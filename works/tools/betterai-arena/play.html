@@ -3,97 +3,200 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>보스와 한 판</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
 <style>
-/* Layout: one phone column - the foe on top, me below, my choices as big buttons, the log and the boss's reasoning under them. */
+/*__FONTS__*/
+/*
+ * Layout: Pokemon Diamond/Pearl's two screens, one above the other - the battle scene (foe HP box top left, foe on its
+ * platform top right, my back sprite bottom left, my HP box right, the message box along the bottom) and the touch
+ * menu (FIGHT, BAG, RUN, POKEMON; the four moves; the party). The turn's results print below both screens.
+ * Around them the wiki's ds_window look in the tower_lobby palette (server-wiki/assets/wiki.css).
+ */
 :root {
-  --bg: #eef1f0; --panel: #ffffff; --ink: #18222b; --muted: #5d6b72; --line: #d5dcdc;
-  --me: #b8432b; --me-soft: #f6e3dd; --foe: #2b5ea8; --foe-soft: #dfe8f5;
-  --ok: #1f7a55; --ok-soft: #dcefe6; --warn: #9a6a00;
-  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
-}
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #12181c; --panel: #1b2328; --ink: #e3e8ea; --muted: #93a2a8; --line: #2c373d;
-    --me: #ee7a60; --me-soft: #3a2420; --foe: #79a6ec; --foe-soft: #1e2a3d;
-    --ok: #5cc595; --ok-soft: #18322a; --warn: #e0b04a; color-scheme: dark;
-  }
+  --backdrop: #141c26; --shell: #5a6e84; --title-bar: #34435a; --panel: #eef1f2; --panel-alt: #d6dadc;
+  --panel-text: #283440; --panel-text-dim: #5a6878; --border: #283440; --frame-highlight: #ffffff; --frame-shade: #9aa6b0;
+  --trim: #c04038; --info-band: #8098b0; --primary: #2c9ccc; --primary-pressed: #1e7aa6; --selected: #ecbc2c;
+  --good: #4fa860; --danger: #c04038; --text: #f2f5f8; --text-dim: #a9b8c8; --cursor: #f07820;
+  --hp-green: #58d080; --hp-yellow: #f8c838; --hp-red: #f05838;
+  --font: "Wiki Galmuri", "Malgun Gothic", "Apple SD Gothic Neo", system-ui, sans-serif;
 }
 * { box-sizing: border-box; }
-html, body { margin: 0; }
-body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; }
-.wrap { max-width: 640px; margin: 0 auto; padding-block: env(safe-area-inset-top, 0px) 40px;
-  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
-header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-block: 12px 8px; }
-header h1 { font-size: 17px; margin: 0; }
-.meta { color: var(--muted); font-size: 13px; }
-.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
-.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
-.stack { display: grid; gap: 10px; }
-.mon .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.mon .name { font-weight: 700; font-size: 16px; }
-.tag { display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 0 6px; border-radius: 5px; }
-.tag.me { background: var(--me-soft); color: var(--me); } .tag.foe { background: var(--foe-soft); color: var(--foe); }
-.hpbar { display: block; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 6px 0 2px; }
-.hpbar i { display: block; height: 100%; background: var(--ok); }
-.hpbar i.low { background: var(--warn); } .hpbar i.red { background: var(--me); }
-.st { color: var(--warn); font-weight: 500; }
-.bench { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
-.bench span { font-size: 12px; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
-.bench span.out { text-decoration: line-through; color: var(--muted); }
-h2 { font-size: 13px; letter-spacing: .06em; color: var(--muted); margin: 6px 0 0; font-weight: 700; }
-.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.choices.one { grid-template-columns: 1fr; }
-button { font: inherit; color: inherit; }
-.choice { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
-  min-height: 56px; cursor: pointer; display: grid; gap: 2px; min-width: 0; }
-.choice:hover { border-color: var(--muted); }
-.choice:focus-visible, .primary:focus-visible { outline: 2px solid var(--foe); outline-offset: 2px; }
-.choice .what { font-weight: 700; overflow-wrap: anywhere; }
-.choice .sub { font-size: 12px; color: var(--muted); }
-.choice.gimmick { border-style: dashed; }
-.choice:disabled { opacity: .45; cursor: default; }
-.primary { background: var(--ink); color: var(--bg); border: 0; border-radius: 10px; padding: 12px 16px; font-weight: 700; cursor: pointer; width: 100%; }
-.status { text-align: center; padding: 14px; }
-.status.thinking { color: var(--muted); }
-.banner { text-align: center; font-size: 20px; font-weight: 700; padding: 16px; }
-.banner.win { color: var(--ok); } .banner.lose { color: var(--me); }
-.log { font-family: var(--mono); font-size: 12.5px; white-space: pre-wrap; margin: 0; overflow-x: auto; }
-details summary { cursor: pointer; font-weight: 500; }
-.cand { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 6px; display: grid; gap: 2px; }
-.cand .l1 { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
-.cand .label { font-weight: 500; flex: 1 1 auto; min-width: 0; }
-.cand.chosen .label::after { content: "고름"; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--ok); background: var(--ok-soft); border-radius: 4px; padding: 0 5px; }
-.cand .detail { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
-.pos { color: var(--ok); } .neg { color: var(--me); } .ex { color: var(--warn); }
-.err { color: var(--me); font-size: 13px; }
-.sets { display: grid; gap: 8px; font-size: 13px; }
-@media (prefers-reduced-motion: no-preference) { .thinking .dots::after { content: "…"; animation: blink 1.2s steps(2) infinite; } }
+[hidden] { display: none !important; }
+html { background: var(--backdrop); }
+body {
+  margin: 0; min-height: 100vh; color: var(--panel-text); font: 15px/1.6 var(--font);
+  background: radial-gradient(circle at 20% 0%, rgba(90, 110, 132, .35), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, .025) 0 2px, transparent 2px 4px), var(--backdrop);
+  padding-block: max(10px, env(safe-area-inset-top, 0px)) 24px;
+  padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px));
+}
+button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
+.shell { max-width: 520px; margin: 0 auto; background: var(--shell); border: 2px solid var(--border); border-radius: 6px;
+  box-shadow: inset 0 0 0 2px var(--frame-shade), 0 6px 0 rgba(0, 0, 0, .35); padding: 6px; }
+.titlebar { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; padding: 8px 12px; background: var(--title-bar);
+  border-radius: 4px 4px 0 0; border-bottom: 3px solid var(--trim); color: var(--text); }
+.titlebar strong { font-size: 17px; letter-spacing: .04em; }
+.titlebar span { color: var(--selected); font-size: 12px; letter-spacing: .2em; }
+.titlebar .id { margin-left: auto; color: var(--text-dim); font-size: 11px; letter-spacing: 0; }
+.body { background: var(--panel); border-radius: 0 0 4px 4px; padding: 8px; display: grid; gap: 8px; }
+
+/* ---- The DS ---------------------------------------------------------------------------------------------------- */
+.ds { background: #2a2f36; border: 2px solid var(--border); border-radius: 10px; padding: 8px; display: grid; gap: 10px;
+  box-shadow: inset 0 0 0 2px #4a525c; }
+.screen { position: relative; width: 100%; aspect-ratio: 4 / 3; overflow: hidden; container-type: inline-size;
+  border: 2px solid #11151a; border-radius: 2px; image-rendering: pixelated; user-select: none; -webkit-user-select: none; }
+.screen > * { position: absolute; }
+
+/* Top screen: the battle scene. */
+.scene { background:
+  linear-gradient(180deg, #f8f8e8 0%, #e0f0c8 22%, #b8e0a0 40%, #98d088 41%, #88c878 70%, #78b868 100%); }
+.scene .stripe { left: 0; right: 0; top: 41%; height: 1.2%; background: rgba(255, 255, 255, .35); }
+.platform { border-radius: 50%; background: radial-gradient(ellipse at 50% 45%, #c8e8a8 0 45%, #a0d088 46% 70%, #78a868 71%); }
+.platform.foe { left: 53%; width: 44%; top: 34%; height: 11%; }
+.platform.me { left: -4%; width: 58%; top: 66%; height: 14%; }
+.sprite { image-rendering: pixelated; pointer-events: none; }
+.sprite.foe { left: 57%; width: 36%; bottom: 58%; }
+.sprite.me { left: 3%; width: 46%; bottom: 26%; }
+.sprite.gone { opacity: 0; }
+.hpbox { background: #f8f8f0; border: .6cqw solid #404848; color: #303838; padding: 1.2cqw 2.4cqw 1.4cqw;
+  box-shadow: inset 0 -.8cqw 0 #c8c8b8; font-size: 4.2cqw; line-height: 1.15; }
+.hpbox.foe { left: 0; top: 5%; width: 52%; border-left: 0; border-radius: 0 3cqw 3cqw 0; }
+.hpbox.me { right: 0; top: 43%; width: 52%; border-right: 0; border-radius: 3cqw 0 0 3cqw; }
+.hpbox .row { position: relative; display: flex; align-items: baseline; gap: 1.4cqw; white-space: nowrap; }
+.hpbox .row > * { position: static; }
+.hpbox .nm { font-weight: 700; overflow: hidden; text-overflow: ellipsis; min-width: 0; flex: 1 1 auto; }
+.hpbox .lv { font-size: 3.6cqw; }
+.male { color: #3070e0; } .female { color: #e04848; }
+.hpbox .bar { position: relative; display: flex; align-items: center; gap: 1cqw; margin-top: .8cqw; }
+.hpbox .bar b { position: static; font-size: 2.8cqw; color: #f8b018; background: #484848; padding: 0 .8cqw; border-radius: .6cqw; }
+.hpbox .track { position: relative; flex: 1; height: 2.2cqw; background: #505858; border: .4cqw solid #303838; border-radius: 1cqw; overflow: hidden; }
+.hpbox .track i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--hp-green); transition: width .5s; }
+.hpbox .track i.mid { background: var(--hp-yellow); } .hpbox .track i.low { background: var(--hp-red); }
+.hpbox .nums { position: static; display: block; text-align: right; font-size: 3.8cqw; margin-top: .6cqw; }
+.hpbox .stg { position: static; display: block; font-size: 3cqw; color: #606868; margin-top: .4cqw; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.st { position: static; font-size: 2.8cqw; color: #fff; padding: 0 .8cqw; border-radius: .6cqw; }
+.st.brn { background: #e07038; } .st.par { background: #c8a818; } .st.psn, .st.tox { background: #a050a0; }
+.st.slp { background: #8890a0; } .st.frz { background: #58a8d8; }
+.msg { left: 1.5%; right: 1.5%; bottom: 2%; height: 25%; background: #fbfbfb; border: .8cqw solid #6878a0;
+  border-radius: 1.6cqw; box-shadow: inset 0 0 0 .7cqw #d8e0f0; padding: 2.2cqw 4cqw; font-size: 4.3cqw; line-height: 1.4; color: #383838; }
+.msg::after { position: absolute; content: ""; right: 2.4cqw; bottom: 2.4cqw; width: 2.6cqw; height: 2.6cqw; background: #e05050; border-radius: .4cqw; }
+.msg.wait::after { animation: blink 1s steps(2) infinite; }
 @keyframes blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) { .msg.wait::after { animation: none; } .hpbox .track i { transition: none; } }
+
+/* Bottom screen: the touch menu. */
+.touch { background: radial-gradient(circle at 50% 48%, transparent 0 17%, rgba(255, 255, 255, .5) 17.5% 19%, transparent 19.5%),
+  radial-gradient(circle at 50% 48%, #e8e8e8 0 40%, #d0d0d8 40.5%), #d0d0d8; }
+.balls { left: 2%; right: 2%; top: 1.5%; height: 8%; display: flex; justify-content: space-between; align-items: center; }
+.balls > span { position: static; display: flex; gap: 1.2cqw; }
+.ball { position: static; width: 4.2cqw; height: 4.2cqw; border-radius: 50%; border: .5cqw solid #383838;
+  background: linear-gradient(#e83838 0 45%, #383838 45% 55%, #f8f8f8 55%); }
+.ball.out { background: #888; } .ball.none { background: transparent; border-style: dashed; border-color: #999; }
+.gimmick-flag { position: static; font-size: 3.2cqw; padding: .2cqw 1.6cqw; border-radius: 1cqw; background: #f8f8f8; border: .5cqw solid #888; color: #666; }
+.gimmick-flag.on { background: #f07820; border-color: #a04808; color: #fff; }
+.tbtn { border: .7cqw solid; border-radius: 3cqw; color: #fff; font-weight: 700; text-shadow: .5cqw .5cqw 0 rgba(0, 0, 0, .35);
+  display: flex; align-items: center; justify-content: center; text-align: center; padding: 1cqw; line-height: 1.2; }
+.tbtn > * { position: static; }
+.tbtn:active:not(:disabled) { transform: translateY(.6cqw); }
+.tbtn:disabled { filter: grayscale(.85) brightness(1.05); opacity: .7; cursor: default; }
+.tbtn:focus-visible { outline: 1cqw solid var(--cursor); outline-offset: .4cqw; }
+.fight { left: 7%; right: 7%; top: 13%; height: 54%; background: linear-gradient(#e86058 0 50%, #d84038 50%); border-color: #902820;
+  box-shadow: inset 0 0 0 1.2cqw rgba(255, 255, 255, .25); font-size: 8cqw; flex-direction: column; gap: 1cqw; }
+.fight small { font-size: 3.4cqw; font-weight: 400; opacity: .9; }
+.bag { left: 2%; width: 30%; top: 71%; bottom: 2.5%; background: linear-gradient(#f8c840 0 50%, #e8a820 50%); border-color: #987010; font-size: 5.2cqw; }
+.run { left: 35%; width: 30%; top: 77%; bottom: 2.5%; background: linear-gradient(#68a8f0 0 50%, #4888e0 50%); border-color: #284898; font-size: 5.2cqw; }
+.mons { right: 2%; width: 30%; top: 71%; bottom: 2.5%; background: linear-gradient(#78d070 0 50%, #50b048 50%); border-color: #287020; font-size: 5.2cqw; }
+.cancel { left: 2%; right: 2%; top: 81%; bottom: 2.5%; background: linear-gradient(#68a8f0 0 50%, #4888e0 50%); border-color: #284898; font-size: 5.2cqw; }
+.move { width: 47%; height: 32%; border-radius: 2.4cqw; color: #283038; text-shadow: none; flex-direction: column; gap: 1.2cqw;
+  background: linear-gradient(rgba(255, 255, 255, .55), rgba(255, 255, 255, .25)), var(--t); border-color: color-mix(in srgb, var(--t) 60%, #000); }
+.move .mv { font-size: 5cqw; font-weight: 700; }
+.move .meta { display: flex; justify-content: space-between; align-items: center; width: 92%; font-size: 3.4cqw; font-weight: 400; }
+.move .meta > * { position: static; }
+.move .ty { color: #fff; background: var(--t); border: .4cqw solid color-mix(in srgb, var(--t) 60%, #000); border-radius: .8cqw; padding: 0 1.2cqw; font-size: 3cqw; }
+.m0 { left: 2%; top: 11%; } .m1 { right: 2%; top: 11%; } .m2 { left: 2%; top: 46%; } .m3 { right: 2%; top: 46%; }
+.slot { width: 47%; height: 21%; border-radius: 2cqw; background: linear-gradient(#a8e090 0 50%, #88cc70 50%); border-color: #3c7a30;
+  color: #203018; text-shadow: none; justify-content: flex-start; gap: 1.6cqw; padding: 1cqw 2cqw; }
+.slot.active { background: linear-gradient(#90c8f0 0 50%, #70b0e0 50%); border-color: #285890; }
+.slot.out { background: linear-gradient(#e8a8a0 0 50%, #d88878 50%); border-color: #883830; }
+.slot img { position: static; width: 13cqw; height: 13cqw; image-rendering: pixelated; flex: none; margin: -2cqw -1cqw; }
+.slot .info { display: flex; flex-direction: column; align-items: stretch; flex: 1; min-width: 0; font-size: 3.6cqw; text-align: left; }
+.slot .info > * { position: static; }
+.slot .info .nm { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.slot .track { position: relative; height: 1.8cqw; background: #505858; border-radius: .9cqw; overflow: hidden; margin: .6cqw 0; }
+.slot .track i { position: absolute; left: 0; top: 0; bottom: 0; background: var(--hp-green); }
+.slot .track i.mid { background: var(--hp-yellow); } .slot .track i.low { background: var(--hp-red); }
+.p0 { left: 2%; top: 11%; } .p1 { right: 2%; top: 11%; } .p2 { left: 2%; top: 34%; } .p3 { right: 2%; top: 34%; }
+.p4 { left: 2%; top: 57%; } .p5 { right: 2%; top: 57%; }
+/* The one in battle cannot be picked but stays bright, as in the game. */
+.slot.active:disabled { filter: none; opacity: 1; }
+.big { left: 7%; right: 7%; top: 18%; height: 56%; background: linear-gradient(#e86058 0 50%, #d84038 50%); border-color: #902820; font-size: 7cqw; flex-direction: column; }
+.big small { font-size: 3.4cqw; font-weight: 400; }
+
+/* ---- Below the DS: the wiki's panels ------------------------------------------------------------------------- */
+.card { padding: 10px 12px; background: var(--frame-highlight); border: 2px solid var(--frame-shade); border-radius: 4px; }
+.card h2 { margin: 0 0 6px; font-size: 15px; padding-bottom: 4px; border-bottom: 2px solid var(--trim); }
+.log { margin: 0; font: 13px/1.6 var(--font); white-space: pre-wrap; word-break: keep-all; overflow-wrap: anywhere; }
+details { padding: 8px 12px; background: var(--panel-alt); border-radius: 4px; }
+details > summary { cursor: pointer; font-weight: 700; }
+details[open] > summary { margin-bottom: 8px; }
+.dim { color: var(--panel-text-dim); font-size: 13px; }
+.cand { border-top: 1px solid var(--frame-shade); padding: 5px 0; }
+.cand .l1 { display: flex; gap: 8px; align-items: baseline; }
+.cand .lbl { flex: 1; min-width: 0; }
+.cand.chosen .lbl::after { content: "고름"; margin-left: 6px; font-size: 11px; color: var(--selected-text, #3a2c08); background: var(--selected); border-radius: 3px; padding: 0 5px; }
+.cand .detail { font-size: 12px; color: var(--panel-text-dim); overflow-wrap: anywhere; }
+.pos { color: #2f7a3e; } .neg { color: var(--danger); } .ex { color: #9a6a00; }
+.pm-button { padding: 6px 14px; color: var(--text); background: var(--primary); border: 2px solid var(--border); border-radius: 4px;
+  box-shadow: inset 0 -3px 0 var(--primary-pressed); }
+.pm-button.warn { background: var(--danger); box-shadow: inset 0 -3px 0 #802820; }
+.row-btns { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.sets { display: grid; gap: 8px; font-size: 13px; }
+.err { color: var(--danger); }
+.keys { margin: 0; }
+@media (hover: none) { .keys { display: none; } }
+.tbtn:focus-visible, .tbtn.cursor { outline: 1.2cqw solid var(--cursor); outline-offset: .3cqw; z-index: 2; }
 </style>
 
-<div class="wrap">
-  <header><h1>보스와 한 판</h1><span class="meta num" id="info"></span></header>
-  <main id="view" class="stack"><p class="status thinking">연결하는 중<span class="dots"></span></p></main>
+<div class="shell">
+  <div class="titlebar"><strong>보스와 한 판</strong><span>BATTLE</span><span class="id" id="info"></span></div>
+  <div class="body">
+    <div class="ds">
+      <div class="screen scene" id="top"></div>
+      <div class="screen touch" id="bottom"></div>
+    </div>
+    <div class="card"><h2>결과</h2><pre class="log" id="results">아직 아무 일도 없습니다.</pre></div>
+    <div class="row-btns"><button class="pm-button" id="new">새 대전</button><span class="dim" id="note"></span></div>
+    <p class="dim keys">키보드: 방향키 이동 · Z/Enter 고르기 · X/Esc 취소 · 1~4 기술 · D 다이맥스 등 켜고 끄기</p>
+    <div id="extra"></div>
+  </div>
 </div>
 
 <script>
-const view = document.getElementById('view');
-const info = document.getElementById('info');
+const DEX = "__DEX__";
+const $ = id => document.getElementById(id);
 let N = { species: {}, moves: {}, abilities: {}, items: {} };
-let game = null, lastRequest = -1, sending = false, problem = '', startArmed = false;
+let game = null, sending = false, screen = 'main', gimmickOn = false, shownRequest = -1, flash = '', armed = false;
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const id = s => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+const TYPES = { Normal: ['노말', '#a8a878'], Fire: ['불꽃', '#f08030'], Water: ['물', '#6890f0'], Electric: ['전기', '#f8d030'],
+  Grass: ['풀', '#78c850'], Ice: ['얼음', '#98d8d8'], Fighting: ['격투', '#c03028'], Poison: ['독', '#a040a0'], Ground: ['땅', '#e0c068'],
+  Flying: ['비행', '#a890f0'], Psychic: ['에스퍼', '#f85888'], Bug: ['벌레', '#a8b820'], Rock: ['바위', '#b8a038'], Ghost: ['고스트', '#705898'],
+  Dragon: ['드래곤', '#7038f8'], Dark: ['악', '#705848'], Steel: ['강철', '#b8b8d0'], Fairy: ['페어리', '#ee99ac'], Stellar: ['스텔라', '#88a0d0'] };
+const STAT = { atk: '공격', def: '방어', spa: '특공', spd: '특방', spe: '스피드', accuracy: '명중', evasion: '회피',
+  attack: '공격', defence: '방어', defense: '방어', special_attack: '특공', special_defence: '특방', special_defense: '특방', speed: '스피드' };
+const STATUS = { brn: '화상', par: '마비', psn: '독', tox: '맹독', slp: '잠듦', frz: '얼음' };
+const WEATHER = { SunnyDay: '쾌청', RainDance: '비', Sandstorm: '모래바람', Hail: '싸라기눈', Snow: '설경', none: '없음' };
+const MECH = { dynamax: '다이맥스', terastallize: '테라스탈', terastal: '테라스탈', mega: '메가진화', zmove: 'Z기술', ultra: '울트라버스트' };
+
+const FORMS = { galar: '가라르', alola: '알로라', hisui: '히스이', paldea: '팔데아', mega: '메가', megax: '메가X', megay: '메가Y',
+  gmax: '거다이맥스', f: '♀', m: '♂', therian: '영물폼', origin: '오리진폼', midnight: '한밤중의 모습', dusk: '황혼의 모습' };
 function mon(name) {
   const key = id(name);
   if (N.species[key]) return N.species[key];
   for (let end = key.length - 1; end > 3; end--) {
     if (N.species[key.slice(0, end)]) {
       const form = String(name).includes('-') ? String(name).split('-').slice(1).join('-') : key.slice(end);
-      return `${N.species[key.slice(0, end)]}-${form}`;
+      return `${N.species[key.slice(0, end)]}-${FORMS[id(form)] || form}`;
     }
   }
   return String(name ?? '?');
@@ -101,16 +204,34 @@ function mon(name) {
 const move = s => N.moves[id(s)] || String(s ?? '');
 const ability = s => N.abilities[id(s)] || String(s ?? '');
 const item = s => N.items[id(s)] || String(s ?? '');
-const STAT = { atk: '공격', def: '방어', spa: '특공', spd: '특방', spe: '스피드', accuracy: '명중', evasion: '회피',
-  attack: '공격', defence: '방어', defense: '방어', special_attack: '특공', special_defence: '특방', special_defense: '특방', speed: '스피드' };
-const STATUS = { brn: '화상', par: '마비', psn: '독', tox: '맹독', slp: '잠듦', frz: '얼음' };
-const WEATHER = { SunnyDay: '쾌청', RainDance: '비', Sandstorm: '모래바람', Hail: '싸라기눈', Snow: '설경', none: '없음' };
-const MECH = { dynamax: '다이맥스', terastallize: '테라스탈', terastal: '테라스탈', mega: '메가진화', zmove: 'Z기술', ultra: '울트라버스트' };
-const statusName = s => s ? (STATUS[id(s).replace(/^.*:/, '')] || STATUS[String(s).split(':').pop()] || String(s).split(':').pop()) : '';
+/** 은/는, 이/가 by the last syllable's final consonant. */
+function josa(word, withFinal, without) {
+  const c = String(word).charCodeAt(String(word).length - 1);
+  return word + (c >= 0xac00 && c <= 0xd7a3 && (c - 0xac00) % 28 ? withFinal : without);
+}
+
+/* Sprites from Pokemon Showdown: Diamond/Pearl's own (gen4) where they exist, else the gen5 style that covers every species. */
+function spriteId(name) {
+  const key = id(name);
+  if (DEX.sprites && DEX.sprites[key]) return DEX.sprites[key];
+  const [base, ...form] = String(name).split('-');
+  return id(base) + (form.length ? '-' + id(form.join('')) : '');
+}
+/** Which URL each sprite loaded from, so a redraw does not walk the gen4 -> gen5 fallback again (and blink). */
+const spriteFound = {};
+function spriteTag(name, back, cls) {
+  const sid = spriteId(name);
+  const dir = back ? '-back' : '';
+  const key = sid + dir;
+  const chain = spriteFound[key] ? [spriteFound[key]] : [`gen4${dir}`, `gen5${dir}`].map(d => `https://play.pokemonshowdown.com/sprites/${d}/${sid}.png`);
+  return `<img class="${cls}" alt="" src="${chain[0]}" data-key="${key}" data-next="${chain[1] || ''}"
+    onload="spriteFound[this.dataset.key]=this.src"
+    onerror="if(this.dataset.next){this.src=this.dataset.next;this.dataset.next=''}else{this.classList.add('gone')}">`;
+}
 
 function who(text) {
   const m = /^(p\d)[a-z]?: (.+)$/.exec(text || '');
-  return m ? `${m[1] === 'p1' ? '나' : '보스'}의 ${mon(m[2])}` : text;
+  return m ? (m[1] === 'p1' ? '' : '상대 ') + mon(m[2]) : text;
 }
 function hp(text) {
   const m = /^(\d+)(?:\/(\d+))?/.exec(text || '');
@@ -123,6 +244,7 @@ function source(text) {
   if (/^p\d[a-z]?: /.test(text)) return who(text);
   return WEATHER[text] || (N.moves[id(text)] ? move(text) : text);
 }
+/** One public log line as the game's message, or null. */
 function line(raw) {
   const all = raw.split('|').slice(1);
   if (!all.length) return null;
@@ -136,210 +258,317 @@ function line(raw) {
     'teampreview', 'poke', 'clearpoke', 'j', 'l'].includes(kind)) return null;
   switch (kind) {
     case 'turn': return `── ${a(0)}턴 ──`;
-    case 'move': return `${who(a(0))} → ${move(a(1))}`;
-    case 'switch': case 'drag': return `${a(0).startsWith('p1') ? '나' : '보스'}: ${kind === 'drag' ? '강제 교체' : '교체'} → ${mon(a(1).split(',')[0])} (${hp(a(2))})`;
-    case '-damage': return `   ${who(a(0))} HP ${hp(a(1))}${src}`;
-    case '-heal': return `   ${who(a(0))} 회복 HP ${hp(a(1))}${src}`;
-    case 'faint': return `   ${who(a(0))} 쓰러짐`;
-    case '-boost': return `   ${who(a(0))} ${STAT[a(1)] || a(1)} +${a(2)}${src}`;
-    case '-unboost': return `   ${who(a(0))} ${STAT[a(1)] || a(1)} -${a(2)}${src}`;
-    case '-status': return `   ${who(a(0))} ${STATUS[a(1)] || a(1)}${src}`;
-    case '-curestatus': return `   ${who(a(0))} ${STATUS[a(1)] || a(1)} 회복`;
-    case '-weather': return tags.includes('[upkeep]') ? null : `날씨: ${WEATHER[a(0)] || a(0)}${src}`;
-    case '-crit': return '   급소';
-    case '-supereffective': return '   효과가 굉장했다';
-    case '-extremelyeffective': return '   효과가 엄청났다(4배)';
-    case '-resisted': return '   효과가 별로';
-    case '-immune': return `   ${who(a(0))} 효과 없음${src}`;
-    case '-miss': return `   ${who(a(1) || a(0))} 빗나감`;
-    case '-fail': return `   실패 ${who(a(0))} ${a(1)}`;
-    case 'cant': return `   ${who(a(0))} 행동 못 함 (${a(1)})`;
-    case '-enditem': return `   ${who(a(0))} ${item(a(1))} 사용·소실${src}`;
-    case '-item': return `   ${who(a(0))} ${item(a(1))}${src}`;
-    case '-ability': return `   ${who(a(0))} 특성 ${ability(a(1))}`;
-    case '-start': return `   ${who(a(0))} ${source(a(1))} 시작`;
-    case '-end': return `   ${who(a(0))} ${source(a(1))} 끝`;
-    case '-sidestart': return `${a(0).startsWith('p1') ? '내' : '보스'} 진영 ${source(a(1))} 설치`;
-    case '-sideend': return `${a(0).startsWith('p1') ? '내' : '보스'} 진영 ${source(a(1))} 제거`;
-    case '-fieldstart': return `필드 ${source(a(0))} 시작`;
-    case '-fieldend': return `필드 ${source(a(0))} 끝`;
-    case 'win': return `승리: ${a(0) === 'p1' ? '나' : '보스'}`;
-    default: return '   ' + [kind.replace(/^-/, ''), ...args.map(x => /^p\d[a-z]?: /.test(x) ? who(x) : x)].join(' ');
+    case 'move': return `${who(a(0))}의 ${move(a(1))}!`;
+    case 'switch': case 'drag': return a(0).startsWith('p1') ? `가랏! ${mon(a(1).split(',')[0])}!` : `상대는 ${josa(mon(a(1).split(',')[0]), '을', '를')} 내보냈다!`;
+    case '-damage': return `  ${who(a(0))} HP ${hp(a(1))}${src}`;
+    case '-heal': return `  ${who(a(0))}의 HP가 회복됐다 (${hp(a(1))})${src}`;
+    case 'faint': return `${josa(who(a(0)), '은', '는')} 쓰러졌다!`;
+    case '-boost': return `  ${who(a(0))}의 ${josa(STAT[a(1)] || a(1), '이', '가')}${Number(a(2)) > 1 ? ' 크게' : ''} 올라갔다!${src}`;
+    case '-unboost': return `  ${who(a(0))}의 ${josa(STAT[a(1)] || a(1), '이', '가')}${Number(a(2)) > 1 ? ' 크게' : ''} 떨어졌다!${src}`;
+    case '-status': return `  ${josa(who(a(0)), '은', '는')} ${STATUS[a(1)] || a(1)} 상태가 됐다!${src}`;
+    case '-curestatus': return `  ${who(a(0))}의 ${josa(STATUS[a(1)] || a(1), '이', '가')} 나았다!`;
+    case '-weather': return tags.includes('[upkeep]') ? null : (a(0) === 'none' ? '날씨가 원래대로 돌아왔다' : `날씨: ${WEATHER[a(0)] || a(0)}${src}`);
+    case '-crit': return '  급소에 맞았다!';
+    case '-supereffective': return '  효과가 굉장했다!';
+    case '-extremelyeffective': return '  효과가 굉장했다! (4배)';
+    case '-resisted': return '  효과가 별로인 듯하다…';
+    case '-immune': return `  ${who(a(0))}에게는 효과가 없는 것 같다…${src}`;
+    case '-miss': return `  ${who(a(1) || a(0))}에게는 맞지 않았다!`;
+    case '-fail': return '  그러나 실패했다!';
+    case 'cant': return `  ${josa(who(a(0)), '은', '는')} 움직일 수 없다! (${a(1)})`;
+    case '-enditem': return `  ${who(a(0))}의 ${item(a(1))}${src}`;
+    case '-item': return `  ${who(a(0))}의 ${item(a(1))}${src}`;
+    case '-ability': return `  ${who(a(0))}의 ${ability(a(1))}!`;
+    case '-start': return `  ${josa(who(a(0)), '은', '는')} ${source(a(1))}`;
+    case '-end': return `  ${who(a(0))}의 ${source(a(1))} 끝`;
+    case '-sidestart': return `${a(0).startsWith('p1') ? '내' : '상대'} 진영에 ${source(a(1))}`;
+    case '-sideend': return `${a(0).startsWith('p1') ? '내' : '상대'} 진영의 ${source(a(1))} 사라졌다`;
+    case '-fieldstart': return `${source(a(0))} 시작`;
+    case '-fieldend': return `${source(a(0))} 끝`;
+    case 'win': return a(0) === 'p1' ? '보스와의 승부에서 이겼다!' : '눈앞이 캄캄해졌다!';
+    default: return '  ' + [kind.replace(/^-/, ''), ...args.map(x => /^p\d[a-z]?: /.test(x) ? who(x) : x)].join(' ');
   }
 }
-const pretty = log => log.map(line).filter(Boolean);
+const pretty = log => (log || []).map(line).filter(Boolean);
 function lastTurns(log, turns) {
   let seen = 0, start = 0;
   for (let i = log.length - 1; i >= 0; i--) if (log[i].startsWith('|turn|') && ++seen === turns) { start = i; break; }
   return log.slice(start);
 }
+const pct = f => Math.max(0, Math.min(100, Math.round(f * 100)));
+const tone = p => p <= 20 ? 'low' : p <= 50 ? 'mid' : '';
 
-function hpBar(frac) {
-  const pct = Math.max(0, Math.min(100, Math.round(frac * 100)));
-  return `<span class="hpbar"><i class="${pct <= 20 ? 'red' : pct <= 50 ? 'low' : ''}" style="width:${pct}%"></i></span>`;
-}
-function stages(obj) {
-  return Object.entries(obj || {}).map(([k, v]) => `${STAT[k] || k} ${v > 0 ? '+' : ''}${v}`).join(' · ');
-}
-
-function myMons(p) {
-  return (p.side?.pokemon || []).map(s => {
-    const species = s.details.split(',')[0];
+/** What the page knows of both sides: names, levels, genders, HP, status from the request and the log. */
+function sides(p, teams) {
+  const latest = {};
+  for (const raw of p?.log || []) {
+    const m = /^\|(?:switch|drag|replace|detailschange)\|(p\d)[a-z]?: ([^|]+)\|([^|]+)/.exec(raw);
+    if (m) latest[m[1]] = m[3];
+  }
+  const details = d => {
+    const parts = String(d || '').split(',').map(s => s.trim());
+    return { name: parts[0], level: (parts.find(x => /^L\d+$/.test(x)) || 'L100').slice(1), gender: parts.find(x => x === 'M' || x === 'F') || '' };
+  };
+  const mine = (p?.side?.pokemon || []).map(s => {
     const cond = s.condition || '';
     const [now, rest] = cond.split('/');
-    const total = parseInt(rest), current = parseInt(now);
-    return { species, active: s.active, fainted: cond.includes('fnt'), cur: current, max: total,
-      frac: total ? current / total : 0, status: cond.split(' ')[1] || '', item: s.item, ability: s.ability || s.baseAbility, moves: s.moves };
+    const max = parseInt(rest), cur = parseInt(now);
+    return { ...details(s.details), active: s.active, fainted: cond.includes('fnt'), cur: cur || 0, max: max || 0,
+      frac: max ? cur / max : 0, status: (cond.split(' ')[1] || '').replace('fnt', ''), item: s.item, ability: s.ability || s.baseAbility, moves: s.moves };
   });
+  const board = (p?.board || []).filter(b => !b.mine);
+  const foeActive = board.find(b => b.active && !b.fainted);
+  const foeInfo = latest.p2 ? details(latest.p2) : null;
+  const foeTeam = (teams?.p2 || []).map(s => {
+    const b = board.find(x => id(x.species) === id(s.species) || id(s.species).startsWith(id(x.species)));
+    return { name: s.species, seen: !!b, fainted: b?.fainted };
+  });
+  return { mine, me: mine.find(m => m.active && !m.fainted), foe: foeActive && { ...foeActive, ...(foeInfo || { name: foeActive.species, level: '50', gender: '' }) }, foeTeam };
 }
 
-function fieldCards(p, teams) {
-  const foe = (p.board || []).filter(b => !b.mine);
-  const foeActive = foe.find(b => b.active && !b.fainted);
-  const mine = myMons(p);
-  const meActive = mine.find(m => m.active);
-  const seenFoe = new Set(foe.map(b => id(b.species)));
-  const foeTeam = (teams?.p2 || []).map(s => s.species);
-  const foeBench = foeTeam.map(s => {
-    const b = foe.find(x => id(x.species) === id(s) || id(s).startsWith(id(x.species)));
-    return `<span class="${b?.fainted ? 'out' : ''}">${esc(mon(s))}${b && !b.fainted && !b.active ? ` <span class="num">${Math.round(b.hp * 100)}%</span>` : ''}</span>`;
-  }).join('');
-  const meBench = mine.map(m => `<span class="${m.fainted ? 'out' : ''}">${esc(mon(m.species))}${!m.fainted && !m.active ? ` <span class="num">${Math.round(m.frac * 100)}%</span>` : ''}</span>`).join('');
-  const foeCard = foeActive ? `
-    <div class="top"><span><span class="tag foe">보스</span> <span class="name">${esc(mon(foeActive.species))}</span></span>
-      <span class="num">${Math.round(foeActive.hp * 100)}%${foeActive.status ? ` <span class="st">${esc(statusName(foeActive.status))}</span>` : ''}</span></div>
-    ${hpBar(foeActive.hp)}
-    ${stages(foeActive.stages) ? `<div class="meta">${esc(stages(foeActive.stages))}</div>` : ''}
-    <div class="meta">${[foeActive.ability && '특성 ' + ability(foeActive.ability.split(':').pop()), foeActive.item && '도구 ' + item(foeActive.item.split(':').pop()),
-      foeActive.moves.length && '본 기술 ' + foeActive.moves.map(m => move(m.split(':').pop())).join(', ')].filter(Boolean).map(esc).join(' · ')}</div>`
-    : '<div class="meta">보스 쪽 필드가 비었습니다</div>';
-  const meBoard = (p.board || []).find(b => b.mine && b.active);
-  const meCard = meActive ? `
-    <div class="top"><span><span class="tag me">나</span> <span class="name">${esc(mon(meActive.species))}</span></span>
-      <span class="num">${meActive.cur}/${meActive.max}${meActive.status ? ` <span class="st">${esc(STATUS[meActive.status] || meActive.status)}</span>` : ''}</span></div>
-    ${hpBar(meActive.frac)}
-    ${meBoard && stages(meBoard.stages) ? `<div class="meta">${esc(stages(meBoard.stages))}</div>` : ''}
-    <div class="meta">${esc([meActive.ability && '특성 ' + ability(meActive.ability), meActive.item && '도구 ' + item(meActive.item)].filter(Boolean).join(' · '))}</div>`
-    : '<div class="meta">내 필드가 비었습니다</div>';
-  return `<div class="card mon">${foeCard}<div class="bench">${foeBench}</div></div>
-    <div class="card mon">${meCard}<div class="bench">${meBench}</div></div>`;
+function hpBox(side, who, cls) {
+  if (!who) return '';
+  const p = side === 'me' ? pct(who.frac) : pct(who.hp);
+  const st = side === 'me' ? who.status : String(who.status || '').split(':').pop();
+  const stages = side === 'foe' ? Object.entries(who.stages || {}).map(([k, v]) => `${STAT[k] || k} ${v > 0 ? '+' : ''}${v}`).join(' ') : '';
+  const meStages = side === 'me' ? (game?.pending?.board || []).find(b => b.mine && b.active)?.stages : null;
+  const stageText = stages || Object.entries(meStages || {}).map(([k, v]) => `${STAT[k] || k} ${v > 0 ? '+' : ''}${v}`).join(' ');
+  return `<div class="hpbox ${cls}">
+    <div class="row"><span class="nm">${esc(mon(who.name))}</span>${who.gender === 'M' ? '<span class="male">♂</span>' : who.gender === 'F' ? '<span class="female">♀</span>' : ''}
+      ${st && STATUS[st] ? `<span class="st ${st}">${STATUS[st]}</span>` : ''}<span class="lv">Lv${esc(who.level)}</span></div>
+    <div class="bar"><b>HP</b><span class="track"><i class="${tone(p)}" style="width:${p}%"></i></span></div>
+    ${side === 'me' ? `<span class="nums">${who.cur}/ ${who.max}</span>` : ''}
+    ${stageText ? `<span class="stg">${esc(stageText)}</span>` : ''}
+  </div>`;
 }
 
-function optionLabel(o, p) {
-  const part = o.parts[0] || {};
-  if (part.kind === 'SWITCH') {
-    const m = myMons(p).find(x => id(x.species) === id(part.switchTo) || id(x.species).startsWith(id(part.switchTo)) || id(part.switchTo).startsWith(id(x.species)));
-    return { what: `교체 → ${mon(part.switchTo)}`, sub: m ? `${m.cur}/${m.max}${m.status ? ' ' + (STATUS[m.status] || m.status) : ''}` : '', kind: 'switch' };
+function message() {
+  if (flash) return flash;
+  if (!game) return '보스 AI와 3대3 싱글 승부!<br>아래 버튼으로 시작하세요.';
+  const p = game.pending || window.__last;
+  const s = sides(p, game.teams);
+  switch (game.status) {
+    case 'starting': return '보스가 승부를 걸어왔다!<br>팀을 고르는 중…';
+    case 'ai_thinking': return sending ? '…' : '보스는 무엇을 할지<br>생각하고 있다…';
+    case 'your_turn':
+      if (game.pending?.forced) return '다음 포켓몬을<br>골라 주세요.';
+      return s.me ? `${josa(mon(s.me.name), '은', '는')}<br>무엇을 할까?` : '무엇을 할까?';
+    case 'done': return game.result?.winner === 'p1' ? '보스와의 승부에서<br>이겼다!' : game.result?.winner ? '눈앞이 캄캄해졌다!' : '승부가 나지 않았다…';
+    case 'error': return '대전이 오류로 멈췄다.';
+    default: return '승부가 중단됐다.';
   }
-  const moveId = (part.move || '').split(':').pop();
-  const slot = (p.active?.[0]?.moves || []).find(m => id(m.id) === id(moveId));
-  const mech = part.mechanic ? (MECH[id(part.mechanic.split(':').pop())] || part.mechanic.split(':').pop()) : '';
-  const parts = o.parts.length > 1 ? o.parts.map(x => x.switchTo ? `→${mon(x.switchTo)}` : move((x.move || '').split(':').pop())).join(' + ') : move(moveId);
-  return { what: (mech ? mech + ' ' : '') + parts, sub: slot ? `PP ${slot.pp}/${slot.maxpp}` : (part.target ? `대상 ${part.target}` : ''), kind: mech ? 'gimmick' : 'move' };
 }
 
-function aiBlock(ai, open) {
+function renderTop() {
+  const p = game?.pending || window.__last;
+  const s = p ? sides(p, game?.teams) : {};
+  const wait = game && ['starting', 'ai_thinking'].includes(game.status);
+  $('top').innerHTML = `<span class="stripe"></span><span class="platform foe"></span><span class="platform me"></span>
+    ${s.foe ? spriteTag(s.foe.name, false, 'sprite foe') : ''}
+    ${s.me ? spriteTag(s.me.name, true, 'sprite me') : ''}
+    ${hpBox('foe', s.foe, 'foe')}${hpBox('me', s.me, 'me')}
+    <div class="msg ${wait ? 'wait' : ''}">${message()}</div>`;
+}
+
+function balls(list) {
+  const out = list.map(m => `<span class="ball ${m.fainted ? 'out' : ''}"></span>`);
+  while (out.length < 6) out.push('<span class="ball none"></span>');
+  return out.slice(0, 6).join('');
+}
+
+function moveButtons(p) {
+  const options = p.options.filter(o => o.parts[0]?.kind === 'USE_MOVE');
+  const plain = options.filter(o => !o.parts[0].mechanic);
+  const gimmicks = options.filter(o => o.parts[0].mechanic);
+  const mech = gimmicks[0] ? (MECH[id(String(gimmicks[0].parts[0].mechanic).split(':').pop())] || '특수') : '';
+  const slots = (p.active?.[0]?.moves || []);
+  const shown = slots.map((slot, i) => {
+    const option = gimmickOn ? gimmicks.find(o => o.id.startsWith(`move ${i + 1} `)) : plain.find(o => o.id === `move ${i + 1}`);
+    const moveId = option ? String(option.parts[0].move || slot.id).split(':').pop() : slot.id;
+    const info = DEX.moves?.[id(moveId)] || DEX.moves?.[id(slot.id)] || ['Normal', 'Status'];
+    const [tname, tcolor] = TYPES[info[0]] || ['???', '#a8a878'];
+    return `<button class="tbtn move m${i}" style="--t:${tcolor}" ${option ? `data-action="${esc(option.id)}"` : 'disabled'}>
+      <span class="mv">${esc(move(moveId))}</span>
+      <span class="meta"><span class="ty">${tname}</span><span>PP ${slot.pp}/${slot.maxpp}</span></span></button>`;
+  }).join('');
+  return `<div class="balls"><span>${gimmicks.length ? `<button class="gimmick-flag ${gimmickOn ? 'on' : ''}" id="gimmick">${esc(mech)} ${gimmickOn ? '켬' : '끔'}</button>` : ''}</span><span></span></div>
+    ${shown}<button class="tbtn cancel" data-go="main">취소</button>`;
+}
+
+function partyButtons(p, s, forced) {
+  const switches = p.options.filter(o => o.parts[0]?.kind === 'SWITCH');
+  const slots = s.mine.map((m, i) => {
+    const option = switches.find(o => id(o.parts[0].switchTo) && (id(m.name).startsWith(id(o.parts[0].switchTo)) || id(o.parts[0].switchTo).startsWith(id(m.name))));
+    const pp = pct(m.frac);
+    return `<button class="tbtn slot p${i} ${m.active ? 'active' : ''} ${m.fainted ? 'out' : ''}" ${option ? `data-action="${esc(option.id)}"` : 'disabled'}>
+      ${spriteTag(m.name, false, '')}
+      <span class="info"><span class="nm">${esc(mon(m.name))} <small>Lv${esc(m.level)}</small></span>
+        <span class="track"><i class="${tone(pp)}" style="width:${pp}%"></i></span>
+        <span>${m.fainted ? '기절' : `${m.cur}/${m.max}${m.status && STATUS[m.status] ? ' ' + STATUS[m.status] : ''}`}</span></span></button>`;
+  }).join('');
+  return `<div class="balls"><span></span><span></span></div>${slots}${forced ? '' : '<button class="tbtn cancel" data-go="main">취소</button>'}`;
+}
+
+function renderBottom() {
+  const el = $('bottom');
+  if (!game || ['error', 'stopped'].includes(game.status)) {
+    el.innerHTML = `<button class="tbtn big" id="start-big">새 대전<small>프리셋 팀 3대3 · 보스 AI</small></button>`;
+    return;
+  }
+  if (game.status === 'done') {
+    el.innerHTML = `<button class="tbtn big" id="start-big">한 판 더<small>새 팀으로 다시 붙기</small></button>`;
+    return;
+  }
+  const p = game.pending || window.__last;
+  if (!p) { el.innerHTML = ''; return; }
+  const s = sides(p, game.teams);
+  const live = game.status === 'your_turn' && game.pending && !sending;
+  const forced = game.pending?.forced;
+  const view = forced ? 'party' : screen;
+  const ballRow = `<div class="balls"><span>${balls(s.mine)}</span><span>${balls(s.foeTeam)}</span></div>`;
+  if (view === 'fight') el.innerHTML = moveButtons(p);
+  else if (view === 'party') el.innerHTML = partyButtons(p, s, forced);
+  else el.innerHTML = `${ballRow}
+    <button class="tbtn fight" data-go="fight"${live ? '' : ' disabled'}>싸운다</button>
+    <button class="tbtn bag" data-say="bag"${live ? '' : ' disabled'}>가방</button>
+    <button class="tbtn run" data-say="run"${live ? '' : ' disabled'}>도망간다</button>
+    <button class="tbtn mons" data-go="party"${live ? '' : ' disabled'}>포켓몬</button>`;
+  if (!live) el.querySelectorAll('[data-action]').forEach(b => b.disabled = true);
+}
+
+function aiBlock(ai) {
   if (!ai) return '';
   const fmt = v => v == null ? '–' : (Math.round(v * 10) / 10).toFixed(1);
   const label = c => c.target?.startsWith('switch:') ? `교체 → ${mon(c.target.slice(7))}` :
     ((c.id.split(' ').slice(2).filter(w => !/^-?\d$/.test(w)).map(w => (MECH[w] || w) + ' ').join('')) + (c.target ? move(c.target) : c.id));
-  return `<details class="card"${open ? ' open' : ''}><summary>보스가 ${ai.turn}턴에 본 후보</summary>
-    <p class="meta">보스가 아직 안 쓴 기술도 보입니다. 굵은 숫자가 최종 점수, 퍼센트가 추첨 확률입니다.</p>
+  return `<details><summary>보스가 ${ai.turn}턴에 본 후보</summary>
+    <p class="dim">보스가 아직 안 쓴 기술도 보입니다. 오른쪽 숫자가 최종 점수, 퍼센트가 추첨 확률입니다.</p>
     ${ai.candidates.map(c => `<div class="cand${c.id === ai.action ? ' chosen' : ''}">
-      <div class="l1"><span class="label">${esc(label(c))}</span>${c.p != null ? `<span class="num meta">${(c.p * 100).toFixed(1)}%</span>` : ''}<span class="num"><b>${fmt(c.refined)}</b></span></div>
+      <div class="l1"><span class="lbl">${esc(label(c))}</span>${c.p != null ? `<span class="dim">${(c.p * 100).toFixed(1)}%</span>` : ''}<b>${fmt(c.refined)}</b></div>
       <div class="detail">기본 ${fmt(c.base)}${Object.entries(c.rules || {}).map(([k, v]) => ` · ${esc(k)} <span class="${v >= 0 ? 'pos' : 'neg'}">${v >= 0 ? '+' : ''}${fmt(v)}</span>`).join('')}${c.ex ? ` · <span class="ex">제외: ${esc(c.ex)}</span>` : ''}</div>
     </div>`).join('')}
-    ${ai.hidden ? `<div class="meta">나머지 ${ai.hidden}개는 생략</div>` : ''}</details>`;
+    ${ai.hidden ? `<div class="dim">나머지 ${ai.hidden}개는 생략</div>` : ''}</details>`;
 }
 
-function setsBlock(teams, open) {
+function setsBlock(teams) {
   if (!teams) return '';
-  const side = (key, label, cls) => (teams[key] || []).filter(s => s.moves).map(s => `<div><span class="tag ${cls}">${label}</span> <b>${esc(mon(s.species))}</b>
-    <div class="meta">${esc([item(s.item), ability(s.ability), s.nature].filter(Boolean).join(' · '))}</div><div class="meta">${esc((s.moves || []).map(move).join(', '))}</div></div>`).join('');
-  return `<details class="card"${open ? ' open' : ''}><summary>${teams.p2?.[0]?.moves ? '두 팀 세트' : '내 팀 세트'}</summary><div class="sets">${side('p1', '나', 'me')}${side('p2', '보스', 'foe')}</div></details>`;
-}
-
-function newGameButton(label) {
-  return `<button class="primary" id="start">${esc(startArmed ? '한 번 더 누르면 지금 판을 버리고 새로 시작' : label)}</button>`;
+  const full = !!teams.p2?.[0]?.moves;
+  const side = (key, label) => (teams[key] || []).filter(s => s.moves).map(s => `<div><b>${label} ${esc(mon(s.species))}</b>
+    <div class="dim">${esc([item(s.item), ability(s.ability), s.nature].filter(Boolean).join(' · '))}</div><div class="dim">${esc((s.moves || []).map(move).join(', '))}</div></div>`).join('');
+  return `<details><summary>${full ? '두 팀 세트' : '내 팀 세트'}</summary><div class="sets">${side('p1', '나')}${side('p2', '보스')}</div></details>`;
 }
 
 function render() {
-  info.textContent = game ? `${game.id} · 시드 ${game.seed}` : '';
-  if (!game) {
-    view.innerHTML = `<div class="card"><p>보스 AI(게임과 같은 조건)와 3대3 싱글 한 판을 둡니다. 두 팀은 프리셋에서 무작위로 뽑고, 나는 p1, 보스는 p2입니다.</p></div>${newGameButton('새 대전 시작')}`;
-    return bind();
-  }
-  const p = game.pending;
-  const err = problem ? `<p class="err">${esc(problem)}</p>` : '';
-  if (game.status === 'starting') {
-    view.innerHTML = `<p class="status thinking">팀을 뽑고 대전을 준비하는 중<span class="dots"></span></p>`;
-    return;
-  }
-  if (game.status === 'error' || game.status === 'stopped') {
-    view.innerHTML = `<div class="card"><p class="err">${game.status === 'error' ? '대전이 오류로 멈췄습니다' : '대전이 중단됐습니다'}</p>
-      ${game.error ? `<pre class="log">${esc(game.error)}</pre>` : ''}</div>${newGameButton('새 대전 시작')}`;
-    return bind();
-  }
-  if (game.status === 'done') {
-    const r = game.result || {};
-    const win = r.winner === 'p1';
-    view.innerHTML = `<div class="card banner ${r.winner ? (win ? 'win' : 'lose') : ''}">${r.winner ? (win ? '이겼습니다' : '졌습니다') : '무승부'} · ${r.turn ?? '–'}턴</div>
-      ${newGameButton('한 판 더')}
-      ${aiBlock(r.ai, false)}
-      ${setsBlock(game.teams, true)}
-      <details class="card"><summary>전체 로그</summary><pre class="log">${esc(pretty(r.log || []).join('\n'))}</pre></details>`;
-    return bind();
-  }
-  // your_turn or ai_thinking: the board of the last request stays up while the boss thinks.
-  const board = p || window.__lastPending;
-  if (p) window.__lastPending = p;
-  if (!board) { view.innerHTML = `<p class="status thinking">보스가 생각하는 중<span class="dots"></span></p>`; return; }
-  const mine = game.status === 'your_turn' && p && !sending;
-  const options = board.options.map(o => ({ o, l: optionLabel(o, board) }));
-  const group = kind => options.filter(x => x.l.kind === kind);
-  const buttons = list => list.map(({ o, l }) => `<button class="choice ${l.kind}" data-action="${esc(o.id)}"${mine ? '' : ' disabled'}>
-      <span class="what">${esc(l.what)}</span>${l.sub ? `<span class="sub num">${esc(l.sub)}</span>` : ''}</button>`).join('');
-  // From the previous turn's marker: what just happened, plus anything since this turn began (a faint before a forced switch).
-  const recent = pretty(lastTurns(board.log, 2));
-  view.innerHTML = `
-    ${fieldCards(board, game.teams)}
-    ${mine ? `<h2>${board.forced ? '다음 포켓몬을 고르세요' : `${board.turn}턴 · 내 차례`}</h2>` : `<p class="status thinking">${sending ? '보내는 중' : '보스가 생각하는 중'}<span class="dots"></span></p>`}
-    ${err}
-    ${group('move').length ? `<div class="choices">${buttons(group('move'))}</div>` : ''}
-    ${group('gimmick').length ? `<div class="choices">${buttons(group('gimmick'))}</div>` : ''}
-    ${group('switch').length ? `<div class="choices">${buttons(group('switch'))}</div>` : ''}
-    <div class="card"><pre class="log">${esc(recent.join('\n') || '아직 아무 일도 없습니다')}</pre></div>
-    ${aiBlock(board.ai, false)}
-    ${setsBlock(game.teams, false)}
-    <details class="card"><summary>전체 로그</summary><pre class="log">${esc(pretty(board.log).join('\n'))}</pre></details>
-    ${newGameButton('이 판 버리고 새로 시작')}`;
-  bind();
+  $('info').textContent = game ? `${game.id} · 시드 ${game.seed}` : '';
+  if (game?.pending) window.__last = game.pending;
+  renderTop();
+  renderBottom();
+  const p = game?.status === 'done' ? null : (game?.pending || window.__last);
+  const log = game?.status === 'done' ? lastTurns(game.result?.log || [], 2) : p ? lastTurns(p.log, 2) : [];
+  $('results').textContent = pretty(log).join('\n') || (game?.error ? game.error : '아직 아무 일도 없습니다.');
+  const ai = game?.status === 'done' ? game.result?.ai : p?.ai;
+  const fullLog = game?.status === 'done' ? game.result?.log : p?.log;
+  $('extra').innerHTML = `${aiBlock(ai)}${game ? setsBlock(game.teams) : ''}
+    ${fullLog ? `<details><summary>전체 로그</summary><pre class="log">${esc(pretty(fullLog).join('\n'))}</pre></details>` : ''}`;
+  restoreCursor();
+  $('new').textContent = armed ? '한 번 더 누르면 지금 판을 버립니다' : '새 대전';
+  $('new').className = 'pm-button' + (armed ? ' warn' : '');
 }
 
-function bind() {
-  view.querySelectorAll('[data-action]').forEach(b => b.addEventListener('click', () => choose(b.dataset.action)));
-  const start = document.getElementById('start');
-  if (start) start.addEventListener('click', () => {
-    const live = game && ['your_turn', 'ai_thinking', 'starting'].includes(game.status);
-    if (live && !startArmed) { startArmed = true; render(); setTimeout(() => { startArmed = false; render(); }, 4000); return; }
-    startArmed = false;
-    post('api/start', {});
-  });
+/* ---- Keyboard: a DS cursor over the bottom screen's buttons ---------------------------------------------- */
+let keyboard = false, cursorKey = null;
+const keyOf = b => b.dataset.action || b.dataset.go || b.dataset.say || b.id || b.className;
+const touchButtons = () => [...$('bottom').querySelectorAll('button:not(:disabled)')];
+function focusButton(b) {
+  if (!b) return;
+  cursorKey = keyOf(b);
+  b.focus({ preventScroll: true });
 }
+function restoreCursor() {
+  if (!keyboard) return;
+  const buttons = touchButtons();
+  focusButton(buttons.find(b => keyOf(b) === cursorKey) || buttons[0]);
+}
+/** The nearest button from `from` in a direction, by the buttons' centres on screen. */
+function nearest(from, dx, dy) {
+  const box = b => { const r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+  const a = box(from);
+  let best = null, bestScore = Infinity;
+  for (const b of touchButtons()) {
+    if (b === from) continue;
+    const c = box(b);
+    const along = (c.x - a.x) * dx + (c.y - a.y) * dy;
+    const across = Math.abs((c.x - a.x) * dy) + Math.abs((c.y - a.y) * dx);
+    // Only what lies in that direction's cone: a button a little lower beside this one is not "below" it.
+    if (along <= 1 || across > along * 2) continue;
+    const score = along + across * 2;
+    if (score < bestScore) { bestScore = score; best = b; }
+  }
+  return best;
+}
+document.addEventListener('keydown', e => {
+  if (e.altKey || e.ctrlKey || e.metaKey || e.target.matches?.('input, textarea, select')) return;
+  const buttons = touchButtons();
+  const current = buttons.includes(document.activeElement) ? document.activeElement : null;
+  const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+  if (dirs[key]) {
+    e.preventDefault();
+    keyboard = true;
+    focusButton(current ? (nearest(current, ...dirs[key]) || current) : buttons[0]);
+  } else if (key === 'z' || ((key === 'Enter' || key === ' ') && !current)) {
+    e.preventDefault();
+    keyboard = true;
+    if (current) current.click(); else focusButton(buttons[0]);
+  } else if (key === 'x' || key === 'Escape' || key === 'Backspace') {
+    if (game?.pending?.forced || screen === 'main') return;
+    e.preventDefault();
+    keyboard = true; screen = 'main'; cursorKey = null; flash = ''; render();
+  } else if (/^[1-4]$/.test(key) && game?.status === 'your_turn' && !game.pending?.forced) {
+    e.preventDefault();
+    keyboard = true;
+    if (screen !== 'fight') { screen = 'fight'; render(); }
+    const b = $('bottom').querySelector(`.m${Number(key) - 1}:not(:disabled)`);
+    if (b) { focusButton(b); b.click(); }
+  } else if (key === 'd' && screen === 'fight' && $('gimmick')) {
+    e.preventDefault();
+    keyboard = true; gimmickOn = !gimmickOn; render();
+  }
+});
+document.addEventListener('pointerdown', () => { keyboard = false; });
+
+document.addEventListener('click', e => {
+  const t = e.target.closest('button');
+  if (!t || t.disabled) return;
+  if (t.id === 'gimmick') { gimmickOn = !gimmickOn; render(); return; }
+  if (t.id === 'start-big') { start(); return; }
+  if (t.id === 'new') {
+    const live = game && ['your_turn', 'ai_thinking', 'starting'].includes(game.status);
+    if (live && !armed) { armed = true; render(); setTimeout(() => { armed = false; render(); }, 4000); return; }
+    armed = false; start(); return;
+  }
+  if (t.dataset.go) { screen = t.dataset.go; flash = ''; cursorKey = null; render(); return; }
+  if (t.dataset.say) {
+    flash = t.dataset.say === 'bag' ? '지금은 가방을<br>쓸 수 없다!' : '안 돼! 승부 도중에<br>상대에게 등을 보일 수는 없어!';
+    render(); setTimeout(() => { flash = ''; render(); }, 2200); return;
+  }
+  if (t.dataset.action) choose(t.dataset.action);
+});
 
 async function post(path, body) {
-  sending = true; problem = ''; render();
+  sending = true; flash = ''; render();
   try {
     const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json();
-    if (data.error) problem = data.error;
     game = data.game || null;
-  } catch (e) { problem = '서버에 닿지 못했습니다. PC의 대전 서버가 켜져 있는지 확인하세요.'; }
+    if (data.error) { $('note').textContent = data.error; $('note').className = 'err'; } else { $('note').textContent = ''; }
+  } catch (e) { $('note').textContent = '서버에 닿지 못했습니다. PC의 대전 서버가 켜져 있는지 확인하세요.'; $('note').className = 'err'; }
   sending = false; render(); schedule();
 }
-
+function start() { window.__last = null; screen = 'main'; gimmickOn = false; post('api/start', {}); }
 function choose(action) {
   if (!game?.pending || sending) return;
+  screen = 'main'; gimmickOn = false;
   post('api/choose', { action, request: game.pending.request });
 }
 
@@ -347,22 +576,26 @@ let timer = null;
 function schedule() {
   clearTimeout(timer);
   const busy = game && ['starting', 'ai_thinking'].includes(game.status);
-  timer = setTimeout(poll, busy ? 800 : 4000);
+  timer = setTimeout(poll, busy ? 700 : 4000);
 }
 async function poll() {
   try {
-    const res = await fetch('api/state', { cache: 'no-store' });
-    const data = await res.json();
-    const before = JSON.stringify([game?.status, game?.pending?.request, game?.id]);
+    const data = await (await fetch('api/state', { cache: 'no-store' })).json();
+    const before = [game?.status, game?.pending?.request, game?.id].join('|');
     game = data.game || null;
-    if (JSON.stringify([game?.status, game?.pending?.request, game?.id]) !== before && !sending) { problem = ''; render(); }
+    const after = [game?.status, game?.pending?.request, game?.id].join('|');
+    if (after !== before && !sending) {
+      if (game?.pending && game.pending.request !== shownRequest) { shownRequest = game.pending.request; screen = 'main'; gimmickOn = false; }
+      render();
+    }
   } catch (e) { /* the next poll retries */ }
   schedule();
 }
 
 (async () => {
   try { N = await (await fetch('api/names')).json(); } catch (e) { /* English names then */ }
-  try { game = (await (await fetch('api/state', { cache: 'no-store' })).json()).game || null; } catch (e) { problem = '서버에 닿지 못했습니다.'; }
+  try { game = (await (await fetch('api/state', { cache: 'no-store' })).json()).game || null; } catch (e) { $('note').textContent = '서버에 닿지 못했습니다.'; }
+  if (game?.pending) shownRequest = game.pending.request;
   render(); schedule();
 })();
 </script>
