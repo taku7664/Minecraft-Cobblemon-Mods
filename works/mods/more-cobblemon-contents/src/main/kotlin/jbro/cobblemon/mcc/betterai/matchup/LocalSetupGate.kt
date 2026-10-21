@@ -212,7 +212,7 @@ internal object LocalSetupGate {
             LocalSwitchRules.previewFoes(context)?.let { (board, foes) -> foes.any { changes(context.copy(state = board), it) } } == true
         val won = if (win >= WIN_PASS && buys) 1.0 else 0.0
         return Reading(win, bonus, won * knockoutMaterialScore * bonus * (1.0 - copyRisk.coerceIn(0.0, 1.0)) *
-            sureKnockoutCost(context, user, facing, scores, cache) * resetHolds(context, user, facing, stages, scores, cache))
+            resetHolds(context, user, facing, stages, scores, cache))
     }
 
     /**
@@ -269,36 +269,6 @@ internal object LocalSetupGate {
         return shown || context.publicActionCatalog.inferredMovesForPokemon(foe.battlePokemonId)?.slots.orEmpty().any {
             it.source == jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveSource.DIFFICULTY_SET_READ && clears(it.details)
         }
-    }
-
-    /**
-     * With an attack that knocks a foe in front out this turn ([WIN_PASS] or more), the raise is paid for with the hit
-     * taken while it goes up: its value at the share of HP left, 1 - the foe's largest expected hit / the user's HP. A
-     * Lucario at 97% chose Swords Dance (273.9) over a sure Close Combat (141.8) on a Bronzong and took an Earthquake for
-     * 62% (league run, 2026-10-19; user decision, option C). A foe that hits for little (a 13% Strange Steam) leaves the
-     * raise nearly whole; one that will not act this turn costs nothing, a paralysed one three quarters, and one that may still
-     * Dynamax hits with its Max Move. 1 without a sure knockout.
-     */
-    private fun sureKnockoutCost(
-        context: BattleDecisionContext,
-        user: BattlePokemonStateView,
-        facing: List<BattlePokemonStateView>,
-        scores: MatchupScores,
-        cache: LocalProjectedActionCalculationCache,
-    ): Double {
-        val sure = facing.any { foe ->
-            scores.moves(user.battlePokemonId, foe.battlePokemonId).any { it.knockoutChanceWithin(1) >= WIN_PASS }
-        }
-        if (!sure || user.hpFraction <= 0.0) return 1.0
-        fun expected(move: MoveMatchupScore) = (move.minimumDamageFraction + move.maximumDamageFraction) / 2.0 * move.accuracy
-        // The foe's hit at the chance it acts at all (paralysis included), its Max Move where it may still Dynamax.
-        val taken = facing.maxOf { foe ->
-            LocalKnockoutWorth.actsThisTurn(foe, context.state) * maxOf(
-                scores.moves(foe.battlePokemonId, user.battlePokemonId).maxOfOrNull(::expected) ?: 0.0,
-                LocalFoeDynamaxThreat.hits(context, context, user, foe, cache).maxOfOrNull { expected(it.score) } ?: 0.0,
-            )
-        }
-        return (1.0 - taken / user.hpFraction).coerceIn(0.0, 1.0)
     }
 
     /**

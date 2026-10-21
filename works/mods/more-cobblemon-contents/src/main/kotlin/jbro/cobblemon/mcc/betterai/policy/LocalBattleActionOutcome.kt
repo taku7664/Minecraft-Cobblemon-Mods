@@ -123,7 +123,6 @@ internal object LocalBattleActionPolicy {
         } else {
             PUBLICLY_BAD_TIER_ADJUSTMENT
         }
-        TIER_TEMPO_LOSS -> TEMPO_LOSS_TIER_ADJUSTMENT
         TIER_ORDINARY,
         TIER_SECURE_KNOCKOUT,
         -> 0.0
@@ -141,26 +140,9 @@ internal object LocalBattleActionPolicy {
         return when (outcome.candidate.kind) {
             BattleActionKind.FORFEIT -> TIER_FORFEIT
             BattleActionKind.WAIT -> TIER_PUBLICLY_BAD
-            BattleActionKind.SWITCH -> switchTier(
-                outcome,
-                context,
-                outcome.candidate.actorSlot in executableDamageSlots,
-                tuning,
-            )
-            BattleActionKind.COMPOSITE -> if (outcome.componentOutcomes.any { component ->
-                    component.candidate.kind == BattleActionKind.SWITCH &&
-                        switchTier(
-                            component,
-                            context,
-                            component.candidate.actorSlot in executableDamageSlots,
-                            tuning,
-                        ) == TIER_TEMPO_LOSS
-                }
-            ) {
-                TIER_TEMPO_LOSS
-            } else {
-                TIER_ORDINARY
-            }
+            // A switch is priced by its own gain (LocalSwitchRules), never by whether an attack is on offer: the -250 tempo
+            // tier it took when the slot had a damaging move and the switch gained under 1.5 turns is gone (user, 2026-10-21).
+            BattleActionKind.SWITCH, BattleActionKind.COMPOSITE -> TIER_ORDINARY
             BattleActionKind.USE_MOVE -> TIER_ORDINARY
         }
     }
@@ -168,56 +150,11 @@ internal object LocalBattleActionPolicy {
     private fun atomicOutcomes(outcome: LocalBattleActionOutcome): Sequence<LocalBattleActionOutcome> =
         if (outcome.componentOutcomes.isEmpty()) sequenceOf(outcome) else outcome.componentOutcomes.asSequence()
 
-    private fun switchTier(
-        outcome: LocalBattleActionOutcome,
-        context: BattleDecisionContext,
-        executableDamageExists: Boolean,
-        tuning: LocalDecisionTuning,
-    ): Int {
-        if (!executableDamageExists) return TIER_ORDINARY
-        val improvement = outcome.survivalPositionImprovement
-        if (improvement == null) return TIER_ORDINARY
-        val recentlySwitched = context.memory.turnsSinceLastSwitch?.let { it <= 1 } == true
-        val offensiveImprovement = LocalLookaheadStateEvaluator
-            .switchOffensivePressureImprovement(outcome.candidate, context)
-            ?.coerceAtLeast(0.0)
-            ?: 0.0
-        val requiredOffensiveImprovement = if (recentlySwitched) {
-            RECENT_SWITCH_OFFENSIVE_IMPROVEMENT +
-                context.memory.switchesThisBattle * REPEATED_SWITCH_OFFENSIVE_STEP
-        } else {
-            MATERIAL_OFFENSIVE_IMPROVEMENT
-        }
-        // Stated in survival turns, the same unit survivalPositionImprovement now reports.
-        val requiredImprovement = if (recentlySwitched) {
-            tuning.recentSwitchSurvivalTurnGain +
-                (context.memory.switchesThisBattle - 1).coerceAtLeast(0) * tuning.repeatedSwitchTurnGainStep
-        } else {
-            tuning.materialSurvivalTurnGain
-        }
-        val overwhelmingPublicEscape = recentlySwitched &&
-            LocalPublicPositionFacts.activeAlly(outcome.candidate, context)?.let { active ->
-                LocalPublicPositionFacts.isOverwhelmingPublicThreat(active, context, tuning)
-            } == true &&
-            improvement >= tuning.recentSwitchSurvivalTurnGain
-        return if (
-            improvement >= requiredImprovement ||
-            offensiveImprovement >= requiredOffensiveImprovement ||
-            overwhelmingPublicEscape
-        ) {
-            TIER_ORDINARY
-        } else {
-            TIER_TEMPO_LOSS
-        }
-    }
-
     private const val TIER_FORFEIT = 0
     internal const val TIER_PUBLICLY_BAD = 1
-    private const val TIER_TEMPO_LOSS = 2
     internal const val TIER_ORDINARY = 3
     internal const val TIER_SECURE_KNOCKOUT = 4
     internal const val SECURE_KNOCKOUT_BONUS = 250.0
-    private const val TEMPO_LOSS_TIER_ADJUSTMENT = -250.0
     internal const val PUBLICLY_INERT_TIER_ADJUSTMENT = -500.0
     private const val PUBLICLY_BAD_TIER_ADJUSTMENT = -1_000.0
     private const val FORFEIT_TIER_ADJUSTMENT = -10_000.0

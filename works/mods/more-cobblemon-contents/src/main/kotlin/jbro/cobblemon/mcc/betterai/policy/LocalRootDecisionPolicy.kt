@@ -17,7 +17,6 @@ internal enum class LocalSwitchDecisionReason {
 
 internal enum class LocalSwitchVetoReason {
     FATAL_REENTRY,
-    PRESERVE_SETUP,
 }
 
 internal data class LocalRootDecisionRefinement(
@@ -31,14 +30,13 @@ internal data class LocalRootDecisionRefinement(
  *
  * This does not invent another utility score. It removes an optional switch only when a useful
  * same-slot action can still execute and public state proves that switching discards a concrete
- * resource: the outgoing Pokemon's last usable turn or its accumulated setup.
+ * resource: the outgoing Pokemon's last usable turn. Its accumulated setup is the stay's own value, not a veto
+ * here (user, 2026-10-21).
  */
 internal object LocalRootDecisionPolicy {
     fun refine(
         ranked: List<LocalBattleActionRank>,
         context: BattleDecisionContext,
-        /** Off where the ranks do not carry the HP a stay keeps against the worst reply, as native ranks do not. */
-        preserveSetup: Boolean = true,
     ): LocalRootDecisionRefinement {
         if (ranked.size < 2) {
             return LocalRootDecisionRefinement(ranked)
@@ -92,19 +90,6 @@ internal object LocalRootDecisionPolicy {
             val projectedReentryHp = LocalSwitchStateProjector.projectedSwitchOutHp(context.state, active)
             if (reentryLoss != null && reentryLoss > 0.0 && projectedReentryHp <= reentryLoss + HP_EPSILON) {
                 vetoes += LocalSwitchVetoReason.FATAL_REENTRY
-            }
-
-            val positiveStages = active.statStages.values.sumOf { it.coerceAtLeast(0) }
-            val stayCanSurviveKnownResponse = credibleStays.any { it.first.worstResponseHpRetention > 0.0 }
-            // Revealed moves alone missed a foe that had shown nothing yet: a +2 Mega Garchomp at 46% was kept in front of
-            // a faster Dragapult just in and fell to Dragon Darts, Togekiss behind immune (hand-played Cynthia, 2026-10-20).
-            // The matchup table's reading of the foe (its inferred attacks) counts too: boosts that die this turn keep nothing.
-            val knockedOutNow = context.state.pokemon.any {
-                it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted &&
-                    (jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.threatOrNull(it.battlePokemonId, active.battlePokemonId) ?: 0.0) > THREAT_KEEPS_NO_SETUP
-            }
-            if (preserveSetup && positiveStages >= SETUP_PRESERVATION_STAGES && stayCanSurviveKnownResponse && !knockedOutNow) {
-                vetoes += LocalSwitchVetoReason.PRESERVE_SETUP
             }
 
             if (vetoes.isNotEmpty()) {
@@ -185,10 +170,8 @@ internal object LocalRootDecisionPolicy {
 
     private const val MINIMUM_CREDIBLE_EXECUTION_PROBABILITY = 0.25
     private const val MAXIMUM_CREDIBLE_STAY_SCORE_GAP = 199.0
-    private const val SETUP_PRESERVATION_STAGES = 2
     private const val MATERIAL_SURVIVAL_GAIN = 0.25
     private const val MATERIAL_TACTICAL_GAIN_SCORE = 20.0
     private const val SAFE_ENTRY_RETENTION = 0.50
     private const val HP_EPSILON = 1e-9
-    private const val THREAT_KEEPS_NO_SETUP = 0.5
 }
