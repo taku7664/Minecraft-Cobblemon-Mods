@@ -8,7 +8,7 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Self-play arena for `works/tools/betterai-arena`: PAIRS team pairs from the preset sets (SEED picks them), each played
- * boss against boss as in the game (searchless, quick decider on, the opposing team preview and Boss's exact spreads
+ * boss against boss as in the game (searchless, the opposing team preview and Boss's exact spreads
  * handed over), THREADS battles at once. Every battle keeps its folder (decisions.jsonl, result.json) under OUT; one
  * `ARENA {...}` line per battle goes to stdout for `arena.py`, which writes the run summary and the viewer.
  *

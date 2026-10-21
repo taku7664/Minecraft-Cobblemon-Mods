@@ -94,7 +94,6 @@ internal object EmbeddedTeamBattle {
                     fitHiddenStats = side !in withoutStatFitting)::reconcile,
             )
             LocalTacticalBrain(tuning = tuning, searchless = side in searchlessSides,
-                quickDecider = searchlessSides[side] ?: true,
                 // The engine itself is borrowed through LocalEngineStopProbe.lease, which the caller sets.
                 nativeStatus = nativeStatusSides == null || side in nativeStatusSides,
                 stageTrace = { stages[side] = it },

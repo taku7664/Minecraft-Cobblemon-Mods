@@ -1,7 +1,7 @@
 # Better AI 아레나
 
 실제 모드 JAR로 보스 대 보스 자가 대전을 N판 돌리고, 판마다 기록 파일을 남기고, 휴대폰에서 볼 수 있는 뷰어를 만든다.
-게임 조건(검색 없음, 빠른 판단 켬, 상대 미리보기 켬)으로 돌고, 판 수만큼 프리셋 팀 짝을 시드로 뽑는다.
+게임 조건(검색 없음, 상대 미리보기 켬)으로 돌고, 판 수만큼 프리셋 팀 짝을 시드로 뽑는다.
 
 ## 한 번 돌리기
 
@@ -48,7 +48,7 @@ Artifact 페이지(https://claude.ai/artifact/RR13L7EUx4cKCfKz9mA9zJ)는 `site/`
 ## 실행부 다시 만들기
 
 실행부(`betterai-arena-runner.jar` + `lib/`)는 테스트 쪽 대전 코드(`EmbeddedTeamBattle`, `EmbeddedPresetAudit`, `BetterAiArena.kt`, `oracle/team-battle-bridge.cjs` 등)만 담는다. AI 본체는 고른 모드 JAR에서 로드되고, 클래스패스 맨 앞에 그 JAR이 온다.
-테스트 쪽 대전 코드를 바꿨을 때만 다시 만든다.
+테스트 쪽 대전 코드를 바꿨을 때, 그리고 그 코드가 부르는 AI 본체의 생성자·함수 시그니처가 바뀌었을 때 다시 만든다. 2026-10-21 `LocalTacticalBrain`의 `quickDecider` 인자를 지운 뒤 옛 실행부로 돌린 50판이 전부 `NoSuchMethodError`로 실패했다.
 
 ```bat
 works\tools\betterai-arena\build-runner.bat

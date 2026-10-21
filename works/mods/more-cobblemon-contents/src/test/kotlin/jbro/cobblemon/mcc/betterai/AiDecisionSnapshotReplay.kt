@@ -102,12 +102,12 @@ internal object AiDecisionSnapshotReplay {
     private fun printStages(stages: LocalDecisionStages) {
         fun value(map: Map<String, Double>, id: String) = map[id]?.let { String.format(Locale.ROOT, "%.3f", it) } ?: "-"
         val ids = (stages.base.keys + stages.refined.keys).distinct().sortedByDescending { stages.refined[it] ?: Double.NEGATIVE_INFINITY }
-        println("stages nativeStatus=${stages.nativeStatusStatus} drawn=${stages.drawn} quick=${stages.quick}:${stages.quickReason} selected=${stages.selected}")
+        println("stages nativeStatus=${stages.nativeStatusStatus} drawn=${stages.drawn} selected=${stages.selected}")
         ids.forEach { id ->
             val rules = stages.rules.mapNotNull { (rule, values) -> values[id]?.takeIf { it != 0.0 }?.let { "$rule=${String.format(Locale.ROOT, "%.3f", it)}" } }
             println("  $id base=${value(stages.base, id)} tier=${stages.tiers[id] ?: "-"} native=${value(stages.nativeStatus, id)} " +
                 "rules=$rules afterRules=${value(stages.afterRules, id)} kind=${value(stages.afterKindWeights, id)} " +
-                "refined=${value(stages.refined, id)} quick=${stages.quickBonus[id].orEmpty()} " +
+                "refined=${value(stages.refined, id)} " +
                 "ruleExcluded=${stages.ruleExclusions[id] ?: "-"} draw=${value(stages.drawProbabilities, id)} drawExcluded=${stages.drawExclusions[id] ?: "-"}")
         }
     }

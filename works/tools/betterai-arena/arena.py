@@ -116,7 +116,7 @@ def run(args):
         'requested': args.battles, 'seed': seed, 'threads': threads,
         'jar': str(jar), 'jarSha256': sha256(jar), 'jarCommit': args.commit,
         'repoHead': git_head(resolve(cfg['repo'])), 'runnerSha256': sha256(runner_jar), 'note': args.note,
-        'mode': 'boss vs boss, searchless, quick decider on, team preview on', 'battles': [],
+        'mode': 'boss vs boss, searchless, team preview on', 'battles': [],
     }
     write_json(out / 'run.json', summary)
     update_index(runs)

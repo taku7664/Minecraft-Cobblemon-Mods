@@ -358,7 +358,7 @@ internal object LocalOpponentIntentPredictor {
         val ended = jbro.cobblemon.mcc.betterai.state.LocalEndTurnStateProjector.project(state,
             jbro.cobblemon.mcc.betterai.mechanics.LocalBadPoisonCounter.seed(state).mapValues { (_, done) -> done + 1 })
         if (allies.any { ally -> (ended.pokemon.firstOrNull { it.battlePokemonId == ally.battlePokemonId }?.hpFraction ?: ally.hpFraction) < ally.hpFraction ||
-                ally.knownVolatileEffectIds.any { PublicIds.canonical(it.substringBefore(':')) in LocalQuickDecider.DRAINING } }) return true
+                ally.knownVolatileEffectIds.any { PublicIds.canonical(it.substringBefore(':')) in DRAINING } }) return true
         if (state.field.roomEffects.isNotEmpty()) return true
         return state.field.sideConditions[BattleSide.ALLY].orEmpty().any { it.remainingTurns != null || it.remainingTurnsRange != null }
     }
@@ -639,4 +639,7 @@ internal object LocalOpponentIntentPredictor {
     private val SPREAD = setOf(BattleMoveTargetPattern.ALL_OPPONENTS, BattleMoveTargetPattern.ALL_ADJACENT, BattleMoveTargetPattern.ALL_ACTIVE)
     private val PROTECTING_MOVES = setOf("protect", "detect", "spikyshield", "kingsshield", "banefulbunker", "silktrap",
         "burningbulwark", "obstruct", "maxguard")
+
+    /** A volatile that drains its holder while it stays in: Leech Seed, Curse, a Perish count, Yawn. */
+    private val DRAINING = setOf("leechseed", "curse", "perish1", "perish2", "perish3", "perishsong", "yawn")
 }
