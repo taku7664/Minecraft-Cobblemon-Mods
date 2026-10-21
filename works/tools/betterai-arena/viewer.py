@@ -39,7 +39,7 @@ class Names:
                     self.moves[self.id(parts[2])] = value
                 elif len(parts) == 3 and parts[1] == 'ability':
                     self.abilities[self.id(parts[2])] = value
-                elif len(parts) == 3 and parts[1] == 'item':
+                elif len(parts) == 3 and parts[0] == 'item' and parts[1] == 'cobblemon':
                     self.items[self.id(parts[2])] = value
             break
 
