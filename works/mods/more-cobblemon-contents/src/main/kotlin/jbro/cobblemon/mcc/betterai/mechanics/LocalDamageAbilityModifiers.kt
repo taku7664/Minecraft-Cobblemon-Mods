@@ -74,7 +74,10 @@ internal object LocalDamageAbilityModifiers {
             "stakeout" -> if (LocalReactiveAbilityState.ENTERED_THIS_TURN in target.knownVolatileEffectIds) 2.0 else 1.0
             "slowstart" -> if (physical && LocalReactiveAbilityState.slowStartActive(actor)) .5 else 1.0
             "flashfire" -> if (type == "fire" && actor.knownVolatileEffectIds.any { canonical(it) == "flashfire" }) 1.5 else 1.0
-            "protean", "libero" -> if (stab) 1.0 else 1.5
+            // Once per entry (Gen 9): spent on an earlier move since it came in, the type it took stays and gives no STAB
+            // to another type. Read as every time, a Greninja turned Ice by its Ice Beam took Water STAB on its Max Geyser,
+            // a sure knockout of an 86% Garganacl that the hit left at 4% (self-play, 2026-10-21).
+            "protean", "libero" -> if (stab || proteanSpent(state, actor)) 1.0 else 1.5
             "hadronengine" -> if (special && terrain == "electricterrain") 4.0 / 3.0 else 1.0
             // Defeatist halves both attacking stats at half HP or less.
             "defeatist" -> if (actor.hpFraction <= 0.5) 0.5 else 1.0
@@ -175,6 +178,17 @@ internal object LocalDamageAbilityModifiers {
     }
 
     /** Blaze and its kind: half again the power of their type at a third of HP or less. */
+    /** Whether [actor]'s Protean or Libero has changed its type since it last came in (its ability shown on a move). */
+    private fun proteanSpent(state: BattleStateView, actor: BattlePokemonStateView): Boolean {
+        val entry = state.observedEvents.filter {
+            it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.SWITCHED && it.actorPokemonId == actor.battlePokemonId
+        }.maxOfOrNull { it.sequence } ?: Long.MIN_VALUE
+        return state.observedEvents.any {
+            it.sequence > entry && it.kind == jbro.cobblemon.mcc.internal.ai.BattleObservedEventKind.ABILITY_REVEALED &&
+                it.actorPokemonId == actor.battlePokemonId && canonical(it.publicValueId.orEmpty()) in setOf("protean", "libero")
+        }
+    }
+
     private fun pinch(actor: BattlePokemonStateView, matches: Boolean): Double =
         if (matches && actor.hpFraction <= 1.0 / 3.0) 1.5 else 1.0
 

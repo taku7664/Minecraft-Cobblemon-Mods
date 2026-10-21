@@ -452,7 +452,8 @@ internal object EmbeddedTeamInput {
                 pokemon.ability, pokemon.item, pokemon.hp == 0.0,
                 if (pokemon.types.isEmpty() && !pokemon.transformed) megaTypes(pokemon.species, "") else pokemon.types + listOfNotNull(pokemon.added),
                 knownTeraTypeId = pokemon.tera,
-                knownBaseStabTypeIds = baseTypes(pokemon.species),
+                // The types it holds (Protean's change included; the game's observer keeps them so), before any Tera.
+                knownBaseStabTypeIds = pokemon.preTeraTypes ?: pokemon.types.ifEmpty { baseTypes(pokemon.species) },
                 combatStats = stats?.let { BattlePublicStatRanges.fromBaseStats(pokemon.level, it["hp"].asInt,
                     it["atk"].asInt, it["def"].asInt, it["spa"].asInt, it["spd"].asInt, it["spe"].asInt) },
                 knownFormStates = speciesData.getAsJsonObject(pokemon.species)?.getAsJsonArray("megaForms")
