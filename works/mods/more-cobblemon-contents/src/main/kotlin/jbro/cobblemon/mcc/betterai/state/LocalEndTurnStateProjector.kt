@@ -143,6 +143,10 @@ internal object LocalEndTurnStateProjector {
                 val divisor = if (types.any { it in SALT_CURE_WEAK_TYPES }) 4 else 8
                 apply(-hpFractionTick(pokemon, divisor))
             }
+            // The last Perish Song count (`perishsong:1`, Showdown's `-start|perish1`) faints it at the turn's end, Magic Guard
+            // or not. Read as a charge on every move that stays in instead (LocalPerishCount, -200 each), it was a forced switch
+            // rather than the Pokemon lost (user, 2026-10-21): the switch's gain reads the fall here (LocalSwitchRules).
+            if (pokemon.knownVolatileEffectIds.any { it.substringBefore(':').lowercase() == "perishsong" && it.substringAfter(':', "") == "1" }) hp = 0.0
             // A Flame Orb or Toxic Orb inflicts its status at the end of the turn (Guts and Poison Heal want it).
             val orbStatus = when (item) {
                 "flameorb" -> "brn".takeIf { status == null && "fire" !in types }

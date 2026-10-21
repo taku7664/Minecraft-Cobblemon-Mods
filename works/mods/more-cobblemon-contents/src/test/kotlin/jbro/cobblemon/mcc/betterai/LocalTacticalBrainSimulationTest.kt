@@ -1178,33 +1178,6 @@ class LocalTacticalBrainSimulationTest {
     }
 
     @Test
-    fun `team rotation cannot switch again on the turn after a voluntary switch when damage is available`() {
-        val thirdPokemonId = UUID.randomUUID()
-        val availableDamage = move(
-            id = "available_damage",
-            power = 60.0,
-            typeId = "normal",
-            facts = damageFacts(0.20),
-        )
-
-        assertEquals(
-            "available_damage",
-            decide(
-                candidates = listOf(availableDamage, switch("rotate_to_third", thirdPokemonId)),
-                turn = 9,
-                allyHp = 0.15,
-                allyTypes = setOf("fire"),
-                opponentTypes = setOf("ground"),
-                allyBench = mapOf(thirdPokemonId to BenchPokemon(1.0, setOf("flying"))),
-                memory = BattleTacticalMemoryView(
-                    turnsSinceLastSwitch = 1,
-                    switchesThisBattle = 3,
-                ),
-            ).actionId,
-        )
-    }
-
-    @Test
     fun `guaranteed public knockout finishes the opponent instead of taking a healthy switch`() {
         val benchId = UUID.randomUUID()
         val finisher = move(
@@ -1317,29 +1290,6 @@ class LocalTacticalBrainSimulationTest {
                 allyAbilityId = "regenerator",
                 allyBench = mapOf(safeBenchId to BenchPokemon(1.0, setOf("water"))),
                 field = sideConditionField(BattleSide.ALLY, "stealthrock"),
-            ).actionId,
-        )
-    }
-
-    @Test
-    fun `boosted active keeps its setup when a credible attack survives the known response`() {
-        val immuneBenchId = UUID.randomUUID()
-        val boostedAttack = move(
-            id = "boosted_attack",
-            power = 75.0,
-            typeId = "water",
-            facts = damageFacts(0.30),
-        )
-
-        assertEquals(
-            "boosted_attack",
-            decide(
-                candidates = listOf(boostedAttack, switch("optional_immunity", immuneBenchId)),
-                allyHp = 0.80,
-                allyTypes = setOf("water"),
-                opponentTypes = setOf("electric"),
-                allyStatStages = mapOf("attack" to 2),
-                allyBench = mapOf(immuneBenchId to BenchPokemon(1.0, setOf("ground"))),
             ).actionId,
         )
     }

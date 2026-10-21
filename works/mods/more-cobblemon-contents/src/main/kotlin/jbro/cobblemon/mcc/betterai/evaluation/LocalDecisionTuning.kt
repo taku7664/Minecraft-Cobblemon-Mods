@@ -499,20 +499,6 @@ internal data class LocalDecisionTuning(
      */
     val maximumSurvivalTurns: Double = 7.5,
 
-    // ---- switch gating (survival turns) ---------------------------------------------------------
-    /**
-     * Survival-turn gain a switch must show to avoid being demoted to the tempo-loss tier.
-     *
-     * These are stated in the same turns unit as `survivalPosition`. They previously sat on the raw
-     * `hp / typeMultiplier` quotient, so changing the exposure unit without moving them turned every
-     * gate wide open - which is the precise mechanism by which fixing one unit bug manufactures a
-     * worse one downstream.
-     */
-    val materialSurvivalTurnGain: Double = 1.5,
-    /** Higher bar when the outgoing Pokemon was itself brought in within the last turn. */
-    val recentSwitchSurvivalTurnGain: Double = 3.5,
-    /** Additional turns demanded per switch already spent this battle. */
-    val repeatedSwitchTurnGainStep: Double = 2.0,
     /**
      * When true, `defensiveExposure` keeps returning a raw type-chart multiplier (`0..4`) when no
      * opponent move has been revealed and expected HP damage (`0..~1.4`) once one has - two different
@@ -628,9 +614,6 @@ internal data class LocalDecisionTuning(
             legacyMixedExposureUnits = true,
             immunityExposureFloor = 0.25,
             maximumSurvivalTurns = Double.MAX_VALUE,
-            materialSurvivalTurnGain = 0.25,
-            recentSwitchSurvivalTurnGain = 0.75,
-            repeatedSwitchTurnGainStep = 2.0,
             relativeRegretGap = 0.0,
             minimumRegretGapScore = 45.0,
             maximumRegretGapScore = 80.0,

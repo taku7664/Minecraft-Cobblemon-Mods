@@ -533,7 +533,7 @@ internal class LocalTacticalBrain(
                     if (extra == 0.0) rank else rank.copy(comparisonValue = rank.comparisonValue + extra)
                 })
                 // Only the re-entry veto: the setup one reads the HP a stay keeps, which native ranks do not carry.
-                val ranked = LocalRootDecisionPolicy.refine(adjusted, difficultyContext, preserveSetup = false).ranked
+                val ranked = LocalRootDecisionPolicy.refine(adjusted, difficultyContext).ranked
                 val nativeSearchStatus = requireNotNull(nativeInitial.searchStatus)
                 val seed = LocalActionChoiceSeed.derive(
                     battleId = battleId,
@@ -761,26 +761,6 @@ internal class LocalTacticalBrain(
                     ?.let { candidate.actionId to (it.value - rank.comparisonValue) }
             }.toMap()
         }.orEmpty()
-        // A heal that puts its user to sleep (Rest: its move code sets the sleep counter) gives up the turns it sleeps
-        // through: each worth the best other move on offer now. The hits taken asleep are taken awake too, so they cost
-        // nothing extra. With Sleep Talk the sleeper still acts, a random one of its other moves: it gives up only what that
-        // draw falls short of the best. Priced as a heal alone, a 74% Giratina Rested (30.2) in front of a 13% Zamazenta its
-        // Dragon Pulse knocked out for sure (self-play, 2026-10-21).
-        val restAdjustments = if (!rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) emptyMap() else {
-            val moves = searchedRanked.filter { it.outcome.candidate.kind == BattleActionKind.USE_MOVE && !it.outcome.publiclyInert }
-            fun sleeps(rank: jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank) =
-                jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.userSleepTurns(rank.outcome.candidate.moveId)
-            val others = moves.filter { sleeps(it) == null && !jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.callsOwnMoveAsleep(it.outcome.candidate.moveId) }
-            val best = others.maxOfOrNull { it.comparisonValue }?.coerceAtLeast(0.0) ?: 0.0
-            val talks = moves.any { jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.callsOwnMoveAsleep(it.outcome.candidate.moveId) }
-            val drawn = others.map { it.comparisonValue.coerceAtLeast(0.0) }.average().takeIf { !it.isNaN() } ?: 0.0
-            val lostPerTurn = if (best <= 0.0) 0.0 else if (talks) best - drawn else best
-            moves.mapNotNull { rank ->
-                val counter = sleeps(rank) ?: return@mapNotNull null
-                val asleep = (counter - 1).coerceAtLeast(0)
-                if (asleep == 0 || lostPerTurn <= 0.0) null else rank.outcome.candidate.actionId to -asleep * lostPerTurn
-            }.toMap()
-        }
         // A self-heal's ranking value becomes what it restores to the user's standing, in the same units as an attack
         // (LocalHealValue). Its heal race's own-heal charge is that reading's to make, so it is left out for these moves.
         val healValueAdjustments = if (!rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) emptyMap() else ruleScores?.let { scores ->
@@ -790,30 +770,12 @@ internal class LocalTacticalBrain(
                 else values[rank.outcome.candidate.actionId]?.let { rank.outcome.candidate.actionId to it - rank.comparisonValue } }.toMap()
         }.orEmpty()
         // A debuff's ranking value becomes what it takes off, in knockout units (the setup score's scale).
-        // The chance this side knocks the foe in front out this turn: its best attack's knockout at the chance that attack
-        // goes off before the foe knocks the user out (LocalActingChance). Singles, as the debuffs below.
-        val knockoutNow by lazy {
-            ruleScores?.let { scores ->
-                val state = difficultyContext.state
-                val user = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
-                val foe = state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
-                if (user == null || foe == null) null else difficultyContext.candidates.filter { candidate ->
-                    candidate.kind == BattleActionKind.USE_MOVE &&
-                        candidate.moveDetails?.damageCategory.let { it != null && it != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }
-                }.maxOfOrNull { candidate ->
-                    val moveId = jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(candidate.moveId.orEmpty())
-                    (scores.moves(user.battlePokemonId, foe.battlePokemonId).firstOrNull { it.moveId == moveId }?.knockoutChanceWithin(1) ?: 0.0) *
-                        jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores)
-                }
-            } ?: 0.0
-        }
         val debuffAdjustments = debuffReadings.mapNotNull { (id, reading) ->
             // A debuff that fails publicly (the target already has a status) keeps its failing rank.
-            // It changes the fight only where the foe survives this turn: knocked out instead, there is no fight left to
-            // change. Read whole, a Togekiss paralysed a Dragapult it knocked out for sure with Dazzling Gleam (114 over 106),
-            // a Dragapult whose shown moves barely touched it (replayed 2026-10-20).
+            // Its own value only: an attack that knocks the foe out is priced by its own knockout credit, so the debuff is not
+            // scaled down by it (user, 2026-10-21; it used to be cut by the user's best attack's knockout chance this turn).
             searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.takeUnless { it.outcome.publiclyInert }?.let {
-                id to (reading.gain * tuning.knockoutMaterialScore * (1.0 - knockoutNow.coerceIn(0.0, 1.0)) - it.comparisonValue)
+                id to (reading.gain * tuning.knockoutMaterialScore - it.comparisonValue)
             }
         }.toMap()
         // Trick Room's value becomes how much turning the speed order over changes both teams' matchups (LocalTrickRoomCredit).
@@ -856,9 +818,6 @@ internal class LocalTacticalBrain(
         val perishTrapAdjustments = perishTrapValues.mapNotNull { (id, value) ->
             searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.let { id to (value - it.comparisonValue) }
         }.toMap()
-        // A Pokemon on its last Perish Song count faints this turn unless it leaves (LocalPerishCount).
-        val perishAdjustments = if (!rulesApply) emptyMap() else
-            jbro.cobblemon.mcc.betterai.matchup.LocalPerishCount.adjustments(difficultyContext.candidates, rulesContext, tuning)
         // A knockout is worth the Pokemon that falls, either side, against the board's mean (LocalKnockoutWorth).
         val knockoutWorthAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.adjustments(
@@ -889,16 +848,16 @@ internal class LocalTacticalBrain(
         val pendingPartnerAdjustments = if (!rulesApply) emptyMap() else jbro.cobblemon.mcc.betterai.matchup.LocalPendingPartnerHit.adjustments(
             difficultyContext.candidates, difficultyContext, active?.lastPair?.takeIf { it.first == difficultyContext.state.turn }?.second, tuning)
         val ruleAdjustments = (pendingPartnerAdjustments.keys + switchJudgement.adjustments.keys + gimmickAdjustments.keys + predictionAdjustments.keys + pendingAttackAdjustments.keys +
-            knockoutWorthAdjustments.keys + selfDropAdjustments.keys + statusMoveAdjustments.keys + restAdjustments.keys +
+            knockoutWorthAdjustments.keys + selfDropAdjustments.keys + statusMoveAdjustments.keys +
             setupAdjustments.keys + protectAdjustments.keys + healRaceAdjustments.keys + healValueAdjustments.keys + screenAdjustments.keys +
-            hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys + perishAdjustments.keys +
+            hazardEncoreAdjustments.keys + debuffAdjustments.keys + nativeStatusAdjustments.keys +
             trickRoomAdjustments.keys + perishTrapAdjustments.keys).associateWith {
             (pendingPartnerAdjustments[it] ?: 0.0) + (switchJudgement.adjustments[it] ?: 0.0) + (gimmickAdjustments[it] ?: 0.0) + (predictionAdjustments[it] ?: 0.0) +
-                (pendingAttackAdjustments[it] ?: 0.0) + (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) + (statusMoveAdjustments[it] ?: 0.0) + (restAdjustments[it] ?: 0.0) +
+                (pendingAttackAdjustments[it] ?: 0.0) + (knockoutWorthAdjustments[it] ?: 0.0) + (selfDropAdjustments[it] ?: 0.0) + (statusMoveAdjustments[it] ?: 0.0) +
                 (setupAdjustments[it] ?: 0.0) + (protectAdjustments[it] ?: 0.0) +
                 (if (it in healValueAdjustments) healValueAdjustments.getValue(it) else healRaceAdjustments[it] ?: 0.0) +
                 (screenAdjustments[it] ?: 0.0) + (hazardEncoreAdjustments[it] ?: 0.0) + (debuffAdjustments[it] ?: 0.0) +
-                (nativeStatusAdjustments[it] ?: 0.0) + (perishAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0) +
+                (nativeStatusAdjustments[it] ?: 0.0) + (trickRoomAdjustments[it] ?: 0.0) +
                 (perishTrapAdjustments[it] ?: 0.0)
         }
         // A status move is worth its value only if its user gets it off: a foe moving first may knock it out (LocalActingChance).
@@ -918,21 +877,24 @@ internal class LocalTacticalBrain(
         val actingAdjustments = if (!rulesApply) emptyMap() else ruleScores?.let { scores ->
             // A single move's value as the chance to act weighs it: an attack's hit (its knockout credit reads that chance
             // already, LocalPokemonWorth.knockoutScore, and the mechanic's cost is paid either way), a status move's total
-            // with its rules' credit. Every such move gives up the best of them at its own chance not to act (below).
+            // with its rules' credit. Each move's own value at its own chance to act, as its accuracy weighs its hit (below).
+            // Its rules' credit with it, a loss too (a foe's predicted switch): a Cloyster about to fall before moving kept its
+            // attacks' -10 from the switch prediction and Shell Smashed at 0 (fixed replay, 2026-10-21). The ranking tier is
+            // no value of the move's and stays.
             val singleActingValues = searchedRanked.mapNotNull { rank ->
                 val candidate = rank.outcome.candidate
+                val rules = (ruleAdjustments[candidate.actionId] ?: 0.0) - (knockoutWorthAdjustments[candidate.actionId] ?: 0.0)
                 when {
                     candidate.kind == BattleActionKind.USE_MOVE &&
                         candidate.moveDetails?.damageCategory.let { it != null && it != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS } -> {
                         val cost = if (candidate.mechanic == null || !tuning.mechanicReserve) 0.0
                             else jbro.cobblemon.mcc.betterai.evaluation.LocalMechanicOptionValue.cost(candidate, difficultyContext, decidingProfile)
-                        candidate.actionId to (rank.outcome.tacticalUtility + cost - rank.outcome.knockoutUtility.coerceAtLeast(0.0)).coerceAtLeast(0.0)
+                        candidate.actionId to (rank.outcome.tacticalUtility + cost - rank.outcome.knockoutUtility.coerceAtLeast(0.0) + rules)
                     }
-                    actingStatus(candidate) -> candidate.actionId to (rank.comparisonValue + (ruleAdjustments[candidate.actionId] ?: 0.0)).coerceAtLeast(0.0)
+                    actingStatus(candidate) -> candidate.actionId to (rank.outcome.tacticalUtility + rules)
                     else -> null
                 }
             }.toMap()
-            val singleActingBest = singleActingValues.values.maxOrNull() ?: 0.0
             searchedRanked.mapNotNull { rank ->
                 val candidate = rank.outcome.candidate
                 if (candidate.kind == BattleActionKind.COMPOSITE) {
@@ -975,16 +937,14 @@ internal class LocalTacticalBrain(
                     }
                     return@mapNotNull if (change >= 0.0) null else candidate.actionId to change
                 }
-                // Singles: each move gives up the best move's value times its own chance not to act, (acts - 1) * best,
-                // instead of its own value times that chance. The best move still reads best * acts against a switch, a move
-                // that goes first (priority) keeps its edge, and moves with the same chance keep their order: scaled, a 55%
-                // Drapion's Poison Jab, Knock Off and Swords Dance all read 0 at a chance of 0 and the draw took Swords Dance
-                // (dev server, 2026-10-20). Read whole, a 26% Heatran a faster foe knocked out first ranked its Earth Power
-                // (77.6) over every switch (league run, 2026-10-19).
-                // A move worth nothing itself (a raise its gate closed) gives the same up, or it ties the best one at 0.
-                if (candidate.actionId !in singleActingValues || singleActingBest <= 0.0) return@mapNotNull null
+                // Singles: the chance to act is the move's own variable, as its accuracy is: its value times that chance,
+                // (acts - 1) * its own value (user, 2026-10-21). It used to give up the best move's value instead, so a status
+                // move's charge was sized by an attack and the other way round; a move that cannot act is worth nothing, and
+                // the switch competes on its own gain (LocalSwitchRules).
+                val own = singleActingValues[candidate.actionId] ?: return@mapNotNull null
                 val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores)
-                if (acts >= 1.0) null else candidate.actionId to (acts - 1.0) * singleActingBest
+                LocalDecisionInternals.record("acting:${candidate.actionId}", mapOf("acts" to acts, "own" to own))
+                if (acts >= 1.0 || own == 0.0) null else candidate.actionId to (acts - 1.0) * own
             }.toMap()
         }.orEmpty()
         if (dynamaxGuardReading.targetFallbacks > 0) {
@@ -1065,14 +1025,9 @@ internal class LocalTacticalBrain(
         // statusMoveWeight, so it has to beat an attack by more before it is chosen.
         val switchAdjusted = if (difficultyContext.state.format != BattleFormat.SINGLE) anchored
             else LocalActionKindWeights.apply(anchored, tuning)
-        // A certain flinch that goes first frees the turn: it is worth its hit plus the best other action, still there
-        // next turn (LocalFreeTurnCredit). Read after every other value, since it is priced against them.
-        val freeTurnAdjustments = if (!rulesApply) emptyMap() else jbro.cobblemon.mcc.betterai.matchup.LocalFreeTurnCredit.adjustments(
-            switchAdjusted, difficultyContext, expectedSwitches, ruleExclusions(switchAdjusted.map { it.outcome.candidate }).keys, tuning)
-        val freeTurnAdjusted = if (freeTurnAdjustments.isEmpty()) switchAdjusted else LocalBattleActionPolicy.sort(switchAdjusted.map { rank ->
-            freeTurnAdjustments[rank.outcome.candidate.actionId]?.let { rank.copy(comparisonValue = rank.comparisonValue + it) } ?: rank
-        })
-        val rootDecision = LocalRootDecisionPolicy.refine(freeTurnAdjusted, difficultyContext)
+        // A certain flinch (Fake Out) is worth its own hit and the turn it denies (LocalRootFlinchValue, in its ranking value),
+        // not the best other action borrowed on top (user, 2026-10-21; LocalFreeTurnCredit is gone).
+        val rootDecision = LocalRootDecisionPolicy.refine(switchAdjusted, difficultyContext)
         val ranked = rootDecision.ranked
         val seed = LocalActionChoiceSeed.derive(
             battleId = battleId,
@@ -1111,10 +1066,9 @@ internal class LocalTacticalBrain(
                     "prediction" to predictionAdjustments, "pendingAttack" to pendingAttackAdjustments, "setup" to setupAdjustments, "protect" to protectAdjustments,
                     "healRace" to healRaceAdjustments, "heal" to healValueAdjustments, "screen" to screenAdjustments,
                     "hazardEncore" to hazardEncoreAdjustments, "debuff" to debuffAdjustments,
-                    "freeTurn" to freeTurnAdjustments, "perish" to perishAdjustments,
                     "trickRoom" to trickRoomAdjustments, "perishTrap" to perishTrapAdjustments, "acting" to actingAdjustments, "asleep" to sleepAdjustments,
                     "knockoutWorth" to knockoutWorthAdjustments, "selfDrop" to selfDropAdjustments,
-                    "statusMove" to statusMoveAdjustments, "rest" to restAdjustments).filterValues { it.isNotEmpty() },
+                    "statusMove" to statusMoveAdjustments).filterValues { it.isNotEmpty() },
                 afterRules = values(ruleAdjusted),
                 afterKindWeights = values(switchAdjusted),
                 refined = values(ranked),
