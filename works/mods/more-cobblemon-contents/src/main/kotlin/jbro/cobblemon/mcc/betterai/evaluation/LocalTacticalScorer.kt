@@ -404,6 +404,9 @@ internal object LocalTacticalScorer {
             mechanicResourceAdjustment(candidate, context, profile, tuning) +
             selfPatternAdjustment(candidate, context, profile) +
             strategyMoveAdjustment(candidate, context, strategy)
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("base:${candidate.actionId}", mapOf("pressure" to pressure, "stage" to damagingStageUtility,
+            "item" to (itemScore?.total ?: 0.0), "priority" to priorityBonus, "knockout" to knockoutBonus, "spread" to spreadBonus,
+            "flinch" to flinchValue, "recoil" to recoilPenalty, "setupPreference" to LocalSetupMovePreference.bonus(candidate, context), "total" to total))
         return LocalTacticalScore(
             total = total,
             statStageUtility = nonDamagingScore?.statStageUtility ?: (damagingStageUtility + (itemScore?.statStageUtility ?: 0.0)),

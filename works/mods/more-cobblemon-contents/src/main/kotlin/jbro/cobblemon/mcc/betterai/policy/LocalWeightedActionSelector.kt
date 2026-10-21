@@ -674,7 +674,7 @@ internal object LocalHighestRankedActionSelector : LocalActionSelector {
         ranked: List<LocalBattleActionRank>,
         seed: Long,
         context: LocalActionMixingContext,
-    ): LocalActionSelection = LocalActionSelection(ranked.first(), seed, 1, 1.0)
+    ): LocalActionSelection = LocalActionSelection(ranked.first(), seed, 1, 1.0, mapOf(ranked.first().outcome.candidate.actionId to 1.0))
 }
 
 internal object LocalActionChoiceSeed {

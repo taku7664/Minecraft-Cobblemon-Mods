@@ -62,6 +62,13 @@ internal object LocalActingChance {
                     ?.takeIf { it.score.knockoutChanceWithin(1) > plain.score.knockoutChanceWithin(1) }
                 incoming(foe, plain) to max?.let { incoming(foe, it) }
             }
+        reads.forEach { (plain, max) ->
+            listOfNotNull(plain, max).forEachIndexed { index, hit ->
+                jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("actingHit:${candidate.actionId}:${hit.move.moveId}${if (index == 1) ":max" else ""}", mapOf(
+                    "min" to hit.move.minimumDamageFraction, "max" to hit.move.maximumDamageFraction, "ko1" to hit.move.knockoutChanceWithin(1),
+                    "incoming" to hit.incomingProbability, "hp" to user.hpFraction))
+            }
+        }
         if (reads.isEmpty()) return 1.0
         // A side Dynamaxes one Pokemon at most: every foe's plain hit, or one of them Dynamaxed, the worst of those.
         val plainHits = reads.map { it.first }

@@ -90,6 +90,8 @@ internal object LocalDynamaxGuard {
                     foe.battlePokemonId, MatchupSpeedField.CURRENT, cache)?.winProbability ?: return@mapNotNull null
                 (after - before).coerceIn(0.0, 1.0)
             }.takeIf { it.isNotEmpty() }?.average() ?: 1.0
+            jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("dynamaxGuard:${candidate.actionId}", mapOf("plainDamage" to plain.damage, "guardedDamage" to guarded.damage,
+                "plainKnockout" to plain.knockout, "guardedKnockout" to guarded.knockout, "turns" to turns))
             ((plain.damage - guarded.damage) + (plain.knockout - guarded.knockout) * turns).takeIf { it > 0.0 }?.let { candidate.actionId to it }
         }.toMap()
         return Reading(

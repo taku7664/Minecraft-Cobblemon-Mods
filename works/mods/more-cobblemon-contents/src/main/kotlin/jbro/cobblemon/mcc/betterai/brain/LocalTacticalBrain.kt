@@ -43,6 +43,7 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalTacticalScorer
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleMind
 import jbro.cobblemon.mcc.betterai.policy.LocalRootDecisionPolicy
+import jbro.cobblemon.mcc.betterai.policy.LocalHighestRankedActionSelector
 import jbro.cobblemon.mcc.betterai.policy.LocalWeightedActionSelector
 import jbro.cobblemon.mcc.betterai.policy.forPlanOwner
 import jbro.cobblemon.mcc.betterai.search.LocalLookaheadBudget
@@ -270,6 +271,10 @@ internal class LocalTacticalBrain(
         // Candidates the matchup-score rules rule out, with the selector's exclusion reason. The search
         // spends nothing on them either.
         val rulesApply = profile.difficulty.tier == BattleTrainerTier.ADVANCED || profile.difficulty.tier == BattleTrainerTier.BOSS
+        // A boss takes the ranking's first action: no draw, and none of the draw's exclusions (setup without a future, a
+        // switch-in that dies) overrides the values (user, 2026-10-21). The draw left the first one 85% at best and, in
+        // 50 self-play battles, took it away 15 times by those exclusions (a Coil at 230 for a Fire Punch at 102).
+        val chooser = if (profile.difficulty.tier == BattleTrainerTier.BOSS) LocalHighestRankedActionSelector else actionSelector
         val baseOpponentIntents by lazy {
             if (!rulesApply) emptyList() else ruleScores?.let {
                 LocalOpponentIntentPredictor.predict(
@@ -305,7 +310,8 @@ internal class LocalTacticalBrain(
         }
         val publicFailures = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
         fun ruleExclusions(candidates: List<BattleActionCandidate>): Map<String, String> {
-            if (!rulesApply) return emptyMap()
+            // A boss rules nothing out: what an exclusion read belongs in the action's own value (user, 2026-10-21).
+            if (!rulesApply || profile.difficulty.tier == BattleTrainerTier.BOSS) return emptyMap()
             // A turn with nothing but failing moves keeps them, as the search does.
             val failing = candidates.filter { candidate ->
                 publicFailures.getOrPut(candidate.actionId) { LocalPublicFailureTriage.fails(candidate, difficultyContext) }
@@ -541,7 +547,7 @@ internal class LocalTacticalBrain(
                     ranked = ranked,
                     perspectivePokemonIds = perspectivePokemonIds,
                 )
-                val selection = actionSelector.choose(
+                val selection = chooser.choose(
                     ranked,
                     seed,
                     mixingContext(ranked, authoritativeSimulationScores = true),
@@ -695,7 +701,7 @@ internal class LocalTacticalBrain(
             excludedActionIds = ruleExclusions(rootRanked.map { it.outcome.candidate }).keys,
             // Read from the same table as the rules; the AI's threat weights play no part in it.
             opponentIntents = opponentIntents,
-            decisionSignature = if (actionSelector !is LocalWeightedActionSelector) null else { tentative ->
+            decisionSignature = if (chooser !is LocalWeightedActionSelector) null else { tentative ->
                 val refined = LocalRootDecisionPolicy.refine(tentative, difficultyContext).ranked
                 val tentativeSeed = LocalActionChoiceSeed.derive(
                     battleId = battleId,
@@ -703,7 +709,7 @@ internal class LocalTacticalBrain(
                     ranked = refined,
                     perspectivePokemonIds = perspectivePokemonIds,
                 )
-                val tentativeSelection = actionSelector.choose(
+                val tentativeSelection = chooser.choose(
                     refined,
                     tentativeSeed,
                     mixingContext(refined),
@@ -1039,7 +1045,7 @@ internal class LocalTacticalBrain(
         // quick decider, pokeemerald's trainer AI order on fixed thresholds, replaced the drawn action in 32 of 143 fixed
         // scenes, a Recover the heal value put first at 29.7 that stopped a 44% knockout among them).
         val drawRanked = ranked
-        val selection = actionSelector.choose(
+        val selection = chooser.choose(
             drawRanked,
             seed,
             mixingContext(drawRanked),
