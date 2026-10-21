@@ -73,13 +73,6 @@ internal object LocalRecoveryLoop {
         }
     }
 
-    /**
-     * The turns in a row, counting back from the last one, on which [pokemonId] (an opponent) used a self-heal and ended
-     * the turn with at least the HP it started with: our hits are not sticking.
-     */
-    fun healedOffStreak(pokemonId: UUID, context: BattleDecisionContext): Int =
-        streak(pokemonId, context) { net, _, _ -> net >= 0.0 }
-
     fun failedStreak(pokemonId: UUID, context: BattleDecisionContext): Int =
         streak(pokemonId, context) { net, before, heal -> losing(before, net, heal) }
 
