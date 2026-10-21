@@ -124,25 +124,13 @@ internal object LocalStatStageMarginalEvaluator {
             score += resolvedScore * probability
             if (probability >= CERTAIN_PROBABILITY) state = applied
         }
-        // A damaging move's stages count where its target is still there to face after the hit: at the chance its roll
-        // leaves the target standing, and not at all where it does no damage (an immunity stops its effects). Read on the
-        // board before the hit, a Max Strike into an immune Gengar took 200 for its Speed drop and a Max Airstream that
-        // knocked a Lilligant out took 193 for the next turn's order against it (self-play, 2026-10-21).
+        // Valued on the board before the hit, as the move is chosen there (user, 2026-10-21): a knockout and a stage change
+        // are two values of the same move, the hit's HP taken (capped at what the target has) and then the stages. Only a
+        // move that does no damage (an immunity) gives no stages: its effects never happen, and a Max Strike into an immune
+        // Gengar took 200 for a Speed drop (self-play, 2026-10-21).
         val damaging = candidate.moveDetails?.damageCategory.let { it != null && it != BattleMoveDamageCategory.STATUS }
-        val standing = if (!damaging) 1.0 else run {
-            val range = candidate.facts?.standardDamageFractionRange ?: return@run 1.0
-            if (range.maximum <= 0.0) return@run 0.0
-            val target = candidate.targets.firstOrNull()?.let { slot ->
-                context.state.pokemon.firstOrNull { it.side == slot.side && it.activeSlot == slot.slot && !it.fainted }
-            } ?: return@run 1.0
-            val hp = target.hpFraction
-            when {
-                range.maximum < hp -> 1.0
-                range.minimum >= hp -> 0.0
-                else -> ((hp - range.minimum) / (range.maximum - range.minimum)).coerceIn(0.0, 1.0)
-            }
-        }
-        return if (appliedAny) score * accuracy.coerceIn(0.0, 1.0) * standing else null
+        val lands = if (damaging && (candidate.facts?.standardDamageFractionRange?.maximum ?: 1.0) <= 0.0) 0.0 else 1.0
+        return if (appliedAny) score * accuracy.coerceIn(0.0, 1.0) * lands else null
     }
 
     /**
