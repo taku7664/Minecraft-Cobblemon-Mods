@@ -91,8 +91,13 @@ button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-c
 .ball { position: static; width: 4.2cqw; height: 4.2cqw; border-radius: 50%; border: .5cqw solid #383838;
   background: linear-gradient(#e83838 0 45%, #383838 45% 55%, #f8f8f8 55%); }
 .ball.out { background: #888; } .ball.none { background: transparent; border-style: dashed; border-color: #999; }
-.gimmick-flag { position: static; font-size: 3.2cqw; padding: .2cqw 1.6cqw; border-radius: 1cqw; background: #f8f8f8; border: .5cqw solid #888; color: #666; }
-.gimmick-flag.on { background: #f07820; border-color: #a04808; color: #fff; }
+/* The gimmick switch: Mega Evolution / Dynamax for the next move, cycling through what this Pokemon may use. */
+.gimmick-flag { position: static; font-size: 3.8cqw; font-weight: 700; padding: .6cqw 2.6cqw; border-radius: 1.6cqw;
+  background: linear-gradient(#fbe4c8 0 50%, #f6d0a8 50%); border: .6cqw solid #c06818; color: #7a3a08; }
+.gimmick-flag.on { background: linear-gradient(#ff9a40 0 50%, #f07820 50%); border-color: #a04808; color: #fff;
+  text-shadow: .4cqw .4cqw 0 rgba(0, 0, 0, .3); box-shadow: 0 0 0 .8cqw rgba(240, 120, 32, .35); }
+.gimmick-flag:focus-visible { outline: 1cqw solid var(--cursor); outline-offset: .3cqw; }
+.balls.tall { height: 9%; }
 .tbtn { border: .7cqw solid; border-radius: 3cqw; color: #fff; font-weight: 700; text-shadow: .5cqw .5cqw 0 rgba(0, 0, 0, .35);
   display: flex; align-items: center; justify-content: center; text-align: center; padding: 1cqw; line-height: 1.2; }
 .tbtn > * { position: static; }
@@ -152,6 +157,14 @@ details[open] > summary { margin-bottom: 8px; }
 .sets { display: grid; gap: 8px; font-size: 13px; }
 .err { color: var(--danger); }
 .keys { margin: 0; }
+.entry section { display: grid; gap: 6px; margin-bottom: 12px; }
+.entry h3 { margin: 4px 0 0; font-size: 14px; }
+.entry select, .entry textarea { width: 100%; font: 13px/1.5 var(--font); color: var(--panel-text); background: var(--panel);
+  border: 2px solid var(--border); border-radius: 4px; padding: 6px 8px; }
+.entry select:focus, .entry textarea:focus { outline: none; border-color: var(--cursor); }
+.entry textarea { min-height: 220px; resize: vertical; white-space: pre; overflow-x: auto; }
+.side-tag { font-size: 12px; color: #fff; border-radius: 3px; padding: 0 6px; }
+.side-tag.me { background: var(--danger); } .side-tag.foe { background: var(--primary); }
 @media (hover: none) { .keys { display: none; } }
 .tbtn:focus-visible, .tbtn.cursor { outline: 1.2cqw solid var(--cursor); outline-offset: .3cqw; z-index: 2; }
 </style>
@@ -164,8 +177,15 @@ details[open] > summary { margin-bottom: 8px; }
       <div class="screen touch" id="bottom"></div>
     </div>
     <div class="card"><h2>결과</h2><pre class="log" id="results">아직 아무 일도 없습니다.</pre></div>
-    <div class="row-btns"><button class="pm-button" id="new">새 대전</button><span class="dim" id="note"></span></div>
-    <p class="dim keys">키보드: 방향키 이동 · Z/Enter 고르기 · X/Esc 취소 · 1~4 기술 · D 다이맥스 등 켜고 끄기</p>
+    <div class="card entry"><h2>엔트리</h2>
+      <section><h3><span class="side-tag me">나</span> 내 팀</h3><select id="pick-p1" aria-label="내 팀 불러오기"></select>
+        <textarea id="team-p1" spellcheck="false" aria-label="내 팀"></textarea><p class="dim" id="check-p1"></p></section>
+      <section><h3><span class="side-tag foe">보스</span> 상대 팀 (보스 AI)</h3><select id="pick-p2" aria-label="상대 팀 불러오기"></select>
+        <textarea id="team-p2" spellcheck="false" aria-label="상대 팀"></textarea><p class="dim" id="check-p2"></p></section>
+      <p class="dim">트레이너를 고르면 그 팀이 펼쳐지고, 바로 고쳐 쓸 수 있습니다. Showdown 영어 텍스트를 붙여 넣어도 됩니다.</p>
+      <div class="row-btns"><button class="pm-button" id="new">이 엔트리로 새 대전</button><span class="dim" id="note"></span></div>
+    </div>
+    <p class="dim keys">키보드: 방향키 이동 · Z/Enter 고르기 · X/Esc 취소 · 1~4 기술 · D 메가진화·다이맥스 켜기(누를 때마다 바뀜)</p>
     <div id="extra"></div>
   </div>
 </div>
@@ -174,7 +194,7 @@ details[open] > summary { margin-bottom: 8px; }
 const DEX = "__DEX__";
 const $ = id => document.getElementById(id);
 let N = { species: {}, moves: {}, abilities: {}, items: {} };
-let game = null, sending = false, screen = 'main', gimmickOn = false, shownRequest = -1, flash = '', armed = false;
+let game = null, sending = false, screen = 'main', gimmick = '', shownRequest = -1, flash = '', armed = false;
 
 const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 const id = s => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
@@ -203,7 +223,7 @@ function mon(name) {
 }
 const move = s => N.moves[id(s)] || String(s ?? '');
 const ability = s => N.abilities[id(s)] || String(s ?? '');
-const item = s => N.items[id(s)] || String(s ?? '');
+const item = s => N.items[id(s)] || DEX.itemNames?.[id(s)] || String(s ?? '');
 /** 은/는, 이/가 by the last syllable's final consonant. */
 function josa(word, withFinal, without) {
   const c = String(word).charCodeAt(String(word).length - 1);
@@ -279,8 +299,10 @@ function line(raw) {
     case '-enditem': return `  ${who(a(0))}의 ${item(a(1))}${src}`;
     case '-item': return `  ${who(a(0))}의 ${item(a(1))}${src}`;
     case '-ability': return `  ${who(a(0))}의 ${ability(a(1))}!`;
-    case '-start': return `  ${josa(who(a(0)), '은', '는')} ${source(a(1))}`;
-    case '-end': return `  ${who(a(0))}의 ${source(a(1))} 끝`;
+    case '-start': return a(1) === 'Dynamax' ? `${josa(who(a(0)), '은', '는')} ${a(2) === 'Gmax' ? '거다이맥스' : '다이맥스'}했다!` : `  ${josa(who(a(0)), '은', '는')} ${source(a(1))}`;
+    case '-end': return a(1) === 'Dynamax' ? `  ${who(a(0))}의 다이맥스가 끝났다` : `  ${who(a(0))}의 ${source(a(1))} 끝`;
+    // A Mega or Primal form arriving is the gimmick; the form going back (a fainted Mega) says nothing.
+    case 'detailschange': return /-(Mega|Primal)/.test(a(1)) ? `${josa(who(a(0)), '은', '는')} ${josa(mon(a(1).split(',')[0]), '으로', '로')} ${/-Mega/.test(a(1)) ? '메가진화했다!' : '원시회귀했다!'}` : null;
     case '-sidestart': return `${a(0).startsWith('p1') ? '내' : '상대'} 진영에 ${source(a(1))}`;
     case '-sideend': return `${a(0).startsWith('p1') ? '내' : '상대'} 진영의 ${source(a(1))} 사라졌다`;
     case '-fieldstart': return `${source(a(0))} 시작`;
@@ -379,11 +401,14 @@ function balls(list) {
 function moveButtons(p) {
   const options = p.options.filter(o => o.parts[0]?.kind === 'USE_MOVE');
   const plain = options.filter(o => !o.parts[0].mechanic);
-  const gimmicks = options.filter(o => o.parts[0].mechanic);
-  const mech = gimmicks[0] ? (MECH[id(String(gimmicks[0].parts[0].mechanic).split(':').pop())] || '특수') : '';
+  const mechOf = o => id(String(o.parts[0].mechanic || '').split(':').pop());
+  const mechs = [...new Set(options.map(mechOf).filter(Boolean))];
+  if (gimmick && !mechs.includes(gimmick)) gimmick = '';
+  const gimmicks = options.filter(o => gimmick && mechOf(o) === gimmick);
+  window.__mechs = mechs;
   const slots = (p.active?.[0]?.moves || []);
   const shown = slots.map((slot, i) => {
-    const option = gimmickOn ? gimmicks.find(o => o.id.startsWith(`move ${i + 1} `)) : plain.find(o => o.id === `move ${i + 1}`);
+    const option = gimmick ? gimmicks.find(o => o.id.startsWith(`move ${i + 1} `)) : plain.find(o => o.id === `move ${i + 1}`);
     const moveId = option ? String(option.parts[0].move || slot.id).split(':').pop() : slot.id;
     const info = DEX.moves?.[id(moveId)] || DEX.moves?.[id(slot.id)] || ['Normal', 'Status'];
     const [tname, tcolor] = TYPES[info[0]] || ['???', '#a8a878'];
@@ -391,8 +416,15 @@ function moveButtons(p) {
       <span class="mv">${esc(move(moveId))}</span>
       <span class="meta"><span class="ty">${tname}</span><span>PP ${slot.pp}/${slot.maxpp}</span></span></button>`;
   }).join('');
-  return `<div class="balls"><span>${gimmicks.length ? `<button class="gimmick-flag ${gimmickOn ? 'on' : ''}" id="gimmick">${esc(mech)} ${gimmickOn ? '켬' : '끔'}</button>` : ''}</span><span></span></div>
+  const label = gimmick ? `${MECH[gimmick] || gimmick} 켬 ✓` : `${mechs.map(m => MECH[m] || m).join(' / ')} 하기`;
+  return `<div class="balls tall"><span>${mechs.length ? `<button class="gimmick-flag ${gimmick ? 'on' : ''}" id="gimmick" aria-pressed="${!!gimmick}">${esc(label)}</button>` : ''}</span><span></span></div>
     ${shown}<button class="tbtn cancel" data-go="main">취소</button>`;
+}
+
+/** Off -> each gimmick this Pokemon may use -> off. */
+function cycleGimmick() {
+  const order = ['', ...(window.__mechs || [])];
+  gimmick = order[(order.indexOf(gimmick) + 1) % order.length];
 }
 
 function partyButtons(p, s, forced) {
@@ -471,8 +503,157 @@ function render() {
   $('extra').innerHTML = `${aiBlock(ai)}${game ? setsBlock(game.teams) : ''}
     ${fullLog ? `<details><summary>전체 로그</summary><pre class="log">${esc(pretty(fullLog).join('\n'))}</pre></details>` : ''}`;
   restoreCursor();
-  $('new').textContent = armed ? '한 번 더 누르면 지금 판을 버립니다' : '새 대전';
+  $('new').textContent = armed ? '한 번 더 누르면 지금 판을 버립니다' : '이 엔트리로 새 대전';
   $('new').className = 'pm-button' + (armed ? ' warn' : '');
+}
+
+/* ---- Entries: each side's team as Showdown-style text (Korean names), from a preset or typed ---------------- */
+const PRESETS = "__PRESETS__";
+const NATURES = { hardy: '노력', lonely: '외로움', brave: '용감', adamant: '고집', naughty: '개구쟁이', bold: '대담', docile: '온순',
+  relaxed: '무사태평', impish: '장난꾸러기', lax: '촐랑', timid: '겁쟁이', hasty: '성급', serious: '성실', jolly: '명랑', naive: '천진난만',
+  modest: '조심', mild: '의젓', quiet: '냉정', bashful: '수줍음', rash: '덜렁', calm: '차분', gentle: '얌전', sassy: '건방', careful: '신중', quirky: '변덕' };
+const STAT_KO = { hp: 'HP', atk: '공격', def: '방어', spa: '특공', spd: '특방', spe: '스피드' };
+const STAT_IDS = ['hp', 'atk', 'def', 'spa', 'spd', 'spe'];
+const STAT_READ = { hp: 'hp', atk: 'atk', def: 'def', spa: 'spa', spd: 'spd', spe: 'spe', 공격: 'atk', 방어: 'def', 특공: 'spa',
+  특방: 'spd', 스피드: 'spe', 특수공격: 'spa', 특수방어: 'spd' };
+let reverse = null;
+/** Korean name -> id for species, moves, abilities, items, natures and forms (built once the names arrive). */
+function reverseNames() {
+  if (reverse) return reverse;
+  const flip = obj => Object.fromEntries(Object.entries(obj || {}).map(([k, v]) => [String(v).replace(/\s/g, ''), k]));
+  reverse = { species: flip(N.species), moves: flip(N.moves), abilities: flip(N.abilities), items: flip({ ...DEX.itemNames, ...N.items }),
+    natures: flip(NATURES), forms: flip(FORMS) };
+  return reverse;
+}
+const look = (kind, text) => { const t = String(text || '').trim(); return reverseNames()[kind][t.replace(/\s/g, '')] || id(t); };
+function speciesId(text) {
+  const t = String(text || '').trim();
+  const whole = look('species', t);
+  if (DEX.sprites?.[id(whole)]) return whole;
+  const cut = t.indexOf('-');
+  if (cut < 0) return whole;
+  const base = look('species', t.slice(0, cut));
+  const form = reverseNames().forms[t.slice(cut + 1).replace(/\s/g, '')] || id(t.slice(cut + 1));
+  return `${base}-${form}`;
+}
+
+function exportText(sets) {
+  return sets.map(s => {
+    const out = [`${mon(s.species)}${s.gender === 'M' ? ' (M)' : s.gender === 'F' ? ' (F)' : ''}${s.item ? ' @ ' + item(s.item) : ''}`];
+    if (s.ability) out.push(`특성: ${ability(s.ability)}`);
+    out.push(`레벨: ${s.level || 50}`);
+    out.push(`성격: ${NATURES[id(s.nature)] || s.nature}`);
+    const evs = STAT_IDS.filter(k => s.evs?.[k]).map(k => `${s.evs[k]} ${STAT_KO[k]}`);
+    if (evs.length) out.push(`노력치: ${evs.join(' / ')}`);
+    const ivs = STAT_IDS.filter(k => s.ivs?.[k] != null && s.ivs[k] !== 31).map(k => `${s.ivs[k]} ${STAT_KO[k]}`);
+    if (ivs.length) out.push(`개체값: ${ivs.join(' / ')}`);
+    if (s.gigantamax) out.push('거다이맥스: 예');
+    if (s.dynamaxPriority != null) out.push(`다이맥스 우선: ${s.dynamaxPriority}`);
+    if (s.canDynamax === 'none') out.push('다이맥스: 안 함');
+    (s.moves || []).forEach(m => out.push(`- ${move(m)}`));
+    return out.join('\n');
+  }).join('\n\n');
+}
+
+/** Showdown-style text (Korean or English names) -> sets as the bridge reads them, with any problems. */
+function parseText(text) {
+  const sets = [], errors = [];
+  const blocks = String(text || '').replace(/\r/g, '').split(/\n\s*\n/).map(b => b.trim()).filter(Boolean);
+  blocks.forEach((block, n) => {
+    const lines = block.split('\n').map(l => l.trim()).filter(Boolean);
+    const set = { level: 50, gender: '', ability: '', item: '', nature: 'serious', moves: [], evs: {}, ivs: {} };
+    let head = lines.shift();
+    const at = head.lastIndexOf('@');
+    if (at >= 0) { set.item = look('items', head.slice(at + 1)); head = head.slice(0, at).trim(); }
+    const g = /\((M|F)\)\s*$/.exec(head);
+    if (g) { set.gender = g[1]; head = head.slice(0, g.index).trim(); }
+    const nick = /\(([^()]+)\)\s*$/.exec(head);
+    if (nick) head = nick[1];
+    set.species = speciesId(head);
+    const who = `${n + 1}번째(${head})`;
+    const spread = (text, into) => text.split('/').forEach(part => {
+      const m = /^\s*(\d+)\s*(.+?)\s*$/.exec(part);
+      const stat = m && (STAT_READ[m[2].toLowerCase()] || STAT_READ[m[2]]);
+      if (stat) into[stat] = Number(m[1]); else if (part.trim()) errors.push(`${who}: '${part.trim()}'를 읽지 못했습니다`);
+    });
+    for (const line of lines) {
+      let m;
+      if ((m = /^[-–]\s*(.+)$/.exec(line))) set.moves.push(look('moves', m[1].replace(/\[.*?\]/g, '')));
+      else if ((m = /^(?:특성|Ability)\s*:\s*(.+)$/i.exec(line))) set.ability = look('abilities', m[1]);
+      else if ((m = /^(?:레벨|Level)\s*:\s*(\d+)/i.exec(line))) set.level = Number(m[1]);
+      else if ((m = /^성격\s*:\s*(.+)$/.exec(line)) || (m = /^(\S+)\s+Nature$/i.exec(line))) set.nature = look('natures', m[1]);
+      else if ((m = /^(?:노력치|EVs)\s*:\s*(.+)$/i.exec(line))) spread(m[1], set.evs);
+      else if ((m = /^(?:개체값|IVs)\s*:\s*(.+)$/i.exec(line))) spread(m[1], set.ivs);
+      else if ((m = /^(?:거다이맥스|Gigantamax)\s*:\s*(.+)$/i.exec(line))) set.gigantamax = /^(예|yes|true)$/i.test(m[1].trim());
+      else if ((m = /^(?:다이맥스 우선|Dynamax Priority)\s*:\s*(\d+)/i.exec(line))) set.dynamaxPriority = Number(m[1]);
+      else if ((m = /^(?:다이맥스|Dynamax)\s*:\s*(.+)$/i.exec(line))) { if (/안|no|none|false/i.test(m[1])) set.canDynamax = 'none'; }
+      else if (/^(?:Tera Type|Shiny|Happiness|Dynamax Level|테라스탈|이로치)/i.test(line)) { /* not used by the battle */ }
+      else errors.push(`${who}: '${line}'를 읽지 못했습니다`);
+    }
+    if (!DEX.sprites?.[id(set.species)]) errors.push(`${who}: 종족을 모르겠습니다`);
+    if (!set.moves.length || set.moves.length > 4) errors.push(`${who}: 기술은 1~4개여야 합니다`);
+    set.moves.forEach(m => { if (!DEX.moves?.[id(m)]) errors.push(`${who}: 기술 '${m}'을 모르겠습니다`); });
+    if (set.level < 1 || set.level > 200) errors.push(`${who}: 레벨이 이상합니다`);
+    const evTotal = STAT_IDS.reduce((a, k) => a + (set.evs[k] || 0), 0);
+    if (evTotal > 510) errors.push(`${who}: 노력치 합이 ${evTotal}로 510을 넘습니다`);
+    set.evs = Object.fromEntries(STAT_IDS.map(k => [k, set.evs[k] ?? 0]));
+    set.ivs = Object.fromEntries(STAT_IDS.map(k => [k, set.ivs[k] ?? 31]));
+    sets.push(set);
+  });
+  if (!sets.length) errors.push('포켓몬이 없습니다');
+  if (sets.length > 6) errors.push(`최대 6마리입니다 (${sets.length}마리)`);
+  return { sets, errors };
+}
+
+function randomRentals(count) {
+  const pool = [...(PRESETS.rentals || [])], picked = [], seen = new Set();
+  while (picked.length < count && pool.length) {
+    const s = pool.splice(Math.floor(Math.random() * pool.length), 1)[0];
+    if (!seen.has(s.species)) { seen.add(s.species); picked.push(s); }
+  }
+  return picked;
+}
+const store = { get: k => { try { return localStorage.getItem(k); } catch (e) { return null; } },
+  set: (k, v) => { try { localStorage.setItem(k, v); } catch (e) { /* per-device convenience only */ } } };
+
+function fillPicker(side) {
+  const pick = $(`pick-${side}`);
+  pick.innerHTML = `<option value="random">무작위 3마리 (렌탈 세트)</option><option value="custom">직접 입력</option>` +
+    (PRESETS.leagues || []).map((r, ri) => `<optgroup label="${esc(r.region)}">${r.trainers.map((t, ti) =>
+      `<option value="${ri}:${ti}">${esc(r.region)} · ${esc(t.label)}</option>`).join('')}</optgroup>`).join('');
+}
+function loadPreset(side, value) {
+  if (value === 'custom') return;
+  let sets;
+  if (value === 'random') sets = randomRentals(3);
+  else { const [ri, ti] = value.split(':').map(Number); sets = PRESETS.leagues[ri].trainers[ti].sets; }
+  $(`team-${side}`).value = exportText(sets);
+  checkEntry(side);
+}
+function checkEntry(side) {
+  const { sets, errors } = parseText($(`team-${side}`).value);
+  const out = $(`check-${side}`);
+  if (errors.length) {
+    out.className = 'err';
+    out.textContent = errors.slice(0, 4).join(' · ') + (errors.length > 4 ? ` 외 ${errors.length - 4}개` : '');
+  } else {
+    const dmax = sets.some(s => s.canDynamax !== 'none');
+    out.className = 'dim';
+    out.textContent = `${sets.length}마리 · 다이맥스 ${dmax ? '가능' : '안 함'}${sets.some(s => s.gigantamax) ? ' (거다이맥스 있음)' : ''} · 메가진화는 메가스톤을 든 포켓몬만`;
+  }
+  store.set(`entry-${side}`, $(`team-${side}`).value);
+  store.set(`pick-${side}`, $(`pick-${side}`).value);
+  return { sets, errors };
+}
+function setupEntries() {
+  for (const side of ['p1', 'p2']) {
+    fillPicker(side);
+    const saved = store.get(`entry-${side}`);
+    $(`pick-${side}`).value = store.get(`pick-${side}`) || 'random';
+    if (saved) { $(`team-${side}`).value = saved; checkEntry(side); } else loadPreset(side, $(`pick-${side}`).value);
+    $(`pick-${side}`).addEventListener('change', e => loadPreset(side, e.target.value));
+    $(`team-${side}`).addEventListener('input', () => { $(`pick-${side}`).value = 'custom'; checkEntry(side); });
+  }
 }
 
 /* ---- Keyboard: a DS cursor over the bottom screen's buttons ---------------------------------------------- */
@@ -532,7 +713,7 @@ document.addEventListener('keydown', e => {
     if (b) { focusButton(b); b.click(); }
   } else if (key === 'd' && screen === 'fight' && $('gimmick')) {
     e.preventDefault();
-    keyboard = true; gimmickOn = !gimmickOn; render();
+    keyboard = true; cycleGimmick(); render();
   }
 });
 document.addEventListener('pointerdown', () => { keyboard = false; });
@@ -540,7 +721,7 @@ document.addEventListener('pointerdown', () => { keyboard = false; });
 document.addEventListener('click', e => {
   const t = e.target.closest('button');
   if (!t || t.disabled) return;
-  if (t.id === 'gimmick') { gimmickOn = !gimmickOn; render(); return; }
+  if (t.id === 'gimmick') { cycleGimmick(); render(); return; }
   if (t.id === 'start-big') { start(); return; }
   if (t.id === 'new') {
     const live = game && ['your_turn', 'ai_thinking', 'starting'].includes(game.status);
@@ -565,10 +746,19 @@ async function post(path, body) {
   } catch (e) { $('note').textContent = '서버에 닿지 못했습니다. PC의 대전 서버가 켜져 있는지 확인하세요.'; $('note').className = 'err'; }
   sending = false; render(); schedule();
 }
-function start() { window.__last = null; screen = 'main'; gimmickOn = false; post('api/start', {}); }
+function start() {
+  const p1 = checkEntry('p1'), p2 = checkEntry('p2');
+  if (p1.errors.length || p2.errors.length) {
+    $('note').className = 'err'; $('note').textContent = '엔트리에 고칠 곳이 있습니다. 빨간 줄을 확인하세요.';
+    $('pick-p1').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    return;
+  }
+  window.__last = null; screen = 'main'; gimmick = '';
+  post('api/start', { p1: { sets: p1.sets }, p2: { sets: p2.sets } });
+}
 function choose(action) {
   if (!game?.pending || sending) return;
-  screen = 'main'; gimmickOn = false;
+  screen = 'main'; gimmick = '';
   post('api/choose', { action, request: game.pending.request });
 }
 
@@ -585,7 +775,7 @@ async function poll() {
     game = data.game || null;
     const after = [game?.status, game?.pending?.request, game?.id].join('|');
     if (after !== before && !sending) {
-      if (game?.pending && game.pending.request !== shownRequest) { shownRequest = game.pending.request; screen = 'main'; gimmickOn = false; }
+      if (game?.pending && game.pending.request !== shownRequest) { shownRequest = game.pending.request; screen = 'main'; gimmick = ''; }
       render();
     }
   } catch (e) { /* the next poll retries */ }
@@ -596,6 +786,7 @@ async function poll() {
   try { N = await (await fetch('api/names')).json(); } catch (e) { /* English names then */ }
   try { game = (await (await fetch('api/state', { cache: 'no-store' })).json()).game || null; } catch (e) { $('note').textContent = '서버에 닿지 못했습니다.'; }
   if (game?.pending) shownRequest = game.pending.request;
+  setupEntries();
   render(); schedule();
 })();
 </script>
