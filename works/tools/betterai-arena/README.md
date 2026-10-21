@@ -55,18 +55,23 @@ works\tools\betterai-arena\play-server.bat
 
 창을 띄워 두는 동안 서버가 돈다. 시작하면 PC 주소와 휴대폰 주소를 출력하고 `F:/AI/betterai-arena/play/server.json`에도 적는다. 켤 때마다 터널 주소와 비밀 토큰이 새로 나오고, 토큰이 틀린 주소는 404다.
 
-| 화면 | 내용 |
+화면은 DS 디아루가·펄기아 전투 화면 구성을 따르고, 바깥은 위키의 `ds_window` 스타일과 Galmuri 폰트다.
+
+| 자리 | 내용 |
 |---|---|
-| 필드 | 보스 쪽 포켓몬(HP%, 상태, 랭크, 드러난 특성·도구·기술)과 내 포켓몬(실제 HP), 양쪽 남은 팀 |
-| 버튼 | 기술(PP), 다이맥스 등 특수 행동, 교체. 쓰러진 뒤에는 교체만 |
-| 로그 | 직전 턴부터 지금까지. 전체 로그는 접어 둔다 |
+| 윗화면 | 상대 HP 창(왼쪽 위), 상대 포켓몬(오른쪽 위), 내 포켓몬 뒷모습(왼쪽 아래), 내 HP 창(오른쪽, 실제 HP·랭크), 메시지 창(아래) |
+| 아랫화면 | 몬스터볼 줄, 싸운다·가방·도망간다·포켓몬. 싸운다는 타입 색 기술 4개(PP)와 다이맥스 등 켜기, 포켓몬은 교체 목록. 가방·도망간다는 게임처럼 막혀 있다 |
+| 결과 | 두 화면 아래. 직전 턴부터 지금까지의 일. 전체 로그는 접어 둔다 |
 | 보스가 본 후보 | 보스의 지난 결정: 상위 후보, 기본 점수, 규칙별 가감, 추첨 확률, 제외 사유. 안 쓴 기술도 보인다 |
+
+키보드: 방향키로 아랫화면 버튼 사이를 위치대로 옮기고, Z·Enter 고르기, X·Esc 취소, 1~4 기술, D 다이맥스 등 켜고 끄기.
+스프라이트는 Pokemon Showdown 서버에서 바로 불러온다(gen4, 없으면 gen5).
 
 - 두 팀은 프리셋에서 무작위로 뽑고, 나는 p1, 보스는 p2다(게임과 같은 조건: 검색 없음, 팀 미리보기, 보스의 정확한 배분).
 - 보스 세트는 판이 끝날 때까지 종족만 보낸다.
 - 판마다 `F:/AI/betterai-arena/play/<시각>/battle/`에 `decisions.jsonl`(보스 쪽), `result.json`, `referee-input.json`이 남는다.
 - 모드 JAR은 `arena.properties`의 `playJar`다. 실행부와 같은 `main`에서 빌드한 것이어야 한다. 개발 서버 JAR이 더 오래됐으면 `NoSuchMethodError`가 난다.
-- 페이지(`play.html`)는 요청마다 디스크에서 읽으므로 고쳐도 서버를 다시 켤 필요가 없다. 서버 코드(`BetterAiPlayServer.kt`)를 고치면 실행부를 다시 만들고 다시 켠다.
+- 서버는 `play.html`에 폰트와 Showdown 기술 타입·스프라이트 이름을 넣은 `play/page.html`을 요청마다 읽는다. `play.html`을 고친 뒤 `python works/tools/betterai-arena/arena.py play-page`만 돌리면 서버를 다시 켤 필요가 없다. 서버 코드(`BetterAiPlayServer.kt`)를 고치면 실행부를 다시 만들고 다시 켠다.
 - `cloudflared.exe`는 Cloudflare 공식 GitHub 릴리스에서 받아 `F:/AI/betterai-arena/tools/`에 둔다(2026-10-21 받은 2026.10.2, Cloudflare 서명 확인).
 
 ## 실행부 다시 만들기

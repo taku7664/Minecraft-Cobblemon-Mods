@@ -3,6 +3,7 @@
   python arena.py run BATTLES [--threads N] [--seed S] [--jar PATH] [--commit SHA] [--note TEXT]
   python arena.py viewer          rebuild every run's viewer.html and the combined site/ folder
   python arena.py play [--jar PATH] [--port N]   serve "play against the boss" (play.html) and open a tunnel for a phone
+  python arena.py play-page       rebuild that page (fonts and Showdown data put in) without restarting the server
 
 Paths come from arena.properties next to this file. Each run lands in <runs>/<timestamp>/ with run.json (the summary),
 arena.log (the runner's output) and battle-<i>/ (decisions.jsonl, result.json, referee-input.json). <runs>/index.json
@@ -170,6 +171,33 @@ def classpath(cfg, jar):
     return [str(jar), str(runner / 'betterai-arena-runner.jar')] + sorted(str(p) for p in (runner / 'lib').glob('*.jar'))         + [p for p in cfg.get('dataJars', '').split(';') if p]
 
 
+DEX_SCRIPT = r"""
+const [moves, dex] = [require(process.argv[1] + '/data/moves.js').Moves, require(process.argv[1] + '/data/pokedex.js').Pokedex];
+const id = s => String(s).toLowerCase().replace(/[^a-z0-9]/g, '');
+const out = { moves: {}, sprites: {} };
+for (const [key, m] of Object.entries(moves)) out.moves[key] = [m.type, m.category];
+for (const [key, p] of Object.entries(dex)) out.sprites[key] = p.forme ? id(p.baseSpecies) + '-' + id(p.forme) : id(p.name);
+process.stdout.write(JSON.stringify(out));
+"""
+
+
+def play_page(cfg, home):
+    """play.html with the wiki's Galmuri font and Showdown's move types and sprite names put in, as page.html."""
+    import base64
+    fonts = HERE.parents[2] / 'server-wiki' / 'assets' / 'fonts'
+    faces = ''.join(
+        f'@font-face {{ font-family: "Wiki Galmuri"; font-weight: {weight}; font-display: swap; '
+        f'src: url(data:font/woff2;base64,{base64.b64encode((fonts / name).read_bytes()).decode()}) format("woff2"); }}\n'
+        for name, weight in (('Galmuri11.woff2', 400), ('Galmuri11-Bold.woff2', 700)) if (fonts / name).is_file())
+    dex = subprocess.run(['node', '-e', DEX_SCRIPT, str(resolve(cfg['showdown']))], capture_output=True, text=True,
+                         encoding='utf-8', check=True).stdout
+    page = (HERE / 'play.html').read_text(encoding='utf-8')
+    page = page.replace('/*__FONTS__*/', faces).replace('"__DEX__"', dex.replace('</', '<\\/'))
+    home.mkdir(parents=True, exist_ok=True)
+    (home / 'page.html').write_text(page, encoding='utf-8')
+    return home / 'page.html'
+
+
 def serve_play(args):
     """The play server on 127.0.0.1 and, when cloudflared is there, a quick tunnel to it. Runs until stopped."""
     import re
@@ -189,7 +217,7 @@ def serve_play(args):
         [cfg.get('java', 'java'), f"-Xmx{cfg.get('maxHeap', '6g')}", f'-Djava.io.tmpdir={home / "tmp"}',
          f'-Daiengine.showdown={showdown}', f"-Daiengine.tools={resolve(cfg['tools'])}",
          '-cp', os.pathsep.join(classpath(cfg, jar)), 'jbro.cobblemon.mcc.betterai.BetterAiPlayServerKt',
-         str(port), token, str(home), str(showdown), str(HERE / 'play.html')],
+         str(port), token, str(home), str(showdown), str(play_page(cfg, home))],
         stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace')
     info = {'started': datetime.datetime.now().isoformat(timespec='seconds'), 'jar': str(jar), 'jarSha256': sha256(jar),
             'local': f'http://127.0.0.1:{port}/{token}/', 'public': None, 'pid': server.pid}
@@ -249,6 +277,7 @@ def main():
     play.add_argument('--commit', help='git commit the picked JAR was built from, when known')
     play.add_argument('--note')
     sub.add_parser('viewer')
+    sub.add_parser('play-page', help='rebuild the play page only; the running server serves it on the next load')
     serve = sub.add_parser('play')
     serve.add_argument('--jar')
     serve.add_argument('--port', type=int)
@@ -258,6 +287,10 @@ def main():
         sys.exit(run(args))
     if args.command == 'play':
         return serve_play(args)
+    if args.command == 'play-page':
+        cfg = config()
+        print(play_page(cfg, resolve(cfg.get('play', 'F:/AI/betterai-arena/play'))))
+        return
     import viewer
     viewer.build(resolve(config()['runs']))
 
