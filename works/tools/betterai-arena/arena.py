@@ -2,6 +2,7 @@
 
   python arena.py run BATTLES [--threads N] [--seed S] [--jar PATH] [--commit SHA] [--note TEXT]
   python arena.py viewer          rebuild every run's viewer.html and the combined site/ folder
+  python arena.py play [--jar PATH] [--port N]   serve "play against the boss" (play.html) and open a tunnel for a phone
 
 Paths come from arena.properties next to this file. Each run lands in <runs>/<timestamp>/ with run.json (the summary),
 arena.log (the runner's output) and battle-<i>/ (decisions.jsonl, result.json, referee-input.json). <runs>/index.json
@@ -120,13 +121,10 @@ def run(args):
     }
     write_json(out / 'run.json', summary)
     update_index(runs)
-    # The picked mod JAR goes first, so its classes and resources win over anything else on the path.
-    classpath = [str(jar), str(runner_jar)] + sorted(str(p) for p in (runner / 'lib').glob('*.jar')) \
-        + [p for p in cfg.get('dataJars', '').split(';') if p]
     showdown = resolve(cfg['showdown'])
     command = [cfg.get('java', 'java'), f"-Xmx{cfg.get('maxHeap', '6g')}", f'-Djava.io.tmpdir={out / "tmp"}',
                f'-Daiengine.showdown={showdown}', f"-Daiengine.tools={resolve(cfg['tools'])}",
-               '-cp', os.pathsep.join(classpath), MAIN_CLASS, str(out), str(args.battles), str(seed), str(threads),
+               '-cp', os.pathsep.join(classpath(cfg, jar)), MAIN_CLASS, str(out), str(args.battles), str(seed), str(threads),
                str(showdown)]
     (out / 'tmp').mkdir()
     print(f'[arena] {run_id}: {args.battles}판, 스레드 {threads}, 시드 {seed}', flush=True)
@@ -166,6 +164,78 @@ def run(args):
     return 0 if summary['status'] == 'done' else 1
 
 
+def classpath(cfg, jar):
+    """The picked mod JAR first, so its classes and resources win; then the runner, its libraries and the data JARs."""
+    runner = resolve(cfg['runner'])
+    return [str(jar), str(runner / 'betterai-arena-runner.jar')] + sorted(str(p) for p in (runner / 'lib').glob('*.jar'))         + [p for p in cfg.get('dataJars', '').split(';') if p]
+
+
+def serve_play(args):
+    """The play server on 127.0.0.1 and, when cloudflared is there, a quick tunnel to it. Runs until stopped."""
+    import re
+    import secrets
+    import threading
+    cfg = config()
+    jar = Path(args.jar or cfg.get('playJar') or cfg['modJar']).resolve()
+    if not jar.is_file():
+        sys.exit(f'모드 JAR이 없습니다: {jar}')
+    home = resolve(cfg.get('play', 'F:/AI/betterai-arena/play'))
+    home.mkdir(parents=True, exist_ok=True)
+    (home / 'tmp').mkdir(exist_ok=True)
+    port = args.port or int(cfg.get('playPort', 8790))
+    token = secrets.token_hex(16)
+    showdown = resolve(cfg['showdown'])
+    server = subprocess.Popen(
+        [cfg.get('java', 'java'), f"-Xmx{cfg.get('maxHeap', '6g')}", f'-Djava.io.tmpdir={home / "tmp"}',
+         f'-Daiengine.showdown={showdown}', f"-Daiengine.tools={resolve(cfg['tools'])}",
+         '-cp', os.pathsep.join(classpath(cfg, jar)), 'jbro.cobblemon.mcc.betterai.BetterAiPlayServerKt',
+         str(port), token, str(home), str(showdown), str(HERE / 'play.html')],
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8', errors='replace')
+    info = {'started': datetime.datetime.now().isoformat(timespec='seconds'), 'jar': str(jar), 'jarSha256': sha256(jar),
+            'local': f'http://127.0.0.1:{port}/{token}/', 'public': None, 'pid': server.pid}
+    log = open(home / 'server.log', 'a', encoding='utf-8')
+
+    def pump(stream, tag, on_line=None):
+        for text in stream:
+            log.write(f'[{tag}] {text}')
+            log.flush()
+            if on_line:
+                on_line(text)
+
+    ready = threading.Event()
+    threading.Thread(target=pump, args=(server.stdout, 'server', lambda t: ready.set() if 'listening' in t else None),
+                     daemon=True).start()
+    if not ready.wait(120) or server.poll() is not None:
+        server.kill()
+        sys.exit(f'대전 서버가 뜨지 않았습니다. {home / "server.log"}를 보세요.')
+    tunnel = None
+    cloudflared = cfg.get('cloudflared')
+    if cloudflared and Path(cloudflared).is_file():
+        tunnel = subprocess.Popen([cloudflared, 'tunnel', '--no-autoupdate', '--url', f'http://127.0.0.1:{port}'],
+                                  stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, encoding='utf-8',
+                                  errors='replace')
+        found = threading.Event()
+
+        def seen(text):
+            match = re.search(r'https://[a-z0-9-]+\.trycloudflare\.com', text)
+            if match and not found.is_set():
+                info['public'] = f'{match.group(0)}/{token}/'
+                found.set()
+        threading.Thread(target=pump, args=(tunnel.stdout, 'tunnel', seen), daemon=True).start()
+        found.wait(60)
+    info['tunnelPid'] = tunnel.pid if tunnel else None
+    write_json(home / 'server.json', info)
+    print(f"[play] PC: {info['local']}", flush=True)
+    print(f"[play] 휴대폰: {info['public'] or '(터널 없음: arena.properties의 cloudflared 경로를 확인하세요)'}", flush=True)
+    try:
+        server.wait()
+    finally:
+        if tunnel:
+            tunnel.terminate()
+        info['stopped'] = datetime.datetime.now().isoformat(timespec='seconds')
+        write_json(home / 'server.json', info)
+
+
 def main():
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding='utf-8', errors='replace')
@@ -179,10 +249,15 @@ def main():
     play.add_argument('--commit', help='git commit the picked JAR was built from, when known')
     play.add_argument('--note')
     sub.add_parser('viewer')
+    serve = sub.add_parser('play')
+    serve.add_argument('--jar')
+    serve.add_argument('--port', type=int)
     args = parser.parse_args()
     sys.path.insert(0, str(HERE))
     if args.command == 'run':
         sys.exit(run(args))
+    if args.command == 'play':
+        return serve_play(args)
     import viewer
     viewer.build(resolve(config()['runs']))
 

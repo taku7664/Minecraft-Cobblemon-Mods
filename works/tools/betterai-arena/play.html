@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="ko">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>보스와 한 판</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: one phone column - the foe on top, me below, my choices as big buttons, the log and the boss's reasoning under them. */
+:root {
+  --bg: #eef1f0; --panel: #ffffff; --ink: #18222b; --muted: #5d6b72; --line: #d5dcdc;
+  --me: #b8432b; --me-soft: #f6e3dd; --foe: #2b5ea8; --foe-soft: #dfe8f5;
+  --ok: #1f7a55; --ok-soft: #dcefe6; --warn: #9a6a00;
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12181c; --panel: #1b2328; --ink: #e3e8ea; --muted: #93a2a8; --line: #2c373d;
+    --me: #ee7a60; --me-soft: #3a2420; --foe: #79a6ec; --foe-soft: #1e2a3d;
+    --ok: #5cc595; --ok-soft: #18322a; --warn: #e0b04a; color-scheme: dark;
+  }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 640px; margin: 0 auto; padding-block: env(safe-area-inset-top, 0px) 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-block: 12px 8px; }
+header h1 { font-size: 17px; margin: 0; }
+.meta { color: var(--muted); font-size: 13px; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+.stack { display: grid; gap: 10px; }
+.mon .top { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.mon .name { font-weight: 700; font-size: 16px; }
+.tag { display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 0 6px; border-radius: 5px; }
+.tag.me { background: var(--me-soft); color: var(--me); } .tag.foe { background: var(--foe-soft); color: var(--foe); }
+.hpbar { display: block; height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; margin: 6px 0 2px; }
+.hpbar i { display: block; height: 100%; background: var(--ok); }
+.hpbar i.low { background: var(--warn); } .hpbar i.red { background: var(--me); }
+.st { color: var(--warn); font-weight: 500; }
+.bench { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.bench span { font-size: 12px; border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; }
+.bench span.out { text-decoration: line-through; color: var(--muted); }
+h2 { font-size: 13px; letter-spacing: .06em; color: var(--muted); margin: 6px 0 0; font-weight: 700; }
+.choices { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.choices.one { grid-template-columns: 1fr; }
+button { font: inherit; color: inherit; }
+.choice { text-align: left; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px;
+  min-height: 56px; cursor: pointer; display: grid; gap: 2px; min-width: 0; }
+.choice:hover { border-color: var(--muted); }
+.choice:focus-visible, .primary:focus-visible { outline: 2px solid var(--foe); outline-offset: 2px; }
+.choice .what { font-weight: 700; overflow-wrap: anywhere; }
+.choice .sub { font-size: 12px; color: var(--muted); }
+.choice.gimmick { border-style: dashed; }
+.choice:disabled { opacity: .45; cursor: default; }
+.primary { background: var(--ink); color: var(--bg); border: 0; border-radius: 10px; padding: 12px 16px; font-weight: 700; cursor: pointer; width: 100%; }
+.status { text-align: center; padding: 14px; }
+.status.thinking { color: var(--muted); }
+.banner { text-align: center; font-size: 20px; font-weight: 700; padding: 16px; }
+.banner.win { color: var(--ok); } .banner.lose { color: var(--me); }
+.log { font-family: var(--mono); font-size: 12.5px; white-space: pre-wrap; margin: 0; overflow-x: auto; }
+details summary { cursor: pointer; font-weight: 500; }
+.cand { border-top: 1px solid var(--line); padding-top: 6px; margin-top: 6px; display: grid; gap: 2px; }
+.cand .l1 { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.cand .label { font-weight: 500; flex: 1 1 auto; min-width: 0; }
+.cand.chosen .label::after { content: "고름"; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--ok); background: var(--ok-soft); border-radius: 4px; padding: 0 5px; }
+.cand .detail { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.pos { color: var(--ok); } .neg { color: var(--me); } .ex { color: var(--warn); }
+.err { color: var(--me); font-size: 13px; }
+.sets { display: grid; gap: 8px; font-size: 13px; }
+@media (prefers-reduced-motion: no-preference) { .thinking .dots::after { content: "…"; animation: blink 1.2s steps(2) infinite; } }
+@keyframes blink { 50% { opacity: 0; } }
+</style>
+
+<div class="wrap">
+  <header><h1>보스와 한 판</h1><span class="meta num" id="info"></span></header>
+  <main id="view" class="stack"><p class="status thinking">연결하는 중<span class="dots"></span></p></main>
+</div>
+
+<script>
+const view = document.getElementById('view');
+const info = document.getElementById('info');
+let N = { species: {}, moves: {}, abilities: {}, items: {} };
+let game = null, lastRequest = -1, sending = false, problem = '', startArmed = false;
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const id = s => String(s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '');
+function mon(name) {
+  const key = id(name);
+  if (N.species[key]) return N.species[key];
+  for (let end = key.length - 1; end > 3; end--) {
+    if (N.species[key.slice(0, end)]) {
+      const form = String(name).includes('-') ? String(name).split('-').slice(1).join('-') : key.slice(end);
+      return `${N.species[key.slice(0, end)]}-${form}`;
+    }
+  }
+  return String(name ?? '?');
+}
+const move = s => N.moves[id(s)] || String(s ?? '');
+const ability = s => N.abilities[id(s)] || String(s ?? '');
+const item = s => N.items[id(s)] || String(s ?? '');
+const STAT = { atk: '공격', def: '방어', spa: '특공', spd: '특방', spe: '스피드', accuracy: '명중', evasion: '회피',
+  attack: '공격', defence: '방어', defense: '방어', special_attack: '특공', special_defence: '특방', special_defense: '특방', speed: '스피드' };
+const STATUS = { brn: '화상', par: '마비', psn: '독', tox: '맹독', slp: '잠듦', frz: '얼음' };
+const WEATHER = { SunnyDay: '쾌청', RainDance: '비', Sandstorm: '모래바람', Hail: '싸라기눈', Snow: '설경', none: '없음' };
+const MECH = { dynamax: '다이맥스', terastallize: '테라스탈', terastal: '테라스탈', mega: '메가진화', zmove: 'Z기술', ultra: '울트라버스트' };
+const statusName = s => s ? (STATUS[id(s).replace(/^.*:/, '')] || STATUS[String(s).split(':').pop()] || String(s).split(':').pop()) : '';
+
+function who(text) {
+  const m = /^(p\d)[a-z]?: (.+)$/.exec(text || '');
+  return m ? `${m[1] === 'p1' ? '나' : '보스'}의 ${mon(m[2])}` : text;
+}
+function hp(text) {
+  const m = /^(\d+)(?:\/(\d+))?/.exec(text || '');
+  if (!m) return text;
+  return !m[2] || m[2] === '100' ? `${m[1]}%` : `${m[1]}/${m[2]}`;
+}
+function source(text) {
+  text = (text || '').trim();
+  for (const [p, f] of [['move: ', move], ['item: ', item], ['ability: ', ability]]) if (text.startsWith(p)) return f(text.slice(p.length));
+  if (/^p\d[a-z]?: /.test(text)) return who(text);
+  return WEATHER[text] || (N.moves[id(text)] ? move(text) : text);
+}
+function line(raw) {
+  const all = raw.split('|').slice(1);
+  if (!all.length) return null;
+  const kind = all[0];
+  const tags = all.slice(1).filter(a => a.startsWith('['));
+  const args = all.slice(1).filter(a => !a.startsWith('['));
+  const from = tags.find(t => t.startsWith('[from]'));
+  const src = from ? ` (${source(from.slice(6))})` : '';
+  const a = i => args[i] ?? '';
+  if (tags.includes('[silent]') || ['player', 'teamsize', 'gen', 'tier', 'gametype', 'start', 'rule', '', 'upkeep',
+    'teampreview', 'poke', 'clearpoke', 'j', 'l'].includes(kind)) return null;
+  switch (kind) {
+    case 'turn': return `── ${a(0)}턴 ──`;
+    case 'move': return `${who(a(0))} → ${move(a(1))}`;
+    case 'switch': case 'drag': return `${a(0).startsWith('p1') ? '나' : '보스'}: ${kind === 'drag' ? '강제 교체' : '교체'} → ${mon(a(1).split(',')[0])} (${hp(a(2))})`;
+    case '-damage': return `   ${who(a(0))} HP ${hp(a(1))}${src}`;
+    case '-heal': return `   ${who(a(0))} 회복 HP ${hp(a(1))}${src}`;
+    case 'faint': return `   ${who(a(0))} 쓰러짐`;
+    case '-boost': return `   ${who(a(0))} ${STAT[a(1)] || a(1)} +${a(2)}${src}`;
+    case '-unboost': return `   ${who(a(0))} ${STAT[a(1)] || a(1)} -${a(2)}${src}`;
+    case '-status': return `   ${who(a(0))} ${STATUS[a(1)] || a(1)}${src}`;
+    case '-curestatus': return `   ${who(a(0))} ${STATUS[a(1)] || a(1)} 회복`;
+    case '-weather': return tags.includes('[upkeep]') ? null : `날씨: ${WEATHER[a(0)] || a(0)}${src}`;
+    case '-crit': return '   급소';
+    case '-supereffective': return '   효과가 굉장했다';
+    case '-extremelyeffective': return '   효과가 엄청났다(4배)';
+    case '-resisted': return '   효과가 별로';
+    case '-immune': return `   ${who(a(0))} 효과 없음${src}`;
+    case '-miss': return `   ${who(a(1) || a(0))} 빗나감`;
+    case '-fail': return `   실패 ${who(a(0))} ${a(1)}`;
+    case 'cant': return `   ${who(a(0))} 행동 못 함 (${a(1)})`;
+    case '-enditem': return `   ${who(a(0))} ${item(a(1))} 사용·소실${src}`;
+    case '-item': return `   ${who(a(0))} ${item(a(1))}${src}`;
+    case '-ability': return `   ${who(a(0))} 특성 ${ability(a(1))}`;
+    case '-start': return `   ${who(a(0))} ${source(a(1))} 시작`;
+    case '-end': return `   ${who(a(0))} ${source(a(1))} 끝`;
+    case '-sidestart': return `${a(0).startsWith('p1') ? '내' : '보스'} 진영 ${source(a(1))} 설치`;
+    case '-sideend': return `${a(0).startsWith('p1') ? '내' : '보스'} 진영 ${source(a(1))} 제거`;
+    case '-fieldstart': return `필드 ${source(a(0))} 시작`;
+    case '-fieldend': return `필드 ${source(a(0))} 끝`;
+    case 'win': return `승리: ${a(0) === 'p1' ? '나' : '보스'}`;
+    default: return '   ' + [kind.replace(/^-/, ''), ...args.map(x => /^p\d[a-z]?: /.test(x) ? who(x) : x)].join(' ');
+  }
+}
+const pretty = log => log.map(line).filter(Boolean);
+function lastTurns(log, turns) {
+  let seen = 0, start = 0;
+  for (let i = log.length - 1; i >= 0; i--) if (log[i].startsWith('|turn|') && ++seen === turns) { start = i; break; }
+  return log.slice(start);
+}
+
+function hpBar(frac) {
+  const pct = Math.max(0, Math.min(100, Math.round(frac * 100)));
+  return `<span class="hpbar"><i class="${pct <= 20 ? 'red' : pct <= 50 ? 'low' : ''}" style="width:${pct}%"></i></span>`;
+}
+function stages(obj) {
+  return Object.entries(obj || {}).map(([k, v]) => `${STAT[k] || k} ${v > 0 ? '+' : ''}${v}`).join(' · ');
+}
+
+function myMons(p) {
+  return (p.side?.pokemon || []).map(s => {
+    const species = s.details.split(',')[0];
+    const cond = s.condition || '';
+    const [now, rest] = cond.split('/');
+    const total = parseInt(rest), current = parseInt(now);
+    return { species, active: s.active, fainted: cond.includes('fnt'), cur: current, max: total,
+      frac: total ? current / total : 0, status: cond.split(' ')[1] || '', item: s.item, ability: s.ability || s.baseAbility, moves: s.moves };
+  });
+}
+
+function fieldCards(p, teams) {
+  const foe = (p.board || []).filter(b => !b.mine);
+  const foeActive = foe.find(b => b.active && !b.fainted);
+  const mine = myMons(p);
+  const meActive = mine.find(m => m.active);
+  const seenFoe = new Set(foe.map(b => id(b.species)));
+  const foeTeam = (teams?.p2 || []).map(s => s.species);
+  const foeBench = foeTeam.map(s => {
+    const b = foe.find(x => id(x.species) === id(s) || id(s).startsWith(id(x.species)));
+    return `<span class="${b?.fainted ? 'out' : ''}">${esc(mon(s))}${b && !b.fainted && !b.active ? ` <span class="num">${Math.round(b.hp * 100)}%</span>` : ''}</span>`;
+  }).join('');
+  const meBench = mine.map(m => `<span class="${m.fainted ? 'out' : ''}">${esc(mon(m.species))}${!m.fainted && !m.active ? ` <span class="num">${Math.round(m.frac * 100)}%</span>` : ''}</span>`).join('');
+  const foeCard = foeActive ? `
+    <div class="top"><span><span class="tag foe">보스</span> <span class="name">${esc(mon(foeActive.species))}</span></span>
+      <span class="num">${Math.round(foeActive.hp * 100)}%${foeActive.status ? ` <span class="st">${esc(statusName(foeActive.status))}</span>` : ''}</span></div>
+    ${hpBar(foeActive.hp)}
+    ${stages(foeActive.stages) ? `<div class="meta">${esc(stages(foeActive.stages))}</div>` : ''}
+    <div class="meta">${[foeActive.ability && '특성 ' + ability(foeActive.ability.split(':').pop()), foeActive.item && '도구 ' + item(foeActive.item.split(':').pop()),
+      foeActive.moves.length && '본 기술 ' + foeActive.moves.map(m => move(m.split(':').pop())).join(', ')].filter(Boolean).map(esc).join(' · ')}</div>`
+    : '<div class="meta">보스 쪽 필드가 비었습니다</div>';
+  const meBoard = (p.board || []).find(b => b.mine && b.active);
+  const meCard = meActive ? `
+    <div class="top"><span><span class="tag me">나</span> <span class="name">${esc(mon(meActive.species))}</span></span>
+      <span class="num">${meActive.cur}/${meActive.max}${meActive.status ? ` <span class="st">${esc(STATUS[meActive.status] || meActive.status)}</span>` : ''}</span></div>
+    ${hpBar(meActive.frac)}
+    ${meBoard && stages(meBoard.stages) ? `<div class="meta">${esc(stages(meBoard.stages))}</div>` : ''}
+    <div class="meta">${esc([meActive.ability && '특성 ' + ability(meActive.ability), meActive.item && '도구 ' + item(meActive.item)].filter(Boolean).join(' · '))}</div>`
+    : '<div class="meta">내 필드가 비었습니다</div>';
+  return `<div class="card mon">${foeCard}<div class="bench">${foeBench}</div></div>
+    <div class="card mon">${meCard}<div class="bench">${meBench}</div></div>`;
+}
+
+function optionLabel(o, p) {
+  const part = o.parts[0] || {};
+  if (part.kind === 'SWITCH') {
+    const m = myMons(p).find(x => id(x.species) === id(part.switchTo) || id(x.species).startsWith(id(part.switchTo)) || id(part.switchTo).startsWith(id(x.species)));
+    return { what: `교체 → ${mon(part.switchTo)}`, sub: m ? `${m.cur}/${m.max}${m.status ? ' ' + (STATUS[m.status] || m.status) : ''}` : '', kind: 'switch' };
+  }
+  const moveId = (part.move || '').split(':').pop();
+  const slot = (p.active?.[0]?.moves || []).find(m => id(m.id) === id(moveId));
+  const mech = part.mechanic ? (MECH[id(part.mechanic.split(':').pop())] || part.mechanic.split(':').pop()) : '';
+  const parts = o.parts.length > 1 ? o.parts.map(x => x.switchTo ? `→${mon(x.switchTo)}` : move((x.move || '').split(':').pop())).join(' + ') : move(moveId);
+  return { what: (mech ? mech + ' ' : '') + parts, sub: slot ? `PP ${slot.pp}/${slot.maxpp}` : (part.target ? `대상 ${part.target}` : ''), kind: mech ? 'gimmick' : 'move' };
+}
+
+function aiBlock(ai, open) {
+  if (!ai) return '';
+  const fmt = v => v == null ? '–' : (Math.round(v * 10) / 10).toFixed(1);
+  const label = c => c.target?.startsWith('switch:') ? `교체 → ${mon(c.target.slice(7))}` :
+    ((c.id.split(' ').slice(2).filter(w => !/^-?\d$/.test(w)).map(w => (MECH[w] || w) + ' ').join('')) + (c.target ? move(c.target) : c.id));
+  return `<details class="card"${open ? ' open' : ''}><summary>보스가 ${ai.turn}턴에 본 후보</summary>
+    <p class="meta">보스가 아직 안 쓴 기술도 보입니다. 굵은 숫자가 최종 점수, 퍼센트가 추첨 확률입니다.</p>
+    ${ai.candidates.map(c => `<div class="cand${c.id === ai.action ? ' chosen' : ''}">
+      <div class="l1"><span class="label">${esc(label(c))}</span>${c.p != null ? `<span class="num meta">${(c.p * 100).toFixed(1)}%</span>` : ''}<span class="num"><b>${fmt(c.refined)}</b></span></div>
+      <div class="detail">기본 ${fmt(c.base)}${Object.entries(c.rules || {}).map(([k, v]) => ` · ${esc(k)} <span class="${v >= 0 ? 'pos' : 'neg'}">${v >= 0 ? '+' : ''}${fmt(v)}</span>`).join('')}${c.ex ? ` · <span class="ex">제외: ${esc(c.ex)}</span>` : ''}</div>
+    </div>`).join('')}
+    ${ai.hidden ? `<div class="meta">나머지 ${ai.hidden}개는 생략</div>` : ''}</details>`;
+}
+
+function setsBlock(teams, open) {
+  if (!teams) return '';
+  const side = (key, label, cls) => (teams[key] || []).filter(s => s.moves).map(s => `<div><span class="tag ${cls}">${label}</span> <b>${esc(mon(s.species))}</b>
+    <div class="meta">${esc([item(s.item), ability(s.ability), s.nature].filter(Boolean).join(' · '))}</div><div class="meta">${esc((s.moves || []).map(move).join(', '))}</div></div>`).join('');
+  return `<details class="card"${open ? ' open' : ''}><summary>${teams.p2?.[0]?.moves ? '두 팀 세트' : '내 팀 세트'}</summary><div class="sets">${side('p1', '나', 'me')}${side('p2', '보스', 'foe')}</div></details>`;
+}
+
+function newGameButton(label) {
+  return `<button class="primary" id="start">${esc(startArmed ? '한 번 더 누르면 지금 판을 버리고 새로 시작' : label)}</button>`;
+}
+
+function render() {
+  info.textContent = game ? `${game.id} · 시드 ${game.seed}` : '';
+  if (!game) {
+    view.innerHTML = `<div class="card"><p>보스 AI(게임과 같은 조건)와 3대3 싱글 한 판을 둡니다. 두 팀은 프리셋에서 무작위로 뽑고, 나는 p1, 보스는 p2입니다.</p></div>${newGameButton('새 대전 시작')}`;
+    return bind();
+  }
+  const p = game.pending;
+  const err = problem ? `<p class="err">${esc(problem)}</p>` : '';
+  if (game.status === 'starting') {
+    view.innerHTML = `<p class="status thinking">팀을 뽑고 대전을 준비하는 중<span class="dots"></span></p>`;
+    return;
+  }
+  if (game.status === 'error' || game.status === 'stopped') {
+    view.innerHTML = `<div class="card"><p class="err">${game.status === 'error' ? '대전이 오류로 멈췄습니다' : '대전이 중단됐습니다'}</p>
+      ${game.error ? `<pre class="log">${esc(game.error)}</pre>` : ''}</div>${newGameButton('새 대전 시작')}`;
+    return bind();
+  }
+  if (game.status === 'done') {
+    const r = game.result || {};
+    const win = r.winner === 'p1';
+    view.innerHTML = `<div class="card banner ${r.winner ? (win ? 'win' : 'lose') : ''}">${r.winner ? (win ? '이겼습니다' : '졌습니다') : '무승부'} · ${r.turn ?? '–'}턴</div>
+      ${newGameButton('한 판 더')}
+      ${aiBlock(r.ai, false)}
+      ${setsBlock(game.teams, true)}
+      <details class="card"><summary>전체 로그</summary><pre class="log">${esc(pretty(r.log || []).join('\n'))}</pre></details>`;
+    return bind();
+  }
+  // your_turn or ai_thinking: the board of the last request stays up while the boss thinks.
+  const board = p || window.__lastPending;
+  if (p) window.__lastPending = p;
+  if (!board) { view.innerHTML = `<p class="status thinking">보스가 생각하는 중<span class="dots"></span></p>`; return; }
+  const mine = game.status === 'your_turn' && p && !sending;
+  const options = board.options.map(o => ({ o, l: optionLabel(o, board) }));
+  const group = kind => options.filter(x => x.l.kind === kind);
+  const buttons = list => list.map(({ o, l }) => `<button class="choice ${l.kind}" data-action="${esc(o.id)}"${mine ? '' : ' disabled'}>
+      <span class="what">${esc(l.what)}</span>${l.sub ? `<span class="sub num">${esc(l.sub)}</span>` : ''}</button>`).join('');
+  // From the previous turn's marker: what just happened, plus anything since this turn began (a faint before a forced switch).
+  const recent = pretty(lastTurns(board.log, 2));
+  view.innerHTML = `
+    ${fieldCards(board, game.teams)}
+    ${mine ? `<h2>${board.forced ? '다음 포켓몬을 고르세요' : `${board.turn}턴 · 내 차례`}</h2>` : `<p class="status thinking">${sending ? '보내는 중' : '보스가 생각하는 중'}<span class="dots"></span></p>`}
+    ${err}
+    ${group('move').length ? `<div class="choices">${buttons(group('move'))}</div>` : ''}
+    ${group('gimmick').length ? `<div class="choices">${buttons(group('gimmick'))}</div>` : ''}
+    ${group('switch').length ? `<div class="choices">${buttons(group('switch'))}</div>` : ''}
+    <div class="card"><pre class="log">${esc(recent.join('\n') || '아직 아무 일도 없습니다')}</pre></div>
+    ${aiBlock(board.ai, false)}
+    ${setsBlock(game.teams, false)}
+    <details class="card"><summary>전체 로그</summary><pre class="log">${esc(pretty(board.log).join('\n'))}</pre></details>
+    ${newGameButton('이 판 버리고 새로 시작')}`;
+  bind();
+}
+
+function bind() {
+  view.querySelectorAll('[data-action]').forEach(b => b.addEventListener('click', () => choose(b.dataset.action)));
+  const start = document.getElementById('start');
+  if (start) start.addEventListener('click', () => {
+    const live = game && ['your_turn', 'ai_thinking', 'starting'].includes(game.status);
+    if (live && !startArmed) { startArmed = true; render(); setTimeout(() => { startArmed = false; render(); }, 4000); return; }
+    startArmed = false;
+    post('api/start', {});
+  });
+}
+
+async function post(path, body) {
+  sending = true; problem = ''; render();
+  try {
+    const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
+    const data = await res.json();
+    if (data.error) problem = data.error;
+    game = data.game || null;
+  } catch (e) { problem = '서버에 닿지 못했습니다. PC의 대전 서버가 켜져 있는지 확인하세요.'; }
+  sending = false; render(); schedule();
+}
+
+function choose(action) {
+  if (!game?.pending || sending) return;
+  post('api/choose', { action, request: game.pending.request });
+}
+
+let timer = null;
+function schedule() {
+  clearTimeout(timer);
+  const busy = game && ['starting', 'ai_thinking'].includes(game.status);
+  timer = setTimeout(poll, busy ? 800 : 4000);
+}
+async function poll() {
+  try {
+    const res = await fetch('api/state', { cache: 'no-store' });
+    const data = await res.json();
+    const before = JSON.stringify([game?.status, game?.pending?.request, game?.id]);
+    game = data.game || null;
+    if (JSON.stringify([game?.status, game?.pending?.request, game?.id]) !== before && !sending) { problem = ''; render(); }
+  } catch (e) { /* the next poll retries */ }
+  schedule();
+}
+
+(async () => {
+  try { N = await (await fetch('api/names')).json(); } catch (e) { /* English names then */ }
+  try { game = (await (await fetch('api/state', { cache: 'no-store' })).json()).game || null; } catch (e) { problem = '서버에 닿지 못했습니다.'; }
+  render(); schedule();
+})();
+</script>
+</html>

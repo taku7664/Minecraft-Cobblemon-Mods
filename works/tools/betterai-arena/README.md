@@ -45,6 +45,30 @@ works\tools\betterai-arena\run-arena.bat 10 --threads 3 --seed 1234 --jar F:\som
 `python works/tools/betterai-arena/arena.py viewer`로 모든 실행의 뷰어를 다시 만든다.
 Artifact 페이지(https://claude.ai/artifact/RR13L7EUx4cKCfKz9mA9zJ)는 `site/`를 Claude 세션의 스크래치패드로 복사한 뒤 같은 URL로 다시 올린다. 새 실행은 `data/<시각>.json`만 더하면 된다.
 
+## 휴대폰으로 보스와 직접 붙기
+
+마인크래프트를 켜지 않고 휴대폰 브라우저에서 보스 AI와 3대3 싱글을 둔다. 대전은 이 PC에서 돌고, cloudflared 터널이 공인 https 주소를 붙인다.
+
+```bat
+works\tools\betterai-arena\play-server.bat
+```
+
+창을 띄워 두는 동안 서버가 돈다. 시작하면 PC 주소와 휴대폰 주소를 출력하고 `F:/AI/betterai-arena/play/server.json`에도 적는다. 켤 때마다 터널 주소와 비밀 토큰이 새로 나오고, 토큰이 틀린 주소는 404다.
+
+| 화면 | 내용 |
+|---|---|
+| 필드 | 보스 쪽 포켓몬(HP%, 상태, 랭크, 드러난 특성·도구·기술)과 내 포켓몬(실제 HP), 양쪽 남은 팀 |
+| 버튼 | 기술(PP), 다이맥스 등 특수 행동, 교체. 쓰러진 뒤에는 교체만 |
+| 로그 | 직전 턴부터 지금까지. 전체 로그는 접어 둔다 |
+| 보스가 본 후보 | 보스의 지난 결정: 상위 후보, 기본 점수, 규칙별 가감, 추첨 확률, 제외 사유. 안 쓴 기술도 보인다 |
+
+- 두 팀은 프리셋에서 무작위로 뽑고, 나는 p1, 보스는 p2다(게임과 같은 조건: 검색 없음, 팀 미리보기, 보스의 정확한 배분).
+- 보스 세트는 판이 끝날 때까지 종족만 보낸다.
+- 판마다 `F:/AI/betterai-arena/play/<시각>/battle/`에 `decisions.jsonl`(보스 쪽), `result.json`, `referee-input.json`이 남는다.
+- 모드 JAR은 `arena.properties`의 `playJar`다. 실행부와 같은 `main`에서 빌드한 것이어야 한다. 개발 서버 JAR이 더 오래됐으면 `NoSuchMethodError`가 난다.
+- 페이지(`play.html`)는 요청마다 디스크에서 읽으므로 고쳐도 서버를 다시 켤 필요가 없다. 서버 코드(`BetterAiPlayServer.kt`)를 고치면 실행부를 다시 만들고 다시 켠다.
+- `cloudflared.exe`는 Cloudflare 공식 GitHub 릴리스에서 받아 `F:/AI/betterai-arena/tools/`에 둔다(2026-10-21 받은 2026.10.2, Cloudflare 서명 확인).
+
 ## 실행부 다시 만들기
 
 실행부(`betterai-arena-runner.jar` + `lib/`)는 테스트 쪽 대전 코드(`EmbeddedTeamBattle`, `EmbeddedPresetAudit`, `BetterAiArena.kt`, `oracle/team-battle-bridge.cjs` 등)만 담는다. AI 본체는 고른 모드 JAR에서 로드되고, 클래스패스 맨 앞에 그 JAR이 온다.
@@ -59,7 +83,7 @@ Gradle 쓰기는 모두 `F:/AI/builds/cobblemon-mods-arena`로 가고, 끝나면
 
 ## 경로 설정
 
-이 PC의 경로는 `arena.properties`에 있다. 모드 JAR, Showdown 폴더, 데이터 JAR, 실행부 폴더, 기록 폴더, 저장소, `java`, 스레드 수, 힙 크기다.
+이 PC의 경로는 `arena.properties`에 있다. 모드 JAR, Showdown 폴더, 데이터 JAR, 실행부 폴더, 기록 폴더, 저장소, `java`, 스레드 수, 힙 크기, 그리고 직접 대전용 `playJar`·`play`·`playPort`·`cloudflared`다.
 
 ## 알아 둘 것
 
