@@ -62,6 +62,7 @@ internal object LocalDynamaxGuard {
         if (foes.isEmpty()) return Reading(emptyMap())
         val cache = LocalProjectedActionCalculationCache()
         val targetingByUser = linkedMapOf<UUID, Targeting>()
+        val turnsByUser = hashMapOf<UUID, Double>()
         val adjustments = dynamaxing.mapNotNull { (candidate, mechanic) ->
             val user = state.pokemon.firstOrNull {
                 it.side == BattleSide.ALLY && it.activeSlot == mechanic.actorSlot && alive(it)
@@ -83,13 +84,19 @@ internal object LocalDynamaxGuard {
                 ?: return@mapNotNull null
             // The HP kept is kept; the knockout stopped is only put off unless the doubled HP turns the one-on-one. Read whole, a 42% Araquanid that could not hurt a +2 Dondozo Dynamaxed to live two
             // turns longer (+216, hand-played Aaron), as had a 46% Luxray (hand-played Volkner; both 2026-10-20).
-            val turns = foes.mapNotNull { foe ->
-                val before = LocalMatchupScoreCalculator.pairMatchup(candidateContext.copy(state = state), user.battlePokemonId,
+            // The doubled HP alone: the one-on-one with every plain move the user has, taking half of each hit. Read with the
+            // candidate's Max Move alone, the move's own power turned it: a Keldeo's Hydro Pump took +241 where its Flip
+            // Turn took +41, the same HP guarded (self-play, 2026-10-21); that power is the move's own value.
+            val doubled = state.derive(pokemon = state.pokemon.map {
+                if (it.battlePokemonId == user.battlePokemonId) LocalDynamax.withDoubledHp(it) else it
+            })
+            val turns = turnsByUser.getOrPut(user.battlePokemonId) { foes.mapNotNull { foe ->
+                val before = LocalMatchupScoreCalculator.pairMatchup(context, user.battlePokemonId,
                     foe.battlePokemonId, MatchupSpeedField.CURRENT, cache)?.winProbability ?: return@mapNotNull null
-                val after = LocalMatchupScoreCalculator.pairMatchup(candidateContext.copy(state = guardedState), user.battlePokemonId,
+                val after = LocalMatchupScoreCalculator.pairMatchup(context.copy(state = doubled), user.battlePokemonId,
                     foe.battlePokemonId, MatchupSpeedField.CURRENT, cache)?.winProbability ?: return@mapNotNull null
                 (after - before).coerceIn(0.0, 1.0)
-            }.takeIf { it.isNotEmpty() }?.average() ?: 1.0
+            }.takeIf { it.isNotEmpty() }?.average() ?: 1.0 }
             jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("dynamaxGuard:${candidate.actionId}", mapOf("plainDamage" to plain.damage, "guardedDamage" to guarded.damage,
                 "plainKnockout" to plain.knockout, "guardedKnockout" to guarded.knockout, "turns" to turns))
             ((plain.damage - guarded.damage) + (plain.knockout - guarded.knockout) * turns).takeIf { it > 0.0 }?.let { candidate.actionId to it }

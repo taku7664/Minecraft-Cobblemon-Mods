@@ -49,8 +49,15 @@ internal object LocalDynamax {
         }
     }
 
-    /** [DAMAGE_SHARE] while [pokemon] is Dynamaxed, otherwise 1. */
-    fun damageShare(pokemon: BattlePokemonStateView?): Double = if (active(pokemon)) DAMAGE_SHARE else 1.0
+    /** [DAMAGE_SHARE] while [pokemon] is Dynamaxed or read with its HP doubled alone ([withDoubledHp]), otherwise 1. */
+    fun damageShare(pokemon: BattlePokemonStateView?): Double =
+        if (active(pokemon) || pokemon?.knownVolatileEffectIds?.contains(DOUBLED_HP) == true) DAMAGE_SHARE else 1.0
+
+    /** [pokemon] with a Dynamax's doubled HP and nothing else (its moves stay its own): what the HP alone buys. */
+    fun withDoubledHp(pokemon: BattlePokemonStateView): BattlePokemonStateView =
+        pokemon.copyState(knownVolatileEffectIds = pokemon.knownVolatileEffectIds + DOUBLED_HP)
+
+    private const val DOUBLED_HP = "betterai:doubledhp"
 
     /** Whether [pokemon] is known to have the Gigantamax factor: its own build says so, or it Gigantamaxed in public. */
     fun gigantamax(pokemon: BattlePokemonStateView?): Boolean = pokemon?.knownVolatileEffectIds?.contains(GIGANTAMAX) == true
