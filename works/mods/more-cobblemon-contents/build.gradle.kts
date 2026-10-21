@@ -133,6 +133,26 @@ tasks.register<JavaExec>("captureBaseline") {
     }
 }
 
+// Self-play arena (works/tools/betterai-arena): the test-side battle runner as its own JAR, plus the plain libraries it
+// needs outside the game. The arena puts a real mod JAR in front of it, so the AI under test is that JAR's; nothing here
+// goes into the mod JAR. ./gradlew :more-cobblemon-contents:arenaRunner -ParenaRunnerDir=<folder>
+val arenaRunnerJar by tasks.registering(Jar::class) {
+    archiveFileName.set("betterai-arena-runner.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("arena"))
+    from(sourceSets.test.get().output)
+    exclude("META-INF/services/**")
+}
+
+tasks.register<Sync>("arenaRunner") {
+    group = "verification"
+    description = "Packages the self-play arena runner and its libraries into -ParenaRunnerDir."
+    from(arenaRunnerJar)
+    from(configurations.testRuntimeClasspath.map { classpath ->
+        classpath.filter { file -> listOf("kotlin-stdlib-", "gson-2", "slf4j-api-").any { file.name.startsWith(it) } }
+    }) { into("lib") }
+    into(providers.gradleProperty("arenaRunnerDir").orElse(layout.buildDirectory.dir("arena/runner").map { it.asFile.path }))
+}
+
 tasks.register<JavaExec>("evaluatePaired") {
     group = "verification"
     description = "Evaluates side-swapped team pairs in separate tuning or held-out corpora."

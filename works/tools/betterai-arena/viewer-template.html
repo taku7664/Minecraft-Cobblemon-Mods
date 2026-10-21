@@ -1,0 +1,240 @@
+<title>Better AI 아레나</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: one column that drills down - runs, then a run's battles, then one battle turn by turn. Side colors carry p1/p2. */
+:root {
+  --bg: #eef1f0;
+  --panel: #ffffff;
+  --ink: #18222b;
+  --muted: #5d6b72;
+  --line: #d5dcdc;
+  --p1: #b8432b;
+  --p1-soft: #f6e3dd;
+  --p2: #2b5ea8;
+  --p2-soft: #dfe8f5;
+  --pick: #1f7a55;
+  --pick-soft: #dcefe6;
+  --warn: #9a6a00;
+  --font: "IBM Plex Sans KR", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12181c; --panel: #1b2328; --ink: #e3e8ea; --muted: #93a2a8; --line: #2c373d;
+    --p1: #ee7a60; --p1-soft: #3a2420; --p2: #79a6ec; --p2-soft: #1e2a3d;
+    --pick: #5cc595; --pick-soft: #18322a; --warn: #e0b04a; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12181c; --panel: #1b2328; --ink: #e3e8ea; --muted: #93a2a8; --line: #2c373d;
+  --p1: #ee7a60; --p1-soft: #3a2420; --p2: #79a6ec; --p2-soft: #1e2a3d;
+  --pick: #5cc595; --pick-soft: #18322a; --warn: #e0b04a; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.5; }
+.wrap { max-width: 860px; margin: 0 auto; padding-block: 0 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+header.bar { position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2; background: var(--bg);
+  border-bottom: 1px solid var(--line); padding-block: 10px; display: flex; gap: 10px; align-items: center; }
+header.bar h1 { font-size: 17px; margin: 0; font-weight: 700; text-wrap: balance; min-width: 0; overflow-wrap: anywhere; }
+button { font: inherit; color: inherit; }
+.back { border: 1px solid var(--line); background: var(--panel); border-radius: 8px; padding: 4px 10px; cursor: pointer; flex: none; }
+.back:focus-visible, .row:focus-visible, .chip-btn:focus-visible { outline: 2px solid var(--p2); outline-offset: 2px; }
+.meta { color: var(--muted); font-size: 13px; }
+.num { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+.list { display: grid; gap: 8px; margin-top: 14px; }
+.row { display: grid; gap: 4px; text-align: left; width: 100%; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px 14px; cursor: pointer; }
+.row:hover { border-color: var(--muted); }
+.row .top { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; justify-content: space-between; }
+.row .title { font-weight: 700; }
+.score { font-family: var(--mono); font-weight: 600; }
+.score .a { color: var(--p1); } .score .b { color: var(--p2); }
+.side { display: inline-block; font-family: var(--mono); font-size: 12px; font-weight: 600; padding: 0 6px; border-radius: 5px; }
+.side.p1 { background: var(--p1-soft); color: var(--p1); } .side.p2 { background: var(--p2-soft); color: var(--p2); }
+.teams { display: grid; gap: 2px; font-size: 13px; }
+.teams span.vs { color: var(--muted); }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 2px 12px; font-size: 13px; margin-top: 12px;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.facts dt { color: var(--muted); } .facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+details.sets { margin-top: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; }
+details.sets summary { cursor: pointer; font-weight: 500; }
+.setgrid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin-top: 10px; }
+.set { font-size: 13px; } .set b { font-weight: 700; } .set .meta { font-size: 12px; }
+.turn { margin-top: 22px; }
+.turn h2 { font-size: 13px; letter-spacing: .06em; color: var(--muted); margin: 0 0 8px; font-weight: 700; }
+.log { font-family: var(--mono); font-size: 12.5px; white-space: pre-wrap; background: var(--panel); border: 1px dashed var(--line);
+  border-radius: 8px; padding: 8px 10px; margin-bottom: 8px; overflow-x: auto; }
+.dec { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; min-width: 0; }
+.dec .head { display: flex; flex-wrap: wrap; gap: 8px; align-items: baseline; }
+.dec .head .pick { font-weight: 700; }
+.board { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 10px 0; }
+@media (max-width: 520px) { .board { grid-template-columns: 1fr; } }
+.mon { font-size: 13px; min-width: 0; }
+.mon .name { font-weight: 500; }
+.hpbar { display: block; height: 6px; background: var(--line); border-radius: 3px; overflow: hidden; margin: 3px 0; }
+.hpbar i { display: block; height: 100%; background: var(--pick); }
+.hpbar i.low { background: var(--warn); } .hpbar i.red { background: var(--p1); }
+.cands { display: grid; gap: 6px; }
+.cand { border-top: 1px solid var(--line); padding-top: 6px; display: grid; gap: 2px; min-width: 0; }
+.cand .line1 { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.cand .label { font-weight: 500; flex: 1 1 auto; min-width: 0; }
+.cand.chosen .label::after { content: "선택"; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--pick);
+  background: var(--pick-soft); border-radius: 4px; padding: 0 5px; }
+.cand .ref { font-family: var(--mono); font-weight: 600; font-variant-numeric: tabular-nums; }
+.cand .detail { font-family: var(--mono); font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.cand .detail .pos { color: var(--pick); } .cand .detail .neg { color: var(--p1); }
+.prob { display: inline-flex; align-items: center; gap: 4px; font-family: var(--mono); font-size: 12px; }
+.prob i { display: inline-block; height: 6px; background: var(--p2); border-radius: 3px; }
+.ex { color: var(--warn); }
+.empty { color: var(--muted); margin-top: 24px; }
+.legend { font-size: 12px; color: var(--muted); margin-top: 10px; }
+</style>
+
+<div class="wrap">
+  <header class="bar"><button class="back" id="back" hidden>← 뒤로</button><h1 id="title">Better AI 아레나</h1></header>
+  <main id="view"></main>
+</div>
+
+<script>
+const ARENA = "__ARENA_DATA__";
+const view = document.getElementById('view');
+const titleEl = document.getElementById('title');
+const backBtn = document.getElementById('back');
+const cache = Object.assign({}, ARENA.data || {});
+let state = { run: null, battle: null };
+
+const esc = s => String(s ?? '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const sideTag = s => s ? `<span class="side ${esc(s)}">${esc(s)}</span>` : '<span class="meta">무승부</span>';
+const fmt = v => v == null ? '–' : (Math.round(v * 10) / 10).toFixed(1);
+const STATUS = { done: '완료', running: '진행 중', incomplete: '미완료' };
+const status = s => STATUS[s] || s;
+const when = iso => iso ? iso.replace('T', ' ').slice(0, 16) : '–';
+
+async function load(id) {
+  if (!cache[id]) {
+    const res = await fetch(`data/${encodeURIComponent(id)}.json`);
+    if (!res.ok) throw new Error(`${id} 기록을 불러오지 못했습니다 (${res.status})`);
+    cache[id] = await res.json();
+  }
+  return cache[id];
+}
+
+function go(next) {
+  state = next;
+  render().catch(err => { view.innerHTML = `<p class="empty">${esc(err.message)}</p>`; });
+  window.scrollTo(0, 0);
+}
+backBtn.addEventListener('click', () => go(state.battle != null ? { run: state.run, battle: null } : { run: null, battle: null }));
+
+async function render() {
+  backBtn.hidden = state.run == null || (ARENA.runs.length === 1 && state.battle == null && Object.keys(ARENA.data || {}).length === 1);
+  if (state.run == null) return renderRuns();
+  const run = await load(state.run);
+  if (state.battle == null) return renderRun(run);
+  return renderBattle(run, run.battles.find(b => b.index === state.battle));
+}
+
+function renderRuns() {
+  titleEl.textContent = 'Better AI 아레나';
+  const runs = [...ARENA.runs].reverse();
+  if (!runs.length) { view.innerHTML = '<p class="empty">아직 실행 기록이 없습니다. run-arena.bat으로 한 번 돌리면 여기에 쌓입니다.</p>'; return; }
+  view.innerHTML = `<p class="legend">보스 대 보스 자가 대전 기록입니다. 실행을 누르면 판 목록이 나옵니다.</p><div class="list">${runs.map(r => `
+    <button class="row" data-run="${esc(r.id)}">
+      <span class="top"><span class="title num">${esc(when(r.started))}</span>
+        <span class="score"><span class="a">p1 ${r.wins?.p1 ?? 0}</span> : <span class="b">${r.wins?.p2 ?? 0} p2</span></span></span>
+      <span class="meta">${r.played ?? 0}/${r.requested}판 · 스레드 ${r.threads} · 시드 <span class="num">${r.seed}</span> · ${esc(status(r.status))}${r.note ? ' · ' + esc(r.note) : ''}</span>
+      <span class="meta num">JAR ${esc((r.jarSha256 || '').slice(0, 12))}${r.jarCommit ? ' · 커밋 ' + esc(r.jarCommit.slice(0, 9)) : ''}</span>
+    </button>`).join('')}</div>`;
+  view.querySelectorAll('[data-run]').forEach(b => b.addEventListener('click', () => go({ run: b.dataset.run, battle: null })));
+}
+
+function renderRun(run) {
+  titleEl.textContent = `${when(run.started)} 실행`;
+  const wins = s => run.battles.filter(b => b.winner === s).length;
+  const turns = run.battles.map(b => b.turns).filter(t => t != null);
+  const avg = turns.length ? (turns.reduce((a, b) => a + b, 0) / turns.length).toFixed(1) : '–';
+  view.innerHTML = `
+    <dl class="facts">
+      <dt>결과</dt><dd class="score"><span class="a">p1 ${wins('p1')}</span> : <span class="b">${wins('p2')} p2</span> <span class="meta">(평균 ${avg}턴)</span></dd>
+      <dt>판</dt><dd>${run.battles.length}/${run.requested} · ${esc(status(run.status))}</dd>
+      <dt>시작·끝</dt><dd class="num">${esc(when(run.started))} → ${esc(when(run.finished))}</dd>
+      <dt>JAR</dt><dd class="num">${esc(run.jar)}</dd>
+      <dt>SHA-256</dt><dd class="num">${esc(run.jarSha256)}</dd>
+      <dt>JAR 커밋</dt><dd class="num">${esc(run.jarCommit || '모름')}</dd>
+      <dt>저장소 HEAD</dt><dd class="num">${esc((run.repoHead || '–').slice(0, 12))}</dd>
+      <dt>시드·스레드</dt><dd class="num">${run.seed} · ${run.threads}</dd>
+      <dt>조건</dt><dd>${esc(run.mode || '')}</dd>
+    </dl>
+    <div class="list">${run.battles.map(b => `
+      <button class="row" data-battle="${b.index}">
+        <span class="top"><span class="title">${b.index + 1}판</span>
+          <span>${b.failed ? '<span class="ex">실패</span>' : `${sideTag(b.winner)} 승 · <span class="num">${b.turns ?? '–'}</span>턴`}</span></span>
+        <span class="teams"><span><span class="side p1">p1</span> ${esc((b.teams?.p1 || []).join(', '))}</span>
+          <span><span class="side p2">p2</span> ${esc((b.teams?.p2 || []).join(', '))}</span></span>
+      </button>`).join('')}</div>`;
+  view.querySelectorAll('[data-battle]').forEach(b => b.addEventListener('click', () => go({ run: state.run, battle: Number(b.dataset.battle) })));
+}
+
+function hpBar(hp) {
+  const pct = Math.max(0, Math.min(100, Math.round(hp * 100)));
+  return `<span class="hpbar"><i class="${pct <= 20 ? 'red' : pct <= 50 ? 'low' : ''}" style="width:${pct}%"></i></span>`;
+}
+
+function board(entries, side) {
+  const other = side === 'p1' ? 'p2' : 'p1';
+  return `<div class="board">${entries.map(m => m.raw ? `<div class="mon meta">${esc(m.raw)}</div>` : `
+    <div class="mon"><span class="side ${m.own ? side : other}">${m.own ? side : other}</span> <span class="name">${esc(m.mon)}</span>
+      <span class="num meta">${Math.round(m.hp * 100)}%</span>${m.status ? ` <span class="ex">${esc(m.status)}</span>` : ''}
+      ${hpBar(m.hp)}
+      ${m.stages.length ? `<div class="meta">${esc(m.stages.join(' · '))}</div>` : ''}
+      ${m.moves.length ? `<div class="meta">${m.own ? '기술' : '본 기술'}: ${esc(m.moves.join(', '))}</div>` : ''}
+    </div>`).join('')}</div>`;
+}
+
+function candidate(c, d) {
+  const chosen = c.id === d.action;
+  const rules = Object.entries(c.rules || {}).map(([k, v]) => `${esc(k)} <span class="${v >= 0 ? 'pos' : 'neg'}">${v >= 0 ? '+' : ''}${fmt(v)}</span>`);
+  const parts = [`기본 ${fmt(c.base)}`, ...rules];
+  if (c.quick) parts.push(`빠른판단 ${esc(c.quick.join(' '))}`);
+  if (c.ex) parts.push(`<span class="ex">추첨 제외: ${esc(c.ex)}</span>`);
+  const prob = c.p != null ? `<span class="prob"><i style="width:${Math.max(2, Math.round(c.p * 60))}px"></i>${(c.p * 100).toFixed(1)}%</span>` : '';
+  return `<div class="cand${chosen ? ' chosen' : ''}">
+    <div class="line1"><span class="label">${esc(c.label)}</span>${prob}<span class="ref">${fmt(c.refined)}</span></div>
+    <div class="detail">${parts.join(' · ')}</div></div>`;
+}
+
+function decision(d) {
+  const drawNote = d.drawn && d.drawn !== d.action ? ` <span class="meta">(추첨 ${esc(d.drawn)})</span>` : '';
+  return `${d.log.length ? `<div class="log">${esc(d.log.join('\n'))}</div>` : ''}
+  <section class="dec">
+    <div class="head">${sideTag(d.side)} <span class="pick">${esc(d.label)}</span>${drawNote}
+      <span class="meta num">${d.ms ?? '–'}ms</span></div>
+    ${board(d.board, d.side)}
+    <div class="cands">${d.candidates.map(c => candidate(c, d)).join('')}</div>
+    ${d.hidden ? `<div class="meta">나머지 후보 ${d.hidden}개는 점수가 낮아 생략</div>` : ''}
+  </section>`;
+}
+
+function renderBattle(run, b) {
+  titleEl.textContent = `${b.index + 1}판 · ${b.winner ? b.winner + ' 승' : '무승부'} · ${b.turns ?? '–'}턴`;
+  const byTurn = [];
+  for (const d of b.decisions) {
+    let group = byTurn[byTurn.length - 1];
+    if (!group || group.turn !== d.turn) byTurn.push(group = { turn: d.turn, items: [] });
+    group.items.push(d);
+  }
+  const sets = side => (b.sets?.[side] || []).map(s => `<div class="set"><span class="side ${side}">${side}</span> <b>${esc(s.mon)}</b>
+    <div class="meta">${esc(s.item)} · ${esc(s.ability)} · ${esc(s.nature || '')}</div><div class="meta">${esc(s.moves.join(', '))}</div></div>`).join('');
+  view.innerHTML = `
+    <details class="sets"><summary>두 팀 구성 보기</summary><div class="setgrid">${sets('p1')}${sets('p2')}</div></details>
+    <p class="legend">판단마다 지난 턴에 일어난 일(공개 로그), 그 진영이 본 보드, 상위 후보를 보여 줍니다. 오른쪽 굵은 숫자가 최종 점수,
+      막대가 추첨 확률, 아래 줄이 기본 점수와 규칙별 가감입니다.</p>
+    ${byTurn.map(g => `<div class="turn"><h2>${g.turn}턴</h2>${g.items.map(decision).join('')}</div>`).join('')}
+    ${b.tail?.length ? `<div class="turn"><h2>마지막</h2><div class="log">${esc(b.tail.join('\n'))}</div></div>` : ''}`;
+}
+
+if (ARENA.runs.length === 1 && cache[ARENA.runs[0].id]) go({ run: ARENA.runs[0].id, battle: null }); else go({ run: null, battle: null });
+</script>
