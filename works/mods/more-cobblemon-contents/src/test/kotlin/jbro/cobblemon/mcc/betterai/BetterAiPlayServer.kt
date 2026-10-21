@@ -48,7 +48,9 @@ fun main(args: Array<String>) {
     server.executor = Executors.newFixedThreadPool(4)
     server.createContext("/") { exchange ->
         runCatching { route(exchange, token, page, play) }.onFailure {
-            runCatching { reply(exchange, 500, "text/plain; charset=utf-8", (it.message ?: it.toString()).toByteArray()) }
+            // The page reads every answer as JSON, failures too.
+            runCatching { reply(exchange, 500, "application/json; charset=utf-8",
+                JsonObject().apply { addProperty("error", it.message ?: it.toString()) }.toString().toByteArray(Charsets.UTF_8)) }
         }
         exchange.close()
     }
@@ -76,9 +78,13 @@ private fun route(exchange: HttpExchange, token: String, page: Path, play: PlayS
     }
 }
 
-private fun body(exchange: HttpExchange): JsonObject =
-    exchange.requestBody.readNBytes(4096).toString(Charsets.UTF_8).takeIf { it.isNotBlank() }
-        ?.let { runCatching { JsonParser.parseString(it).asJsonObject }.getOrNull() } ?: JsonObject()
+/** The request's JSON (two six-member entries run to ~10 KB; 256 KB is the cap). Unreadable JSON is an error, not "no entry". */
+private fun body(exchange: HttpExchange): JsonObject {
+    val text = exchange.requestBody.readNBytes(256 * 1024).toString(Charsets.UTF_8)
+    if (text.isBlank()) return JsonObject()
+    return runCatching { JsonParser.parseString(text).asJsonObject }
+        .getOrElse { throw IllegalArgumentException("요청을 읽지 못했습니다: ${it.message}") }
+}
 
 private fun json(exchange: HttpExchange, value: JsonObject) =
     reply(exchange, 200, "application/json; charset=utf-8", value.toString().toByteArray(Charsets.UTF_8))
@@ -124,9 +130,39 @@ private class PlayServer(private val out: Path, private val showdown: Path) {
     fun start(body: JsonObject): JsonObject {
         game?.stop()
         val seed = body["seed"]?.takeIf { it.isJsonPrimitive }?.asInt ?: (1..2_000_000_000).random()
+        val entry = runCatching { entry(body) }.getOrElse { problem ->
+            return state().apply { addProperty("error", problem.message ?: problem.toString()) }
+        }
         val folder = out.resolve(LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")))
-        game = Game(folder, seed, showdown).also { it.begin() }
+        game = Game(folder, seed, showdown, entry).also { it.begin() }
         return state()
+    }
+
+    /**
+     * Both sides' sets when the page sent them (`p1.sets`, `p2.sets`, 1-6 each, as the bridge reads them), else null for
+     * a random preset pair. Each set gets the battle id the bridge reads its preview slot from (`...0000000001NN`).
+     */
+    private fun entry(body: JsonObject): JsonObject? {
+        if (!body.has("p1") && !body.has("p2")) return null
+        return JsonObject().apply {
+            for ((digit, side) in listOf(1 to "p1", 2 to "p2")) {
+                val sets = body.getAsJsonObject(side)?.getAsJsonArray("sets") ?: error("${if (side == "p1") "내" else "상대"} 엔트리가 비었습니다")
+                require(sets.size() in 1..6) { "엔트리는 1~6마리입니다 (${side}: ${sets.size()}마리)" }
+                add(side, JsonObject().apply {
+                    add("sets", JsonArray().apply {
+                        sets.forEachIndexed { index, value ->
+                            val set = value.asJsonObject.deepCopy()
+                            val species = set["species"]?.asString?.takeIf(String::isNotBlank) ?: error("${index + 1}번째 포켓몬의 종족이 없습니다")
+                            val moves = set.getAsJsonArray("moves")
+                            require(moves != null && moves.size() in 1..4) { "$species: 기술은 1~4개입니다" }
+                            if (!set.has("name")) set.addProperty("name", species)
+                            set.addProperty("uuid", "00000000-0000-0000-0000-0000000${digit}%04d".format(index + 1))
+                            add(set)
+                        }
+                    })
+                })
+            }
+        }
     }
 
     @Synchronized
@@ -138,7 +174,7 @@ private class PlayServer(private val out: Path, private val showdown: Path) {
     }
 }
 
-private class Game(val folder: Path, val seed: Int, private val showdown: Path) {
+private class Game(val folder: Path, val seed: Int, private val showdown: Path, private val entry: JsonObject?) {
     @Volatile var status = "starting"
     @Volatile var pending: JsonObject? = null
     @Volatile var result: JsonObject? = null
@@ -188,13 +224,22 @@ private class Game(val folder: Path, val seed: Int, private val showdown: Path) 
         val scratch = folder.resolve("engine")
         try {
             Files.createDirectories(folder)
-            val audit = EmbeddedPresetAudit.run(scratch.resolve("audit"), teamPairs = 1, teamSeed = seed)
+            // The engine copy comes with the preset audit; a sent entry replaces the drawn pair.
+            val audit = EmbeddedPresetAudit.run(scratch.resolve("audit"), teamPairs = if (entry == null) 1 else 0, teamSeed = seed)
             val engine = scratch.resolve("audit/engine")
             for (file in listOf("side.js", "pokemon.js", "battle.js", "battle-actions.js")) {
                 Files.copy(showdown.resolve("sim/$file"), engine.resolve("sim/$file"), REPLACE_EXISTING)
             }
-            val pair = audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs").first().asJsonObject.deepCopy()
-                .apply { addProperty("teamPreview", true) }
+            val pair = if (entry == null) {
+                audit.getAsJsonObject("teamSampling").getAsJsonArray("pairs").first().asJsonObject.deepCopy()
+            } else {
+                JsonObject().apply {
+                    addProperty("battleFormat", "SINGLE")
+                    add("battleSeed", JsonArray().apply { listOf(seed, seed * 7 + 1, seed * 13 + 2, seed * 31 + 3).forEach { add(it and 0xffff) } })
+                    add("p1", entry["p1"].deepCopy())
+                    add("p2", entry["p2"].deepCopy())
+                }
+            }.apply { addProperty("teamPreview", true) }
             teams = JsonObject().apply {
                 for (side in listOf("p1", "p2")) add(side, pair.getAsJsonObject(side).getAsJsonArray("sets").deepCopy())
             }

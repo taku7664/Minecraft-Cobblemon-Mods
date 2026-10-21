@@ -181,6 +181,77 @@ process.stdout.write(JSON.stringify(out));
 """
 
 
+STAT_KEYS = {'hp': 'hp', 'attack': 'atk', 'defence': 'def', 'defense': 'def', 'special_attack': 'spa',
+             'special_defence': 'spd', 'special_defense': 'spd', 'speed': 'spe'}
+
+
+def plain_id(value):
+    """A Cobblemon id ('cobblemon:life_orb', 'Life Orb') as Showdown's (lifeorb)."""
+    return ''.join(c for c in str(value).split(':')[-1].lower() if c.isalnum())
+
+
+def league_set(properties, mechanic):
+    """One League team line (Cobblemon Pokemon properties) as the bridge's set, as LeagueNativeAuditScenarioTest reads it."""
+    tokens = properties.split()
+    values = dict(token.split('=', 1) for token in tokens[1:] if '=' in token)
+    spread = lambda suffix: {stat: int(values[f'{key}_{suffix}']) for key, stat in STAT_KEYS.items()
+                             if f'{key}_{suffix}' in values}
+    form = values.get('form')
+    entry = {'species': f'{tokens[0]}-{form}' if form else tokens[0], 'level': int(values.get('level', 50)),
+             'moves': values['moves'].split(','), 'ability': plain_id(values.get('ability', '')),
+             'item': plain_id(values['held_item']) if 'held_item' in values else '',
+             'nature': values.get('nature', 'serious'),
+             'gender': {'male': 'M', 'female': 'F'}.get(values.get('gender'), ''),
+             'evs': spread('ev'), 'ivs': spread('iv')}
+    if mechanic == 'DYNAMAX':
+        if values.get('gmax_factor') == 'true':
+            entry['gigantamax'] = True
+        if 'dynamaxPriority' in values:
+            entry['dynamaxPriority'] = int(values['dynamaxPriority'])
+        if 'canDynamax' in values:
+            entry['canDynamax'] = values['canDynamax']
+    else:
+        # No Dynamax outside Galar: the league's own gimmick (Mega Evolution, by the held stone) is the only one.
+        entry['canDynamax'] = 'none'
+    return entry
+
+
+def play_presets():
+    """The hard Sinnoh and Galar League trainers' teams and the Battle Factory rental sets, from this checkout's sources."""
+    mods = HERE.parents[1] / 'mods'
+    league = mods / 'more-cobblemon-contents-league-challenge/src/main/resources'
+    data = league / 'data/more_cobblemon_contents_league_challenge/league-challenge'
+    lang = json.loads((league / 'assets/more_cobblemon_contents_league_challenge/lang/ko_kr.json').read_text(encoding='utf-8'))
+    read = lambda path: json.loads(path.read_text(encoding='utf-8'))
+    regions = []
+    for file, region in (('active.json', '신오'), ('galar.json', '가라르')):
+        hard = read(data / 'leagues' / file)['hard']
+        order = []
+        for step in hard['gyms'] + hard['finals']:
+            order += step if isinstance(step, list) else [step]
+        trainers = []
+        for challenge_id in order:
+            path = challenge_id.split(':', 1)[1]
+            challenge = read(data / 'challenges' / f'{path}.json')
+            trainer = read(data / 'trainers' / f"{challenge['trainer'].split(':', 1)[1]}.json")
+            team = read(data / 'teams' / f"{trainer['team'].split(':', 1)[1]}.json")
+            mechanic = challenge.get('mechanic', 'NONE')
+            label = lang.get(trainer['name_key'], path) + (' (챔피언컵)' if '/cup_' in f'/{path}' else '')
+            trainers.append({'id': path, 'label': label, 'mechanic': mechanic,
+                             'sets': [league_set(line, mechanic) for line in team['pokemon']]})
+        regions.append({'region': f'하드 {region}', 'trainers': trainers})
+    rentals = []
+    for path in sorted((mods / 'more-cobblemon-contents-battle-factory/src/main/resources/data/more_cobblemon_contents'
+                        '/mcc-battle-factory/rental-sets').glob('*.json')):
+        for rental in read(path)['rental_sets']:
+            rentals.append({'species': plain_id(rental['species_id']), 'level': 50,
+                            'moves': [plain_id(m) for m in rental['moves']], 'ability': plain_id(rental['ability_id']),
+                            'item': plain_id(rental.get('held_item_id', '')), 'nature': plain_id(rental['nature_id']),
+                            'gender': '', 'evs': {STAT_KEYS[k]: v for k, v in rental.get('evs', {}).items() if k in STAT_KEYS},
+                            'ivs': {}})
+    return {'leagues': regions, 'rentals': rentals}
+
+
 def play_page(cfg, home):
     """play.html with the wiki's Galmuri font and Showdown's move types and sprite names put in, as page.html."""
     import base64
@@ -192,7 +263,19 @@ def play_page(cfg, home):
     dex = subprocess.run(['node', '-e', DEX_SCRIPT, str(resolve(cfg['showdown']))], capture_output=True, text=True,
                          encoding='utf-8', check=True).stdout
     page = (HERE / 'play.html').read_text(encoding='utf-8')
-    page = page.replace('/*__FONTS__*/', faces).replace('"__DEX__"', dex.replace('</', '<\\/'))
+    # Mega Showdown's items (Mega Stones, cores) are named in its own JAR, not in Cobblemon's language file.
+    dex = json.loads(dex)
+    dex['itemNames'] = {}
+    import zipfile
+    for jar in sorted((resolve(cfg['showdown']).parent / 'mods').glob('mega_showdown*.jar')):
+        with zipfile.ZipFile(jar) as archive:
+            lang = json.loads(archive.read('assets/mega_showdown/lang/ko_kr.json').decode('utf-8'))
+        dex['itemNames'] = {plain_id(key.split('.', 2)[2]): name for key, name in lang.items()
+                            if key.startswith('item.mega_showdown.') and key.count('.') == 2}
+    dex = json.dumps(dex, ensure_ascii=False, separators=(',', ':'))
+    presets = json.dumps(play_presets(), ensure_ascii=False, separators=(',', ':'))
+    page = page.replace('/*__FONTS__*/', faces).replace('"__DEX__"', dex.replace('</', '<\\/')) \
+        .replace('"__PRESETS__"', presets.replace('</', '<\\/'))
     home.mkdir(parents=True, exist_ok=True)
     (home / 'page.html').write_text(page, encoding='utf-8')
     return home / 'page.html'
