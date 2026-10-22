@@ -227,12 +227,21 @@ internal class LocalTacticalBrain(
         // The board the rules read staying on (singles): the Pokemon in front Mega Evolved when one of its moves can
         // Mega Evolve it this turn, since staying and attacking does. On the base form's table a lead Garchomp that can
         // Mega Evolve read as losing to a Hippowdon it beats as a Mega, and the switching rules took it out (2026-10-12).
-        val baseRuleScores by lazy { pairTable(difficultyContext) }
+        // The board the rules and the worths read: every opposing Pokemon still to come, the preview's not yet seen behind
+        // at full HP (LocalSwitchRules.previewFoes), as the remaining fight holds them. Read off the Pokemon seen alone,
+        // a Tauros' Close Combat that knocked out a 45% Pachirisu read it as the last foe and its drop as costing nothing,
+        // tied with Earthquake, with a Wyrdeer still to come (self-play, 2026-10-21); 102 of 143 fixed scenes read one foe.
+        // Off the field they hit nothing this turn; only the fight still to come reads them.
+        val ruleBoard by lazy {
+            jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules.previewFoes(difficultyContext)?.let { difficultyContext.copy(state = it.first) }
+                ?: difficultyContext
+        }
+        val baseRuleScores by lazy { pairTable(ruleBoard) }
         val megaRules: Pair<BattleDecisionContext, jbro.cobblemon.mcc.betterai.matchup.MatchupScores?>? by lazy {
             if (difficultyContext.state.format != BattleFormat.SINGLE) return@lazy null
             val board = difficultyContext.candidates.asSequence().filter { it.kind == BattleActionKind.USE_MOVE }
-                .map { jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(difficultyContext, BattleSide.ALLY, it) }
-                .firstOrNull { it !== difficultyContext } ?: return@lazy null
+                .map { jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(ruleBoard, BattleSide.ALLY, it) }
+                .firstOrNull { it !== ruleBoard } ?: return@lazy null
             val table = pairTable(board)
             // A Mega board whose form's data is missing cannot be played: the base board stands. Read anyway, its moves read
             // nothing, the Pokemon "had nothing to hit with" and switched out of sure knockouts (Z-A Megas in the league run
@@ -247,7 +256,7 @@ internal class LocalTacticalBrain(
             // together, never the Mega's state beside the base form's scores.
             } else table?.let { board to it }
         }
-        val rulesContext: BattleDecisionContext by lazy { megaRules?.first ?: difficultyContext }
+        val rulesContext: BattleDecisionContext by lazy { megaRules?.first ?: ruleBoard }
         val ruleScores by lazy { megaRules?.second ?: baseRuleScores }
         // A stat raise is judged on the board it is used on: the Mega's with a Mega Evolution, the base form's without.
         // On the base form's a Mega Garchomp's Swords Dance read as a 19% win against a Hippowdon it beats outright.
@@ -484,11 +493,11 @@ internal class LocalTacticalBrain(
         // Each Pokemon's worth from the matchup table, for the tiers that read it: the native search, the ranking and the
         // rules price material and knockouts with it on this thread (LocalPokemonWorth).
         val worthReading = if (!rulesApply) null else baseRuleScores?.let {
-            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.read(difficultyContext.state, it, tuning.livingPokemonValue)
+            jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.read(ruleBoard.state, it, tuning.livingPokemonValue)
         }
         jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(worthReading?.worths, worthReading?.denials)
         worthReading?.let { reading ->
-            difficultyContext.state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }.forEach { pokemon ->
+            ruleBoard.state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }.forEach { pokemon ->
                 val id = pokemon.battlePokemonId
                 val denial = reading.denials[id]
                 LocalDecisionInternals.record("pokemon:${pokemon.side}:${pokemon.speciesId.substringAfter(':')}:${id.toString().take(8)}", buildMap {

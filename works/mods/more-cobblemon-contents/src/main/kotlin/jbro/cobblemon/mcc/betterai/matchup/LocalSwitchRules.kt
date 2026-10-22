@@ -60,6 +60,28 @@ internal object LocalSwitchRules {
     }
 
     /** The preview's opposing Pokemon not seen yet, as hypothetical bench Pokemon on a copy of the board, or null without any. */
+    /**
+     * What the opposing sets are read from for the preview's Pokemon not yet seen ([previewFoes]): their board, and the
+     * catalog with each one's preview move pool as its learnset, as a Pokemon in front has its own. Without the pool a
+     * tier that reads the hidden set filled nothing beside the moves it read (self-play, 2026-10-22).
+     */
+    internal fun previewSetReading(
+        context: BattleDecisionContext,
+    ): Pair<jbro.cobblemon.mcc.internal.ai.BattleStateView, jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView>? {
+        val preview = context.opponentTeamPreview ?: return null
+        val (board, foes) = previewFoes(context) ?: return null
+        val catalog = context.publicActionCatalog
+        val pools = foes.mapNotNull { foe ->
+            val slot = preview.pokemon.firstOrNull { java.util.UUID(1, Long.MIN_VALUE + it.previewSlotId) == foe.battlePokemonId }
+                ?: preview.pokemon.firstOrNull { it.speciesId == foe.speciesId && it.formId == foe.formId }
+            val pool = slot?.moveCandidatePool ?: return@mapNotNull null
+            jbro.cobblemon.mcc.internal.ai.BattlePublicMoveCandidatePoolView(foe.battlePokemonId, foe.speciesId, foe.formId,
+                pool.moveIds, pool.sourceId, pool.moveDetails)
+        }
+        return board to jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView(catalog.entries, catalog.originalEntries,
+            catalog.candidatePools + pools, catalog.opponentMoveInferences)
+    }
+
     internal fun previewFoes(context: BattleDecisionContext): Pair<jbro.cobblemon.mcc.internal.ai.BattleStateView, List<BattlePokemonStateView>>? {
         val preview = context.opponentTeamPreview ?: return null
         val state = context.state

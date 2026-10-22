@@ -235,13 +235,19 @@ internal class Cobblemon173BrainTrainerBattleActor(
                         )) {
                         actualOpponentStatSpreadsByPreviewSlot()
                     } else emptyMap()
+                    // The tiers that read the hidden set read the preview's Pokemon not yet seen too, on the board the
+                    // rules read them on (LocalSwitchRules.previewFoes, behind at full HP): seen alone, they had no move
+                    // and hit nothing in any reading of the fight still to come (self-play, 2026-10-22).
+                    val previewRead = if (trainerProfile.difficulty.tier in setOf(BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS))
+                        jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules.previewSetReading(context) else null
+                    val previewFoes = previewRead?.first?.pokemon.orEmpty().filter { foe -> state.pokemon.none { it.battlePokemonId == foe.battlePokemonId } }
                     context.copy(
                         publicActionCatalog = publicCatalog.withOpponentMoveInferences(
                             opponentMoveInference.update(
-                                state,
-                                publicCatalog,
+                                previewRead?.first ?: state,
+                                previewRead?.second ?: publicCatalog,
                                 trainerProfile.difficulty.tier,
-                                actualOpponentMoveIds(),
+                                actualOpponentMoveIds() + actualPreviewMoveIds(previewFoes),
                                 observationAdapter.transformedPokemon(),
                                 // An attack's own stat changes read on this board, with the stats the brain reads (user
                                 // decision 2026-10-18).
@@ -578,6 +584,18 @@ internal class Cobblemon173BrainTrainerBattleActor(
         compatibilityCallOrNull { battle.getActor(opponentActorId) }?.pokemonList.orEmpty().associate { pokemon ->
             pokemon.uuid to pokemon.moveSet.getMoves().mapTo(linkedSetOf()) { move -> move.name }
         }
+
+    /** The real moves of the preview's Pokemon not yet seen, by the ids the rules' board gives them; a unique species and form only. */
+    private fun actualPreviewMoveIds(foes: List<jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView>): Map<UUID, Set<String>> {
+        if (foes.isEmpty()) return emptyMap()
+        val actual = compatibilityCallOrNull { battle.getActor(opponentActorId) }?.pokemonList.orEmpty()
+        return foes.mapNotNull { foe ->
+            actual.singleOrNull { pokemon ->
+                pokemon.effectedPokemon.species.resourceIdentifier.toString().equals(foe.speciesId, true) &&
+                    (foe.formId == null || pokemon.effectedPokemon.form.name.equals(foe.formId, true))
+            }?.let { foe.battlePokemonId to it.moveSet.getMoves().mapTo(linkedSetOf()) { move -> move.name } }
+        }.toMap()
+    }
 
     /** Match only unique public species/form identities; ambiguity must never assign a private spread to the wrong slot. */
     private fun actualOpponentStatSpreadsByPreviewSlot(): Map<Int, BattleLocalOpponentStatSpreadView> {

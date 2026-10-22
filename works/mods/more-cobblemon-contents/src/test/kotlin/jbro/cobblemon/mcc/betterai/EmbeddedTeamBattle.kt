@@ -167,11 +167,18 @@ internal object EmbeddedTeamBattle {
                                         opponentSpreads(pair, if (side == "p1") "p2" else "p1", preview)
                                     } else emptyMap())
                             } ?: baseContext
+                            // As the game does: the tiers that read the hidden set read the preview's Pokemon not yet seen too.
+                            val previewRead = if (profiles.getValue(side).difficulty.tier in setOf(
+                                    BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS)) {
+                                jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules.previewSetReading(stageBoard)
+                            } else null
+                            val inferenceState = previewRead?.first ?: baseContext.state
+                            previewRead?.let { registerMoveDetails(it.second, inferenceMoveDetails.getValue(side)) }
                             val inferences = inferenceLedgers.getValue(side).update(
-                                baseContext.state,
-                                baseContext.publicActionCatalog,
+                                inferenceState,
+                                previewRead?.second ?: baseContext.publicActionCatalog,
                                 profiles.getValue(side).difficulty.tier,
-                                actualOpponentMoves(pair, side, baseContext.state),
+                                actualOpponentMoves(pair, side, inferenceState),
                                 ownStages = LocalOwnStageValue(stageBoard, profiles.getValue(side).difficulty.tier),
                             )
                             val context = BattleDecisionContext(
