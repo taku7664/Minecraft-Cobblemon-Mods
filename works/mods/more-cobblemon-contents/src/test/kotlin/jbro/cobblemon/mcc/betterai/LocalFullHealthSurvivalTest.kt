@@ -19,11 +19,14 @@ class LocalFullHealthSurvivalTest {
     fun `a possible hidden ability prevents inferring guaranteed sturdy survival`() {
         val unresolved = knockout(item = null, ability = null, inferredOrdinary = listOf("sturdy"),
             inferredHidden = listOf("weakarmor"))
-        assertEquals(BattleKnockoutAssessment.GUARANTEED, unresolved.first,
-            "Keep the base damage projection instead of asserting unrevealed Sturdy; dynamic modifiers remain unknown")
+        assertEquals(BattleKnockoutAssessment.POSSIBLE, unresolved.first,
+            "Equally possible Sturdy and Weak Armor give a possible knockout, not a guaranteed one")
+        assertEquals(0.5, unresolved.second!!, 1e-9,
+            "Average the Sturdy branch's zero KO chance and Weak Armor branch's certain KO")
         val revealed = knockout(item = null, ability = "sturdy", inferredOrdinary = listOf("sturdy"),
             inferredHidden = listOf("weakarmor"))
         assertEquals(BattleKnockoutAssessment.IMPOSSIBLE, revealed.first)
+        assertEquals(0.0, revealed.second!!, 1e-9)
     }
 
     @Test
