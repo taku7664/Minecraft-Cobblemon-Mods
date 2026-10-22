@@ -243,16 +243,12 @@ internal object LocalSwitchRules {
         val byFoe = opponents.mapNotNull { foe -> scores.switchIn(incoming.battlePokemonId, foe.battlePokemonId, replaced.battlePokemonId)?.let { foe to it } }
         val entries = byFoe.map { it.second }
         if (entries.isEmpty()) return null
-        // If hazards kill the incoming Pokemon, the next entry really is another switch. The saved Pokemon is now on
-        // the bench and pays those hazards when it comes back, rather than keeping its old active HP for free.
-        val returningContext = if (entries.any { it.entryFaints }) {
-            val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
-            LocalMatchupPosition.enter(context, incoming, cache, slot = replaced.activeSlot)?.let {
-                LocalMatchupPosition.enter(it, replaced, cache, slot = replaced.activeSlot)
-            }
-        } else null
-        val returningScores = returningContext?.let { LocalMatchupScoreCalculator.calculate(it) }
-        val returningStandings = returningContext?.let { LocalKnockoutWorth.standings(it.state, requireNotNull(returningScores)) }
+        // Keep the existing board's matchup and worth. If hazards kill the incoming Pokemon, charge only the HP
+        // the saved Pokemon loses on re-entry, in the same HP-bar units as gain (user, 2026-10-22).
+        val returns = entries.any { it.entryFaints }
+        val reentryHpLoss = if (returns) minOf(replaced.hpFraction,
+            jbro.cobblemon.mcc.betterai.mechanics.PublicSwitchEntryHazardCalculator.hpLoss(context.state, replaced.side, replaced) ?: 0.0)
+            else 0.0
         val stays = opponents.mapNotNull { scores.pokemon(replaced.battlePokemonId, it.battlePokemonId) }
         // One opponent focusing the slot is enough to knock the incoming Pokemon out; one that switches out hits nothing.
         val survival = byFoe.minOf { (foe, entry) ->
@@ -299,7 +295,7 @@ internal object LocalSwitchRules {
         // one left walking in free, the one leaving included, and the fall itself is paid by its worth below. Counted as -1
         // and by its worth, a fall was paid twice.
         val freeAfterIncoming = (bench.filter { it.battlePokemonId != incoming.battlePokemonId } + replaced).mapNotNull { other ->
-            opponents.mapNotNull { (returningScores ?: scores).pokemon(other.battlePokemonId, it.battlePokemonId)?.score }.averageOrNull()
+            opponents.mapNotNull { scores.pokemon(other.battlePokemonId, it.battlePokemonId)?.score }.averageOrNull()
         }.maxOrNull()
         val switchGoesOn = if (freeAfterIncoming == null) switchValue
             else entries.map { it.score + (1.0 - it.predictedSurvival) * (1.0 + freeAfterIncoming) }.average()
@@ -315,15 +311,16 @@ internal object LocalSwitchRules {
         val living = jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT.livingPokemonValue
         // In what each still does (standings, board units), not the side-shared worth: sparing one that loses to everything
         // keeps little.
-        val standingKept = returningStandings?.get(replaced.battlePokemonId) ?: standings[replaced.battlePokemonId] ?: (leavingWorth ?: 0.0) * living
+        val standingKept = standings[replaced.battlePokemonId] ?: (leavingWorth ?: 0.0) * living
         val standingLost = standings[incoming.battlePokemonId] ?: (incomingWorth ?: 0.0) * living
         val kept = if (freeAfter == null) 0.0 else falls * standingKept - (1.0 - survival) * standingLost
-        val gain = switchGoesOn - stayGoesOn + kept
+        val gain = switchGoesOn - stayGoesOn + kept - reentryHpLoss
         jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("switch:$actionId", mapOf(
             "entryFaints" to if (entries.any { it.entryFaints }) 1.0 else 0.0,
             "entryHp" to entries.map { it.hpAfterEntry }.average(),
-            "returns" to if (returningContext != null) 1.0 else 0.0,
-            "keptHp" to (returningContext?.state?.pokemon?.firstOrNull { it.battlePokemonId == replaced.battlePokemonId }?.hpFraction ?: replaced.hpFraction),
+            "returns" to if (returns) 1.0 else 0.0,
+            "keptHp" to replaced.hpFraction - reentryHpLoss,
+            "reentryHpLoss" to reentryHpLoss, "reentryCost" to reentryHpLoss * SCORE_SCALE,
             "survival" to survival, "switchValue" to switchValue, "stayValue" to stayValue,
             "falls" to falls, "fallsFirst" to fallsFirst, "freeAfter" to (freeAfter ?: 0.0),
             "freeAfterIncoming" to (freeAfterIncoming ?: 0.0), "switchGoesOn" to switchGoesOn,

@@ -674,15 +674,8 @@ class LocalMatchupScoreTest {
         assertEquals(0.0, entry.predictedSurvival)
         assertEquals(0.0, entry.hpAfterEntry)
         assertEquals(-1.0, entry.score)
-        val returned = c.copy(state = c.state.derive(pokemon = c.state.pokemon.map {
-            when (it.battlePokemonId) {
-                ALLY -> it.copyState(hpFraction = 0.5 - 18.0 / 150.0)
-                BENCH -> it.copyState(hpFraction = 0.0, fainted = true)
-                else -> it
-            }
-        }))
-        val returningScore = LocalMatchupScoreCalculator.pairMatchup(returned, ALLY, FOE, MatchupSpeedField.CURRENT,
-            jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache())!!.score
+        val originalScore = scores.pokemon(ALLY, FOE)!!.score
+        val originalStanding = jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.standings(c.state, scores).getValue(ALLY)
         for (chance in listOf(0.0, 1.0)) {
             jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.begin()
             try {
@@ -691,9 +684,37 @@ class LocalMatchupScoreTest {
                 assertEquals(0.0, internals.getValue("survival"))
                 assertEquals(1.0, internals.getValue("returns"))
                 assertEquals(0.5 - 18.0 / 150.0, internals.getValue("keptHp"), 1e-9)
-                assertEquals(returningScore, internals.getValue("freeAfterIncoming"), 1e-9)
-                assertEquals(internals.getValue("switchGoesOn") - internals.getValue("stayGoesOn") + internals.getValue("kept"),
+                assertEquals(18.0 / 150.0, internals.getValue("reentryHpLoss"), 1e-9)
+                assertEquals(12.0, internals.getValue("reentryCost"), 1e-9)
+                assertEquals(originalScore, internals.getValue("freeAfterIncoming"), 1e-9)
+                assertEquals(originalStanding, internals.getValue("standingKept"), 1e-9)
+                assertEquals(internals.getValue("switchGoesOn") - internals.getValue("stayGoesOn") + internals.getValue("kept") - 18.0 / 150.0,
                     internals.getValue("gain"), 1e-9)
+            } finally {
+                jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.clear()
+            }
+        }
+    }
+
+    @Test
+    fun `reentry HP cost respects boots and cannot exceed the saved Pokemon remaining HP`() {
+        for ((hp, item, loss) in listOf(Triple(0.5, "heavydutyboots", 0.0), Triple(0.05, null, 0.05))) {
+            val original = context(150, 100, allyPower = 65.0, foePower = 40.0, rocksOnAllySide = true, allyItem = item)
+            val c = original.copy(state = original.state.derive(pokemon = original.state.pokemon.map {
+                when (it.battlePokemonId) {
+                    ALLY -> it.copyState(hpFraction = hp)
+                    BENCH -> it.copyState(hpFraction = 0.04)
+                    else -> it
+                }
+            }), candidates = listOf(attackAction(), switchAction()))
+            val scores = LocalMatchupScoreCalculator.calculate(c)
+            jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.begin()
+            try {
+                LocalSwitchRules.judge(c.candidates, c, scores)
+                val internals = jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.take().getValue("switch:switch")
+                assertEquals(1.0, internals.getValue("entryFaints"))
+                assertEquals(loss, internals.getValue("reentryHpLoss"), 1e-9)
+                assertEquals(hp - loss, internals.getValue("keptHp"), 1e-9)
             } finally {
                 jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.clear()
             }

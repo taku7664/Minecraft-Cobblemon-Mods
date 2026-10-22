@@ -3,6 +3,14 @@
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
+## [2026-10-22 13:31] 재진입은 기존 판을 유지하고 장판 HP 손실만 교체 식에서 차감 (구현·관련 단위·두 기록 재생 확인, 설치·실게임 미확인)
+
+- **사용자 결정:** 재진입 후 체력으로 대면·KO·생존 확률과 포켓몬 가치 전체를 다시 계산하는 것은 과하다. 기존 판의 값을 유지하고 해당 포켓몬이 장판으로 잃는 HP의 점수만 교체 계산식에서 뺀다. 앞서 이를 단순 체력 감점과 같은 것으로 설명한 것은 부정확했다.
+- **변경:** `LocalSwitchRules.voluntary`의 `returningContext`·`returningScores`·`returningStandings` 재계산을 제거했다. `freeAfterIncoming`과 `standingKept`는 기존 점수표를 사용한다. 장판 즉사 뒤 재진입 경로의 `reentryHpLoss = min(현재 HP 비율, PublicSwitchEntryHazardCalculator.hpLoss(...))`, `gain = switchGoesOn - stayGoesOn + kept - reentryHpLoss`로 계산한다. HP 한 줄의 기존 점수 단위는 100점이다. 순위 뒤 감점이나 다른 행동 점수 수정은 없다. 재진입 가상 판에만 필요했던 `LocalMatchupPosition.enter`의 사망 슬롯 대체 행동 생성도 제거했다. 장판 즉사·생존률 0 처리와 선공 회복 봉인 처리는 유지했다.
+- **내부 값:** `switch:<actionId>`에 `reentryHpLoss`(HP 비율), `reentryCost`(점수)를 남긴다. `keptHp`는 피해를 뺀 체력의 기록용 값이며, 이 체력으로 판을 다시 매기지 않는다. 통굽부츠 등 기존 장판 무효 조건을 사용하고 현재 남은 HP보다 큰 피해 비용을 차감하지 않는다.
+- **확인:** 컴파일 성공, 관련 단위 143/143, 기존 아레나 두 장면 재생 성공. `battle-13` 15턴은 `reentryHpLoss=21/171=0.1228070175`, `reentryCost=12.28070175`, `standingKept=0.5888861236`, `kept=0.3572194569`, `gain=0.2343544080`. 교체 최종 18.43544점으로 야습 17.27554점보다 높아 선택은 유지된다. 같은 장면의 다른 기술 점수와 `battle-35`의 회복 봉인 포함 모든 최종 점수는 수정 전 재생 결과와 일치한다. 테스트는 장판 피해의 정수 HP 반올림, 기존 대면·가치 유지, 비용 한 번 차감, 통굽부츠, 남은 HP 상한을 확인한다.
+- **근거·범위:** `F:/AI/builds/cobblemon-mods-1b39-entry-healblock/`의 `compile-hpcost.log`, `unit-hpcost.log`, `unit-hpcost-reports/`, `replay-hpcost.log`, `replay-hpcost-reports/`, `arena-replay-hpcost.json`. 모든 빌드·캐시·임시 경로는 F 드라이브를 사용했다. 새 아레나 50판, 고정 장면 전체, 배포용 JAR 생성·설치, 서버 조작·기동, 실게임 확인은 하지 않았다.
+
 ## [2026-10-22 12:04] 장판 즉사·재진입 경로와 선공 회복 봉인 반영 (구현·관련 단위·두 기록 재생 확인, 두 선택은 유지)
 
 - **요청:** 아레나 조사에서 나온 1번 경로를 추가하고 2번 회복 봉인도 처리한다. 행동의 자기 계산식 안에서 처리하며 고정 감점이나 보스 제외 규칙을 추가하지 않았다.
