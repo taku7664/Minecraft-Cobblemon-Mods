@@ -1,0 +1,158 @@
+package jbro.cobblemon.mcc.betterai
+
+import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
+import jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth
+import jbro.cobblemon.mcc.betterai.matchup.*
+import jbro.cobblemon.mcc.internal.ai.*
+import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Test
+import java.util.UUID
+
+class LocalActingChanceTest {
+    @Test
+    fun `a certain faster knockout remains zero when that attack is certain`() {
+        val f = fixture()
+        assertEquals(0.0, f.chance(listOf(f.option(IntentKind.ATTACK, 1.0))), 1e-9)
+    }
+
+    @Test
+    fun `a switch share preserves each move's chance to act`() {
+        val f = fixture()
+        assertEquals(0.3, f.chance(listOf(f.option(IntentKind.ATTACK, 0.7), f.option(IntentKind.SWITCH, 0.3))), 1e-9)
+    }
+
+    @Test
+    fun `status and protection choices are not treated as attacks`() {
+        val f = fixture()
+        assertEquals(0.6, f.chance(listOf(f.option(IntentKind.ATTACK, 0.4), f.option(IntentKind.SETUP, 0.3),
+            f.option(IntentKind.PROTECT, 0.2), f.option(IntentKind.STATUS, 0.1))), 1e-9)
+    }
+
+    @Test
+    fun `the chosen attacks own knockout chances are averaged rather than the best hit assigned all mass`() {
+        val f = fixture(lightAttack = true)
+        assertEquals(0.75, f.chance(listOf(f.option(IntentKind.ATTACK, 0.25),
+            f.option(IntentKind.ATTACK, 0.75, "pound"))), 1e-9)
+    }
+
+    @Test
+    fun `priority changes the actual order without an added probability bonus`() {
+        val f = fixture(ownPriority = 1)
+        assertEquals(1.0, f.chance(listOf(f.option(IntentKind.ATTACK, 1.0))), 1e-9)
+        val fasterPriority = fixture(ownPriority = 1, foePriority = 2)
+        assertEquals(0.0, fasterPriority.chance(listOf(fasterPriority.option(IntentKind.ATTACK, 1.0))), 1e-9)
+    }
+
+    @Test
+    fun `accuracy and the opponents paralysis are each counted once`() {
+        val inaccurate = fixture(accuracy = 50.0)
+        assertEquals(0.5, inaccurate.chance(listOf(inaccurate.option(IntentKind.ATTACK, 1.0))), 1e-9)
+        val paralyzed = fixture(foeStatus = "par")
+        assertEquals(1.0 - 0.7 * 0.75, paralyzed.chance(listOf(paralyzed.option(IntentKind.ATTACK, 0.7),
+            paralyzed.option(IntentKind.SWITCH, 0.3))), 1e-9)
+    }
+
+    @Test
+    fun `a known different target contributes no incoming hit`() {
+        val f = fixture()
+        val elsewhere = f.option(IntentKind.ATTACK, 1.0).copy(targetId = UUID.randomUUID())
+        assertEquals(1.0, f.chance(listOf(elsewhere)), 1e-9)
+    }
+
+    @Test
+    fun `missing intent and unresolvable attack keep a conservative fallback`() {
+        val f = fixture()
+        assertEquals(0.0, LocalActingChance.of(f.action, f.context, scores), 1e-9)
+        assertEquals(0.3, f.chance(listOf(f.option(IntentKind.ATTACK, 0.7, "unreadattack"),
+            f.option(IntentKind.SWITCH, 0.3))), 1e-9)
+    }
+
+    @Test
+    fun `a pending-attack requirement cannot stop a known status candidate`() {
+        val f = fixture(foeMove = "suckerpunch", foePriority = 1)
+        assertEquals(1.0, f.chance(listOf(f.option(IntentKind.ATTACK, 1.0, "suckerpunch"))), 1e-9)
+    }
+
+    @Test
+    fun `Trick Room uses the same forecast despite its negative priority`() {
+        val f = fixture(ownPriority = -7)
+        val intents = listOf(OpponentIntent(f.foe.battlePokemonId, 0, listOf(f.option(IntentKind.ATTACK, 0.7),
+            f.option(IntentKind.SWITCH, 0.3))))
+        assertEquals(0.3, LocalTrickRoomCredit.landing(f.action, f.context, scores, intents), 1e-9)
+    }
+
+    @Test
+    fun `two nonlethal attacks combine only when both are selected`() {
+        val hit = hit(0.6, 0.0)
+        val first = listOf(LocalActingChance.WeightedHit(0.7, hit), LocalActingChance.WeightedHit(0.3, null))
+        val second = listOf(LocalActingChance.WeightedHit(0.6, hit), LocalActingChance.WeightedHit(0.4, null))
+        assertEquals(0.42, LocalActingChance.expectedKnockout(listOf(first, second), 1.0), 1e-9)
+    }
+
+    @Test
+    fun `two foes cannot both Dynamax in the same combined hit`() {
+        val choice = LocalActingChance.WeightedHit(1.0, hit(0.1, 0.0), hit(0.6, 0.0))
+        assertEquals(0.0, LocalActingChance.expectedKnockout(listOf(listOf(choice), listOf(choice)), 1.0), 1e-9)
+    }
+
+    @Test
+    fun `KO material uses the forecast too and clearing the decision clears it`() {
+        val f = fixture()
+        val target = f.foe.battlePokemonId
+        val denial = LocalKnockoutWorth.Denial(0.0, 1, threat = 1.0,
+            threatOn = mapOf(f.user.battlePokemonId to 1.0))
+        try {
+            LocalPokemonWorth.set(mapOf(target to 2.0), mapOf(target to denial))
+            assertEquals(0.0, LocalPokemonWorth.knockoutScore(target, LocalDecisionTuning.CURRENT, f.action,
+                f.context.state, 0.0), 1e-9)
+            LocalPokemonWorth.setActingChance { _, _, _ -> 0.3 }
+            assertEquals(60.0, LocalPokemonWorth.knockoutScore(target, LocalDecisionTuning.CURRENT, f.action,
+                f.context.state, 0.0), 1e-9)
+            LocalPokemonWorth.clear()
+            assertEquals(200.0, LocalPokemonWorth.knockoutScore(target, LocalDecisionTuning.CURRENT, f.action,
+                f.context.state, 0.0), 1e-9)
+        } finally { LocalPokemonWorth.clear() }
+    }
+
+    private data class Fixture(val user: BattlePokemonStateView, val foe: BattlePokemonStateView,
+        val action: BattleActionCandidate, val context: BattleDecisionContext, val foeMove: String) {
+        fun option(kind: IntentKind, chance: Double, id: String? = if (kind == IntentKind.ATTACK) foeMove else null) =
+            IntentOption(kind, id, if (kind == IntentKind.ATTACK) user.battlePokemonId else null, null, 0.0, chance)
+        fun chance(options: List<IntentOption>) = LocalActingChance.of(action, context, scores,
+            intents = listOf(OpponentIntent(foe.battlePokemonId, 0, options)))
+    }
+
+    private fun fixture(ownPriority: Int = 0, foePriority: Int = 0, accuracy: Double = 100.0,
+        foeStatus: String? = null, lightAttack: Boolean = false, foeMove: String = "tackle"): Fixture {
+        val user = mon(BattleSide.ALLY, 100)
+        val foe = mon(BattleSide.OPPONENT, 400, foeStatus)
+        val details = BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0,
+            ownPriority, 8, BattleMoveTargetPattern.SELF,
+            effects = BattleShowdownMoveEffects.resolve("swordsdance"))
+        val action = BattleActionCandidate("setup", BattleActionKind.USE_MOVE, 0, 0, "swordsdance", moveDetails = details)
+        val attack = BattlePublicMoveOptionView(foeMove, BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL,
+            100.0, accuracy, foePriority, 8, effects = BattleShowdownMoveEffects.resolve(foeMove)), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+        val light = BattlePublicMoveOptionView("pound", attack.details.copy(power = 1.0), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+        val catalog = BattlePublicActionCatalogView(listOf(
+            BattlePokemonActionCatalogView(user.battlePokemonId, listOf(BattlePublicMoveOptionView("swordsdance", details,
+                BattlePublicMoveKnowledge.EXACT_OWN)), true),
+            BattlePokemonActionCatalogView(foe.battlePokemonId, listOf(attack) + if (lightAttack) listOf(light) else emptyList(), true)))
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 4, listOf(user, foe), BattleFieldStateView.empty(),
+            BattleSide.entries.associateWith { 1 }, emptyList(), emptyList())
+        return Fixture(user, foe, action, BattleDecisionContext(UUID.randomUUID(), state, listOf(action), Long.MAX_VALUE,
+            publicActionCatalog = catalog).withDynamaxInBattle(false), foeMove)
+    }
+
+    private fun mon(side: BattleSide, speed: Int, status: String? = null) = BattlePokemonStateView(
+        UUID.randomUUID(), side, 0, "fixture:acting", null, 50, 1.0, status, emptyMap(), emptySet(), "", "", false,
+        knownTypeIds = setOf("normal"), combatStats = BattleCombatStatRangesView(
+            BattleIntegerRange(100, 100), BattleIntegerRange(300, 300), BattleIntegerRange(60, 60),
+            BattleIntegerRange(100, 100), BattleIntegerRange(60, 60), BattleIntegerRange(speed, speed),
+            if (side == BattleSide.ALLY) BattleCombatStatKnowledge.EXACT_OWN else BattleCombatStatKnowledge.LOCAL_OPPONENT_ESTIMATE))
+
+    private fun hit(damage: Double, knockout: Double) = LocalDynamaxGuard.IncomingHit(
+        MoveMatchupScore(UUID.randomUUID(), "probe", UUID.randomUUID(), 1.0, damage, damage,
+            listOf(1.0, 1.0 - knockout), listOf(0.0, damage), 2.0, 0.5), 1.0, 1.0)
+
+    private companion object { val scores = MatchupScores(emptyMap(), emptyMap(), complete = true) }
+}

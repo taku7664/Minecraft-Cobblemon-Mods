@@ -14,6 +14,13 @@ internal object LocalPokemonWorth {
     private val active = ThreadLocal<Map<UUID, Double>?>()
     private val denials = ThreadLocal<Map<UUID, jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Denial>?>()
 
+    private val actingChance = ThreadLocal<((UUID, jbro.cobblemon.mcc.internal.ai.BattleActionCandidate,
+        jbro.cobblemon.mcc.internal.ai.BattleStateView) -> Double?)?>()
+
+    /** Share the root's existing opponent forecast with the KO credit; null retains the standalone reading. */
+    fun setActingChance(value: (UUID, jbro.cobblemon.mcc.internal.ai.BattleActionCandidate,
+        jbro.cobblemon.mcc.internal.ai.BattleStateView) -> Double?) { actingChance.set(value) }
+
     /** The worths read for the last decision on any thread, for the measurement harness. */
     @Volatile
     var last: Map<UUID, Double> = emptyMap()
@@ -60,10 +67,13 @@ internal object LocalPokemonWorth {
         // into a faster Dragapult that Dragon Darted it first, Togekiss behind immune (hand-played Cynthia, 2026-10-20).
         // Its threat to this attacker, not to the one beside it (LocalKnockoutWorth.Denial.threatOn).
         val threat = actor?.let { denial.threatOn[it.battlePokemonId] } ?: denial.threat
-        val lands = first.coerceIn(0.0, 1.0) + (1.0 - first.coerceIn(0.0, 1.0)) * (1.0 - threat)
+        val withoutPrediction = first.coerceIn(0.0, 1.0) + (1.0 - first.coerceIn(0.0, 1.0)) * (1.0 - threat)
+        val predicted = id?.let { actingChance.get()?.invoke(it, attack, state) }
+        val lands = predicted?.coerceIn(0.0, 1.0) ?: withoutPrediction
         // One that falls at the turn's end anyway is worth only the hit a knockout first stops (Denial.fallsAnyway).
         val kept = if (denial.fallsAnyway) 0.0 else worth * lands
-        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("knockout:${attack.actionId}>$id", mapOf("worth" to worth, "first" to first, "threat" to threat, "lands" to lands, "fallsAnyway" to jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.flag(denial.fallsAnyway), "denial" to denial.value, "total" to kept + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore))
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("knockout:${attack.actionId}>$id", mapOf("worth" to worth, "first" to first, "threat" to threat, "lands" to lands, "landsWithoutPrediction" to withoutPrediction,
+            "predicted" to jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.flag(predicted != null), "fallsAnyway" to jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.flag(denial.fallsAnyway), "denial" to denial.value, "total" to kept + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore))
         return kept + denial.value * first.coerceIn(0.0, 1.0) * tuning.boardToScore
     }
 
@@ -75,6 +85,7 @@ internal object LocalPokemonWorth {
 
     fun set(worths: Map<UUID, Double>?, denials: Map<UUID, jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.Denial>? = null) {
         active.set(worths)
+        actingChance.remove()
         this.denials.set(denials)
         last = worths.orEmpty()
     }
@@ -92,6 +103,7 @@ internal object LocalPokemonWorth {
 
     fun clear() {
         active.remove()
+        actingChance.remove()
         denials.remove()
     }
 }

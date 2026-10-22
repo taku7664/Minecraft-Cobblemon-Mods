@@ -74,12 +74,18 @@ internal object LocalTrickRoomCredit {
 
     /**
      * The chance [candidate]'s user gets the room up this turn: at -7 every hit on the field lands first, and one that
-     * knocks it out leaves the room down. Each foe's likeliest knockout, at the chance it moves and aims at the user (one
-     * in as many of this side's Pokemon in front), two hits together counted ([LocalDynamaxGuard.knockout]). A Bronzong
+     * knocks it out leaves the room down. Uses the same predicted choices, order and targets as [LocalActingChance],
+     * two hits together counted ([LocalDynamaxGuard.knockout]). A Bronzong
      * at 6% in front of a Skarmory's Brave Bird took the room's 61 and fell before it moved (2026-10-19).
      */
-    fun landing(candidate: BattleActionCandidate, context: BattleDecisionContext, scores: MatchupScores): Double =
-        LocalActingChance.of(candidate, context, scores)
+    fun landing(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        scores: MatchupScores,
+        intents: List<OpponentIntent>? = null,
+        cache: jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache =
+            jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache(),
+    ): Double = LocalActingChance.of(candidate, context, scores, intents = intents, calculationCache = cache)
 
     /** +1 when the ally is surely slower (the room hands it the first move), -1 when surely faster, 0 otherwise. */
     private fun order(mine: BattleIntegerRange?, theirs: BattleIntegerRange?): Double = when {

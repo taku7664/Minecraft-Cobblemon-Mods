@@ -496,6 +496,24 @@ internal class LocalTacticalBrain(
             jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth.read(ruleBoard.state, it, tuning.livingPokemonValue)
         }
         jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(worthReading?.worths, worthReading?.denials)
+        val opponentIntents = readOpponentIntents
+        val actingCalculationCache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+        // KO material already includes its target's chance to stop this attack; use the same forecast as HP pressure.
+        // Other opposing slots remain the root's responsibility, so their risk is not charged twice in doubles.
+        jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.setActingChance { targetId, attack, state ->
+            val actor = state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == attack.actorSlot && !it.fainted }
+            val originalActor = difficultyContext.state.pokemon.firstOrNull { it.side == BattleSide.ALLY && it.activeSlot == attack.actorSlot && !it.fainted }
+            val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId && it.activeSlot != null && !it.fainted }
+            val originalTarget = difficultyContext.state.pokemon.firstOrNull { it.battlePokemonId == targetId && it.activeSlot != null && !it.fainted }
+            val table = baseRuleScores
+            // Projected future turns, replacements and already-changed HP keep their own standalone KO reading.
+            if (table == null || actor == null || target == null || originalTarget == null || originalActor == null ||
+                state.turn != difficultyContext.state.turn || actor.battlePokemonId != originalActor.battlePokemonId ||
+                actor.hpFraction != originalActor.hpFraction || target.hpFraction != originalTarget.hpFraction) null
+            else jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(attack, difficultyContext.copy(state = state), table,
+                ignoring = state.pokemon.filter { it.side == BattleSide.OPPONENT && it.activeSlot != null && it.battlePokemonId != targetId }
+                    .mapTo(hashSetOf()) { it.battlePokemonId }, intents = opponentIntents, calculationCache = actingCalculationCache)
+        }
         worthReading?.let { reading ->
             ruleBoard.state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }.forEach { pokemon ->
                 val id = pokemon.battlePokemonId
@@ -689,7 +707,6 @@ internal class LocalTacticalBrain(
         }
         val threatStartedAtNanos = System.nanoTime()
         val rootRanked = baseRanked
-        val opponentIntents = readOpponentIntents
         val lookahead = if (searchless) null else LocalRecursiveLookaheadEvaluator.evaluate(
             rootRanked,
             difficultyContext,
@@ -809,14 +826,14 @@ internal class LocalTacticalBrain(
                 if (rooms.isEmpty()) return@mapNotNull null
                 val value = trickRoomValue ?: return@mapNotNull null
                 val worth = if (rooms.size > 1) 0.0 else value * (ruleScores?.let {
-                    jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(rooms.single().candidate, difficultyContext, it)
+                    jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(rooms.single().candidate, difficultyContext, it, opponentIntents, actingCalculationCache)
                 } ?: 1.0)
                 return@mapNotNull candidate.actionId to (worth - rooms.sumOf { it.tacticalUtility })
             }
             if (!jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.prices(candidate)) null
             // The room's worth at the chance its user gets it up before a hit knocks it out (it moves last, at -7).
             else trickRoomValue?.let { value ->
-                val landing = ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, difficultyContext, it) } ?: 1.0
+                val landing = ruleScores?.let { jbro.cobblemon.mcc.betterai.matchup.LocalTrickRoomCredit.landing(candidate, difficultyContext, it, opponentIntents, actingCalculationCache) } ?: 1.0
                 candidate.actionId to (value * landing - rank.comparisonValue)
             }
         }.toMap()
@@ -923,7 +940,7 @@ internal class LocalTacticalBrain(
                         val part = outcome.candidate
                         val credit = partCredits(part, scores) + outcome.tacticalUtility.coerceAtLeast(0.0)
                         if (credit <= 0.0) 0.0
-                        else (jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot) - 1.0) * credit
+                        else (jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot, intents = opponentIntents, calculationCache = actingCalculationCache) - 1.0) * credit
                     } + rank.outcome.componentOutcomes.sumOf { outcome ->
                         // An attack part's value at the chance its user moves before a foe knocks it out: the hit's damage at
                         // the chance against every foe, its knockout credit against the foes it does not aim at (its targets'
@@ -945,9 +962,9 @@ internal class LocalTacticalBrain(
                             difficultyContext.state.pokemon.filter { it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.OPPONENT && it.activeSlot != null && !it.fainted }
                                 .mapTo(hashSetOf()) { it.battlePokemonId }
                         }
-                        val every = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot)
+                        val every = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot, intents = opponentIntents, calculationCache = actingCalculationCache)
                         val others = if (knockout <= 0.0) 1.0
-                            else jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot, aimed)
+                            else jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, part.actorSlot, aimed, opponentIntents, actingCalculationCache)
                         (every - 1.0) * hit + (others - 1.0) * knockout
                     }
                     return@mapNotNull if (change >= 0.0) null else candidate.actionId to change
@@ -957,7 +974,7 @@ internal class LocalTacticalBrain(
                 // move's charge was sized by an attack and the other way round; a move that cannot act is worth nothing, and
                 // the switch competes on its own gain (LocalSwitchRules).
                 val own = singleActingValues[candidate.actionId] ?: return@mapNotNull null
-                val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores)
+                val acts = jbro.cobblemon.mcc.betterai.matchup.LocalActingChance.of(candidate, difficultyContext, scores, intents = opponentIntents, calculationCache = actingCalculationCache)
                 LocalDecisionInternals.record("acting:${candidate.actionId}", mapOf("acts" to acts, "own" to own))
                 if (acts >= 1.0 || own == 0.0) null else candidate.actionId to (acts - 1.0) * own
             }.toMap()
