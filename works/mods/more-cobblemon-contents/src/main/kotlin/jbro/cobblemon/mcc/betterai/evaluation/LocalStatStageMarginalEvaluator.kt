@@ -86,7 +86,14 @@ internal object LocalStatStageMarginalEvaluator {
             it.kind == BattleMoveEffectKind.STAT_STAGE && it.statStages.isNotEmpty()
         }
         if (effects.isEmpty()) return null
-        var state = context.state
+        // Both sides of the stage comparison use the form in which this move is actually used.
+        val dynamax = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
+        var state = if (dynamax.isMechanic(candidate.mechanic?.mechanicId)) context.state.copyState(
+            pokemon = context.state.pokemon.map { pokemon ->
+                if (pokemon.side == BattleSide.ALLY && pokemon.activeSlot == candidate.actorSlot)
+                    dynamax.start(pokemon, dynamax.isGMaxMove(candidate.mechanic?.transformedMoveId) || dynamax.gigantamax(pokemon))
+                else pokemon
+            }) else context.state
         var score = 0.0
         var appliedAny = false
         effects.forEach { effect ->
@@ -130,7 +137,11 @@ internal object LocalStatStageMarginalEvaluator {
         // Gengar took 200 for a Speed drop (self-play, 2026-10-21).
         val damaging = candidate.moveDetails?.damageCategory.let { it != null && it != BattleMoveDamageCategory.STATUS }
         val lands = if (damaging && (candidate.facts?.standardDamageFractionRange?.maximum ?: 1.0) <= 0.0) 0.0 else 1.0
-        return if (appliedAny) score * accuracy.coerceIn(0.0, 1.0) * lands else null
+        if (!appliedAny) return null
+        val value = score * accuracy.coerceIn(0.0, 1.0) * lands
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("statStages:${candidate.actionId}", mapOf(
+            "raw" to score, "accuracy" to accuracy.coerceIn(0.0, 1.0), "lands" to lands, "value" to value))
+        return value
     }
 
     /**

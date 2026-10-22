@@ -170,10 +170,14 @@ internal object LocalLookaheadStateEvaluator {
     ): Double = calculationCache.slotActions(state, side, source.publicActionCatalog, includeMoveHypotheses) {
         PublicFutureActionFactory.slotActions(state, side, source.publicActionCatalog, includeMoveHypotheses = includeMoveHypotheses)
     }
+        .map { action ->
+            val actor = state.pokemon.firstOrNull { it.side == side && it.activeSlot == action.actorSlot && !it.fainted }
+            if (actor == null) action else jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.asUsed(action, actor)
+        }
         .filter { action ->
+            // Fixed damage has printed power zero; a Dynamax may also turn it into an ordinary attack.
             action.kind == BattleActionKind.USE_MOVE &&
-                action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS &&
-                (action.moveDetails?.power ?: 0.0) > 0.0
+                action.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS
         }
         .takeWhile { shouldContinue() }
         .map { action ->

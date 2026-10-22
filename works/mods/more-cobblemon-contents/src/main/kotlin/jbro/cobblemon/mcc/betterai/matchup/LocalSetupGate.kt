@@ -19,8 +19,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind
 /**
  * A stat-raising status move: what it is worth ([score]) and what rules it out ([evaluate]).
  *
- * Its worth is whether the user still wins the one-on-one after boosting, times a sweep bonus of at least 1 for the
- * opponents still to come that the boosted user finds easy. It is ruled out only when, read from [MatchupScores],
+ * Its worth is the actual HP/KO pressure and move-order change against the remaining opponents. It is ruled out only when, read from [MatchupScores],
  * an opponent on the field can stop it once boosted. A benched stopper has to come in first, which costs
  *   its side a turn and a hit; the next decision judges it once it is in front of the boosted user.
  *   - What each opponent move does to the boosted sweeper is read from its data ([LocalStopScoreCalculator]); no
@@ -122,97 +121,87 @@ internal object LocalSetupGate {
         return Verdict(failures.isEmpty(), failures)
     }
 
-    /** What [score] read: the one-on-one win chance after boosting, the sweep bonus, and the value in the root's units. */
-    data class Reading(val win: Double, val bonus: Double, val value: Double)
+    /** All components use score units: actual marginal HP/KO pressure, action order, HP paid and usable effect chance. */
+    data class Reading(val pressure: Double, val speed: Double, val hpCost: Double, val survival: Double,
+        val holds: Double, val effectChance: Double, val value: Double)
 
-    /**
-     * A stat raise's value in the root's units: whether the user still wins the one-on-one after raising its stats
-     * in front of the Pokemon it faces (the weakest such chance in doubles), the setup turn's hit paid. A win chance of
-     * [WIN_PASS] or more is a win, worth [knockoutMaterialScore] times [sweepBonus]; anything less is worth nothing. The
-     * question is yes or no: read as a share, a coin flip took half a knockout and, with the bonus, three times the
-     * attack beside it (a Lucario's Nasty Plot at 0.5, 2026-10-13). No turn is searched; the exchange is the pair table's.
-     * Whether the boost raises the win chance is not asked: one that already wins without it still wins with it, which
-     * is when a free turn to boost is safest. Null when [candidate] is not a stat-raising status move of an active ally
-     * or the pair cannot be read.
-     */
     fun score(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         scores: MatchupScores,
         knockoutMaterialScore: Double,
         cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
-        /**
-         * The chance a waiting opponent copies the raise on entry ([jbro.cobblemon.mcc.betterai.search.LocalEntryCopyRisk]).
-         * It takes from the value, not from the win: the one-on-one is still won, the boost just changes hands.
-         */
         copyRisk: Double = 0.0,
-        /**
-         * Each opposing Pokemon's chance to switch out this turn, leaned to its record (LocalOpponentTendencies): a foe
-         * that leaves does not land the setup turn's hit. Empty, every foe stays.
-         */
         foeSwitchChances: Map<java.util.UUID, Double> = emptyMap(),
     ): Reading? {
-        if (!isSetupMove(candidate)) return null
         val user = context.state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == candidate.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return null
-        if (ghostCurse(candidate, user)) return null
+        return marginal(candidate, context, user, scores, knockoutMaterialScore, cache, copyRisk, foeSwitchChances)
+    }
+
+    /**
+     * The raise's own change against each remaining foe, averaged in the same HP/KO units as an attack.
+     * Both stage boards precede the hit. No pass threshold, whole-knockout reward, or team-size multiplier.
+     * The root separately applies the chance of falling before acting; here only falling after raising loses the gain.
+     * The opponent predictor uses the same formula and also pays its before-action survival here.
+     */
+    fun marginal(
+        candidate: BattleActionCandidate,
+        context: BattleDecisionContext,
+        user: BattlePokemonStateView,
+        scores: MatchupScores,
+        knockoutMaterialScore: Double,
+        cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+        copyRisk: Double = 0.0,
+        foeSwitchChances: Map<java.util.UUID, Double> = emptyMap(),
+        includesBeforeActionRisk: Boolean = false,
+    ): Reading? {
+        if (!isSetupMove(candidate) || ghostCurse(candidate, user)) return null
         val moveId = PublicIds.canonical(candidate.moveId ?: return null)
         val stages = LocalMatchupScoreCalculator.setupMoves(context, user)[moveId] ?: return null
-        // A raise its user's ability turns into drops (Contrary Bulk Up, a Mega Staraptor's included) raises nothing:
-        // no win is bought with it. Read as won, it took the full setup value beside the attack (2026-10-13).
-        if (!raisesFor(stages, context.state, user)) return Reading(0.0, 1.0, 0.0)
-        val facing = context.state.pokemon.filter {
-            it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
-        }
-        if (facing.isEmpty()) return null
         val cost = LocalMatchupScoreCalculator.setupHpCosts(context, user)[moveId] ?: 0.0
-        val win = facing.minOf { foe ->
-            // A foe that will not act this turn (recharging, asleep, frozen) lands its setup-turn hit only when it does.
-            val hit = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = true, hpCost = cost) ?: return null
-            val free = LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = false, hpCost = cost) ?: return null
-            // A foe that may still Dynamax knocks the raised user out with its Max Move where its plain moves would
-            // not; moving first only buys the raise it never uses. Moving second, [LocalActingChance] already took it.
-            // The setup-turn win already holds the plain hit's survival (1 - plain); the Max Move's replaces it, (1 - max)
-            // over (1 - plain), in the share where the user moves first.
-            val dynamaxSurvival = LocalFoeDynamaxThreat.bestHit(context, context, user, foe, cache)?.let { max ->
-                val plain = scores.moves(foe.battlePokemonId, user.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0
-                val falls = max.score.knockoutChanceWithin(1)
-                if (falls <= plain) return@let 1.0
-                val first = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.actsFirstProbability(
-                    context.state, BattleSide.ALLY, candidate, BattleSide.OPPONENT, max.action) ?: 0.5
-                val ratio = if (plain >= 1.0) 0.0 else ((1.0 - falls) / (1.0 - plain)).coerceIn(0.0, 1.0)
-                1.0 - first + first * ratio
-            } ?: 1.0
-            val acting = actingChance(foe, context.state) * (1.0 - (foeSwitchChances[foe.battlePokemonId] ?: 0.0).coerceIn(0.0, 1.0))
-            acting * hit * dynamaxSurvival + (1.0 - acting) * free
+        if (cost > 0.0 && user.hpFraction <= cost) return Reading(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+        val foes = context.state.pokemon.filter { it.side != user.side && !it.fainted && it.hpFraction > 0.0 }
+        if (foes.isEmpty()) return null
+        val facing = foes.filter { it.activeSlot != null }
+        val tuning = jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT.let {
+            it.copy(leafKnockoutPressure = knockoutMaterialScore / it.boardToScore)
         }
-        val bonus = sweepBonus(context, user, facing, stages, scores, cache, cost)
-        // A raise buys something only where it changes a fight, against any foe still to beat (in front, seen behind, or
-        // in the preview and not yet seen): a loss turned into a win, a knockout in fewer uses, more of the foe's hits
-        // survived, or the first move instead of the second. Whatever the stat raised, each read from the exchange with
-        // and without it. Read as a win alone, a Scizor that beat what stood in front kept raising: three Swords Dances to
-        // +6 before it attacked (dev server, 2026-10-20).
-        fun turns(move: MoveMatchupScore?) = move?.let { m -> (1..LocalMatchupScoreCalculator.MAXIMUM_USES).firstOrNull { m.knockoutChanceWithin(it) >= 0.5 } }
-            ?: (LocalMatchupScoreCalculator.MAXIMUM_USES + 1)
-        fun changes(board: BattleDecisionContext, foe: BattlePokemonStateView): Boolean {
-            val now = LocalMatchupScoreCalculator.boostedExchange(board, user, foe, emptyMap(), scores, cache, setupTurn = false)?.second ?: return true
-            val raised = LocalMatchupScoreCalculator.boostedExchange(board, user, foe, stages, scores, cache, setupTurn = false, hpCost = cost)
-                ?.second ?: return true
-            // Not yet winning the one in front: whether the raise wins it is the score's own question below.
-            if (now.winProbability < WIN_PASS) return raised.winProbability >= WIN_PASS || facing.any { it.battlePokemonId == foe.battlePokemonId }
-            return turns(raised.subjectMove) < turns(now.subjectMove) ||
-                turns(raised.opponentMove) > turns(now.opponentMove) ||
-                now.subjectMovesFirstProbability < 0.5 && raised.subjectMovesFirstProbability >= 0.5
+        val perspective = if (user.side == BattleSide.ALLY) 1.0 else -1.0
+        val changes = foes.mapNotNull { foe ->
+            val position = LocalMatchupPosition.face(context, user, foe, cache) ?: return@mapNotNull null
+            val raised = LocalMatchupScoreCalculator.setupState(position.state, user.battlePokemonId, stages, 1)
+            jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator.evaluate(
+                position.state, raised, position, cache, tuning)
         }
-        val behind = context.state.pokemon.filter { foe ->
-            foe.side == BattleSide.OPPONENT && foe.activeSlot == null && !foe.fainted && foe.hpFraction > 0.0
-        }
-        val buys = facing.any { changes(context, it) } || behind.any { changes(context, it) } ||
-            LocalSwitchRules.previewFoes(context)?.let { (board, foes) -> foes.any { changes(context.copy(state = board), it) } } == true
-        val won = if (win >= WIN_PASS && buys) 1.0 else 0.0
-        return Reading(win, bonus, won * knockoutMaterialScore * bonus * (1.0 - copyRisk.coerceIn(0.0, 1.0)) *
-            resetHolds(context, user, facing, stages, scores, cache))
+        if (changes.isEmpty()) return null
+        val pressure = changes.map { it.pressureBoardDelta * tuning.boardToScore * perspective }.average()
+        val speed = changes.map { it.speedBoardDelta * tuning.boardToScore * perspective }.average()
+        val afterCost = LocalMatchupScoreCalculator.setupState(context.state, user.battlePokemonId, stages, 1, cost)
+        val raisedContext = context.copy(state = afterCost)
+        val survival = facing.fold(1.0) { survives, foe ->
+            val hit = LocalMatchupScoreCalculator.moveMatchups(raisedContext, foe.battlePokemonId, user.battlePokemonId, cache).firstOrNull() ?: return@fold survives
+            val first = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.actsFirstProbability(
+                afterCost, user.side, candidate, foe.side, hit.action) ?: 0.5
+            val acts = actingChance(foe, context.state) *
+                (1.0 - (foeSwitchChances[foe.battlePokemonId] ?: 0.0).coerceIn(0.0, 1.0))
+            val plainFall = hit.score.knockoutChanceWithin(1)
+            val fall = if (user.side == BattleSide.ALLY) LocalFoeDynamaxThreat.bestHit(
+                raisedContext, raisedContext, afterCost.pokemon.first { it.battlePokemonId == user.battlePokemonId }, foe, cache)
+                ?.score?.knockoutChanceWithin(1)?.let { maxOf(it, plainFall) } ?: plainFall else plainFall
+            survives * (1.0 - acts * fall * if (includesBeforeActionRisk) 1.0 else first)
+        }.coerceIn(0.0, 1.0)
+        val holds = resetHolds(context, user, facing, stages, scores, cache) * (1.0 - copyRisk.coerceIn(0.0, 1.0))
+        val effectChance = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAccuracy.probability(candidate, context, user.side) *
+            candidate.moveDetails?.effects?.effects.orEmpty().filter { it.kind == BattleMoveEffectKind.STAT_STAGE }
+                .minOfOrNull { (it.probability ?: 1.0).coerceIn(0.0, 1.0) }.let { it ?: 1.0 }
+        val hpCost = cost * tuning.boardToScore
+        val value = ((pressure + speed) * survival * holds - hpCost) * effectChance
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("setup:${candidate.actionId}", mapOf(
+            "pressure" to pressure, "speed" to speed, "hpCost" to hpCost, "survival" to survival, "holds" to holds,
+            "effectChance" to effectChance, "opponents" to changes.size.toDouble(), "value" to value))
+        return Reading(pressure, speed, hpCost, survival, holds, effectChance, value)
     }
 
     /**
@@ -272,49 +261,6 @@ internal object LocalSetupGate {
     }
 
     /**
-     * At least 1, and [SWEEP_BONUS_STEP] more for each opponent still to come that the boosted user finds easy: a
-     * benched one already seen by the boosted user's win chance against it from its current HP, one known only from
-     * the team preview by the lead choice's edge ([jbro.cobblemon.mcc.betterai.policy.LocalLeadChoice.matchup], one
-     * doubling of damage in the user's favour counting as fully easy). Without a preview only the seen ones count.
-     */
-    fun sweepBonus(
-        context: BattleDecisionContext,
-        user: BattlePokemonStateView,
-        facing: List<BattlePokemonStateView>,
-        stages: Map<String, Int>,
-        scores: MatchupScores,
-        cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
-        /** The share of maximum HP the raise costs (Belly Drum's half). */
-        hpCost: Double = 0.0,
-    ): Double {
-        val seen = context.state.pokemon.filter { it.side == BattleSide.OPPONENT }
-        val benched = seen.filter { foe ->
-            foe.activeSlot == null && !foe.fainted && foe.hpFraction > 0.0 && facing.none { it.battlePokemonId == foe.battlePokemonId }
-        }
-        var easy = benched.sumOf { foe ->
-            LocalMatchupScoreCalculator.boostedWin(context, user, foe, stages, scores, cache, setupTurn = false, hpCost = hpCost) ?: 0.0
-        }
-        val preview = context.opponentTeamPreview
-        val ownTeam = context.exactOwnTeam
-        if (preview != null && ownTeam != null) {
-            val unseen = preview.pokemon.filter { slot ->
-                seen.none { jbro.cobblemon.mcc.betterai.simulation.NativeInBattleFormes.samePublicIdentity(it, slot) }
-            }
-            val coming = (preview.selectionSize - seen.size).coerceIn(0, unseen.size)
-            if (coming > 0) {
-                val lead = jbro.cobblemon.mcc.internal.ai.BattleLeadChoiceContext(context.state.format,
-                    context.state.pokemon.filter { it.side == BattleSide.ALLY }.map { it.copyState(activeSlot = null) },
-                    context.publicActionCatalog, ownTeam, preview)
-                val benchedUser = user.copyState(activeSlot = null)
-                easy += coming * unseen.map { foe ->
-                    jbro.cobblemon.mcc.betterai.policy.LocalLeadChoice.matchup(benchedUser, foe, lead, detailed = true).coerceIn(0.0, 1.0)
-                }.average()
-            }
-        }
-        return 1.0 + SWEEP_BONUS_STEP * easy
-    }
-
-    /**
      * How likely [opponent] is to act this turn: a Pokemon that must recharge does not, a sleeping one wakes
      * about half the time, a frozen one thaws one time in five. The window a sleeping or frozen opponent opens is
      * the classic moment to set up.
@@ -370,10 +316,6 @@ internal object LocalSetupGate {
     private const val FROZEN_ACTS = 0.2
     const val REASON = "setup_gate"
     const val SWEEP_PASS = 0.5
-    /** The win chance after boosting that [score] reads as a win (user decision, 2026-10-13). */
-    const val WIN_PASS = 0.7
-    /** The sweep bonus each fully easy opponent still to come adds over 1. */
-    const val SWEEP_BONUS_STEP = 0.15
     const val STOPPER_PASS = 0.5
     val ALWAYS_STOPS = setOf(StopToolKind.ENCORE, StopToolKind.FORCES_SWITCH,
         StopToolKind.IGNORES_BOOSTS, StopToolKind.DESTINY_BOND)

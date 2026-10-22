@@ -288,21 +288,15 @@ internal object LocalOpponentIntentPredictor {
         // A status move that publicly cannot work is not one it would pick: the predictor read Stealth Rock with Stealth
         // Rock up at 32% (used 0 of 44), a Cotton Guard at +6 Defence at 93-97%, Will-O-Wisp into a burned Pokemon.
         if (failsPublicly(moveId, details, user, allies, context)) return emptyList()
-        scores.sweeps[user.battlePokemonId]?.takeIf { it.setupMoveId == moveId }?.let { sweep ->
-            // Priced as the AI prices its own raise (LocalSetupGate.score): a knockout when the raised user still wins the
-            // one-on-one in front, the raise turn's hits taken ([SweepScore.boostedByOpponent]), at [LocalSetupGate.WIN_PASS]
-            // or more, and nothing otherwise. The sweep score itself is the better of the plain and the raised win, so a
-            // Pokemon already winning read its raise high whether or not it did anything (23.4 predicted against 7 used).
-            val boosted = allies.map { sweep.boostedByOpponent[it.battlePokemonId] }
-            if (boosted.isNotEmpty() && boosted.all { it != null }) {
-                val won = if (boosted.minOf { requireNotNull(it) } >= LocalSetupGate.WIN_PASS) 1.0 else 0.0
-                return listOf(option(IntentKind.SETUP, KNOCKOUT_WEIGHT * won - KNOCKOUT_WEIGHT * knockoutNow(user, allies, scores)))
-            }
-            return listOf(option(IntentKind.SETUP, setupValue(sweep.score, user, allies, scores, context) + SETUP_OFFSET))
-        }
-        if (effects.any { it.kind == BattleMoveEffectKind.STAT_STAGE } && effects.all { it.target != BattleMoveEffectTarget.SELECTED_TARGET }) {
-            // A stat raise that makes no sweeper.
-            return listOf(option(IntentKind.SETUP, setupValue(UNSCORED, user, allies, scores, context)))
+        val setupCandidate = jbro.cobblemon.mcc.internal.ai.BattleActionCandidate(
+            "intent:setup:${user.battlePokemonId}:$moveId", jbro.cobblemon.mcc.internal.ai.BattleActionKind.USE_MOVE,
+            user.activeSlot, 0, moveId, moveDetails = details)
+        val boardToScore = jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT.boardToScore
+        // Same marginal formula, normalized to the predictor's existing attack units (HP .4, knockout .6).
+        LocalSetupGate.marginal(setupCandidate, context, user, scores,
+            KNOCKOUT_WEIGHT / DAMAGE_WEIGHT * boardToScore,
+            includesBeforeActionRisk = true)?.let { setup ->
+            return listOf(option(IntentKind.SETUP, setup.value / boardToScore * DAMAGE_WEIGHT))
         }
         val scored = allies.mapNotNull { ally ->
             scores.statusMoves(user.battlePokemonId, ally.battlePokemonId).firstOrNull { it.moveId == moveId }?.let { ally to it.score }
@@ -379,23 +373,6 @@ internal object LocalOpponentIntentPredictor {
             standing * (1.0 - best.knockoutChanceWithin(1) * aim)
         }
     }
-
-    /**
-     * A raise is worth [worth] only if [user] lives to use it: times the chance no ally's best hit knocks it out this turn
-     * (it spends the turn raising, so every ally's hit lands). And a raise in place of a knockout it holds on an ally now
-     * puts that knockout off, the knockout's share of an attack ([KNOCKOUT_WEIGHT]). With a sure knockout on the AI's Pokemon
-     * the predictor read a raise at 8.8 over 52 such turns and the trainers raised once (league runs, 2026-10-19).
-     */
-    private fun setupValue(worth: Double, user: BattlePokemonStateView, allies: List<BattlePokemonStateView>, scores: MatchupScores,
-        context: BattleDecisionContext): Double {
-        return survivesTurn(user, allies, scores, context) * worth - KNOCKOUT_WEIGHT * knockoutNow(user, allies, scores)
-    }
-
-    /** The best chance [user] knocks one of [allies] out this turn with an attack: what a raise in its place puts off. */
-    private fun knockoutNow(user: BattlePokemonStateView, allies: List<BattlePokemonStateView>, scores: MatchupScores): Double =
-        allies.maxOfOrNull { ally ->
-            scores.moves(user.battlePokemonId, ally.battlePokemonId).maxOfOrNull { it.knockoutChanceWithin(1) } ?: 0.0
-        } ?: 0.0
 
     /**
      * The attacks this tier believes [user] holds but has not shown (the same slots the pair table scores its hits by),
@@ -617,7 +594,6 @@ internal object LocalOpponentIntentPredictor {
     private const val PIVOT_WEIGHT = 0.5
     private const val KNOCK_OFF_ITEM = 0.15
     private const val KNOCK_OFF = "knockoff"
-    private const val SETUP_OFFSET = -0.1
     private const val SWITCH_COST = 0.4
     /** How much of the entry hit counts against the incoming Pokemon's matchup, on top of the exchange's own HP. */
     private const val ENTRY_DAMAGE_WEIGHT = 0.5

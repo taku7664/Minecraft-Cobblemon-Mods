@@ -315,6 +315,56 @@ class LocalDynamaxTest {
         assertTrue(slow > fast + 1e-3, "fast=$fast slow=$slow")
     }
 
+    @Test
+    fun `Max Guard earns doubled HP only on damage that passes its protection`() {
+        val user = mon(BattleSide.ALLY, speed = 90)
+        val foe = mon(BattleSide.OPPONENT, speed = 100)
+        val base = BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 10,
+            BattleMoveTargetPattern.SELF, effects = BattleShowdownMoveEffects.resolve("softboiled"))
+        val guard = BattleActionCandidate("guard", BattleActionKind.USE_MOVE, 0, 0, "maxguard",
+            mechanic = BattleMechanicCandidate("dynamax", null, null), moveDetails = base.copy(priority = 4,
+                effects = BattleShowdownMoveEffects.resolve("maxguard")), tags = setOf("maxmovebase:softboiled"))
+        fun guardedAgainst(id: String): Double {
+            val incoming = attack(id, 80.0)
+            val incomingDetails = incoming.moveDetails!!.copy(effects = BattleShowdownMoveEffects.resolve(id))
+            val catalog = BattlePublicActionCatalogView(listOf(
+                BattlePokemonActionCatalogView(user.battlePokemonId, listOf(BattlePublicMoveOptionView("softboiled", base,
+                    BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), true),
+                BattlePokemonActionCatalogView(foe.battlePokemonId, listOf(BattlePublicMoveOptionView(id, incomingDetails,
+                    BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), true)))
+            val context = context(state(user, foe), guard).copy(publicActionCatalog = catalog)
+            return LocalDynamaxGuard.adjustments(listOf(guard), context,
+                jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT)[guard.actionId] ?: 0.0
+        }
+        assertEquals(0.0, guardedAgainst("tackle"), 1e-9)
+        assertTrue("feint" in jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.maxGuardBypasses)
+        assertTrue(guardedAgainst("feint") > 0.0)
+    }
+
+    @Test
+    fun `a zero power fixed damage move becomes a Max attack before its stage value is read`() {
+        val user = mon(BattleSide.ALLY)
+        val foe = mon(BattleSide.OPPONENT)
+        val base = BattleMoveCandidateView("fighting", BattleMoveDamageCategory.PHYSICAL, 0.0, 100.0, 0, 10,
+            effects = BattleShowdownMoveEffects.resolve("seismictoss"))
+        val normal = BattleActionCandidate("toss", BattleActionKind.USE_MOVE, 0, 0, "seismictoss", moveDetails = base)
+        val max = LocalDynamax.asUsed(BattleActionCandidate("toss", BattleActionKind.USE_MOVE, 0, 0, "seismictoss",
+            mechanic = BattleMechanicCandidate("dynamax", null, null), moveDetails = base), user)
+        val catalog = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(user.battlePokemonId,
+            listOf(BattlePublicMoveOptionView("seismictoss", base, BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), true),
+            BattlePokemonActionCatalogView(foe.battlePokemonId, emptyList(), true)))
+        val context = context(state(user, foe), max).copy(publicActionCatalog = catalog)
+        val stage = jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator
+        val starting = stage.candidateScore(max, context, 1.0)!!
+        val already = context.copy(state = context.state.copyState(pokemon = listOf(LocalDynamax.start(user), foe)))
+        val ongoing = stage.candidateScore(BattleActionCandidate(max.actionId, max.kind, max.actorSlot, max.moveSlot,
+            max.moveId, moveDetails = max.moveDetails, tags = max.tags), already, 1.0)!!
+        assertTrue(starting > 0.0, "starting=$starting")
+        assertEquals(starting, ongoing, 1e-9)
+        val raisedPlain = context.state.copyState(pokemon = listOf(user.copyState(statStages = mapOf("attack" to 1)), foe))
+        assertEquals(0.0, stage.evaluate(context.state, raisedPlain, context).score, 1e-9)
+    }
+
     private data class DoubleGuardFixture(
         val context: BattleDecisionContext,
         val joint: BattleActionCandidate,

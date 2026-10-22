@@ -397,7 +397,7 @@ internal object EmbeddedTeamBattle {
                                                     }
                                                 })
                                                 jbro.cobblemon.mcc.betterai.matchup.LocalSetupGate.score(setup, context, scores, tunings.getValue(side).knockoutMaterialScore)?.let { r ->
-                                                    addProperty("winAfterSetup", r.win); addProperty("sweepBonus", r.bonus); addProperty("setupValue", r.value)
+                                                    addProperty("setupPressure", r.pressure); addProperty("setupSpeed", r.speed); addProperty("setupValue", r.value)
                                                 }
                                                 // The foes' hits on the user as the gate's own table has them (the setup-turn cost reads these).
                                                 if (user != null) add("gateTheirs", com.google.gson.JsonArray().apply {

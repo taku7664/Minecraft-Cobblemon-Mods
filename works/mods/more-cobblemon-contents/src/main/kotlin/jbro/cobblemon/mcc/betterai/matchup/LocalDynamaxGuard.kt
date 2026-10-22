@@ -79,8 +79,11 @@ internal object LocalDynamaxGuard {
             // Only the doubled HP is guarded.
             val guardedState = with(state, dynamaxed)
             val acting = acting(candidateContext, guardedState, dynamaxed, foes, cache) { foe -> aims(mechanic, foe, state) }
-            val plain = threat(candidateContext, state, user, foes, targeting, tuning, cache, acting) ?: return@mapNotNull null
-            val guarded = threat(candidateContext, guardedState, dynamaxed, foes, targeting, tuning, cache, acting)
+            val protection = LocalDynamax.asUsed(mechanic, dynamaxed).takeIf {
+                it.moveDetails?.effects?.effects.orEmpty().any { effect -> effect.kind == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectKind.PROTECT_USER }
+            }
+            val plain = threat(candidateContext, state, user, foes, targeting, tuning, cache, acting, protection) ?: return@mapNotNull null
+            val guarded = threat(candidateContext, guardedState, dynamaxed, foes, targeting, tuning, cache, acting, protection)
                 ?: return@mapNotNull null
             // The HP kept is kept; the knockout stopped is only put off unless the doubled HP turns the one-on-one. Read whole, a 42% Araquanid that could not hurt a +2 Dondozo Dynamaxed to live two
             // turns longer (+216, hand-played Aaron), as had a 46% Luxray (hand-played Volkner; both 2026-10-20).
@@ -148,6 +151,7 @@ internal object LocalDynamaxGuard {
         cache: LocalProjectedActionCalculationCache,
         /** Each foe's chance to act ([acting]), the same on both boards so only the hits' size differs. */
         acting: Map<UUID, Double>,
+        protection: BattleActionCandidate?,
     ): Threat? {
         val hits = foes.mapNotNull { foe ->
             val pair = LocalMatchupScoreCalculator.pairMatchup(
@@ -159,12 +163,33 @@ internal object LocalDynamaxGuard {
             IncomingHit(hit, acts, targeting.byOpponent.getValue(foe.battlePokemonId))
         }
         if (hits.isEmpty()) return null
-        // Every hit is already halved for a Dynamaxed target, as every calculation reads one.
-        val taken = hits.sumOf {
-            (it.move.minimumDamageFraction + it.move.maximumDamageFraction) / 2.0 * it.move.accuracy *
-                it.incomingProbability * it.targetProbability
+        fun taken(incoming: List<IncomingHit>): Threat {
+            val damage = incoming.sumOf {
+                (it.move.minimumDamageFraction + it.move.maximumDamageFraction) / 2.0 * it.move.accuracy *
+                    it.incomingProbability * it.targetProbability
+            }
+            return Threat(minOf(damage, user.hpFraction) * tuning.boardToScore,
+                knockout(incoming, user.hpFraction) * tuning.knockoutMaterialScore)
         }
-        return Threat(minOf(taken, user.hpFraction) * tuning.boardToScore, knockout(hits, user.hpFraction) * tuning.knockoutMaterialScore)
+        val unprotected = taken(hits)
+        if (protection == null) return unprotected
+        val success = jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.nextSuccessProbability(
+            jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules.consecutiveSuccessfulUses(state, user.side, user.activeSlot))
+        val protected = taken(hits.map { hit ->
+            if (PublicIds.canonical(hit.move.moveId) in jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.maxGuardBypasses) hit
+            else {
+                val foe = foes.first { it.battlePokemonId == hit.move.userId }
+                val attack = BattleActionCandidate("guard:incoming", BattleActionKind.USE_MOVE, foe.activeSlot, 0,
+                    hit.move.moveId, moveDetails = context.publicActionCatalog.forPokemon(foe.battlePokemonId)
+                        .firstOrNull { PublicIds.canonical(it.moveId) == PublicIds.canonical(hit.move.moveId) }?.details)
+                val first = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.actsFirstProbability(
+                    state, user.side, protection, foe.side, LocalDynamax.asUsed(attack, foe)) ?: 0.5
+                hit.copy(incomingProbability = hit.incomingProbability * (1.0 - first))
+            }
+        })
+        // The success/failure is shared by both incoming hits, so combine their KO probabilities only within each case.
+        return Threat(protected.damage * success + unprotected.damage * (1.0 - success),
+            protected.knockout * success + unprotected.knockout * (1.0 - success))
     }
 
     /** A turn's incoming hits in score units: the HP they take, and the knockout. */

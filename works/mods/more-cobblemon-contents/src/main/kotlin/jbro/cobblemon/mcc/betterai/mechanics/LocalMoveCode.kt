@@ -49,6 +49,15 @@ internal object LocalMoveCode {
 
     fun setsTerrain(moveId: String?): Boolean = BattleDeclarativeMoveEffects.SETS_TERRAIN_FLAG in flags(moveId)
 
+    /** The bypass list in Max Guard's onTryHit, read from the bundled source rather than named in the scorer. */
+    val maxGuardBypasses: Set<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        val source = BattleShowdownMoveEffects.showdownSource("data/moves.js") ?: return@lazy emptySet()
+        val properties = BattleDeclarativeMoveEffects.entries(source, "const Moves =")[maxProtectMoveId] ?: return@lazy emptySet()
+        val condition = properties["condition"].orEmpty()
+        val list = Regex("""bypassesMaxGuard\s*=\s*\[([\s\S]*?)]""").find(condition)?.groupValues?.get(1).orEmpty()
+        Regex("""["']([a-z]+)["']""").findAll(list).map { it.groupValues[1] }.toSet()
+    }
+
     /** The Max Move a Dynamaxed Pokemon's status move turns into (Max Guard), or null when the bundle cannot be read. */
     val maxProtectMoveId: String? by lazy(LazyThreadSafetyMode.PUBLICATION) {
         BattleShowdownMoveEffects.idsWithFlag(BattleDeclarativeMoveEffects.MAX_PROTECT_FLAG).firstOrNull()

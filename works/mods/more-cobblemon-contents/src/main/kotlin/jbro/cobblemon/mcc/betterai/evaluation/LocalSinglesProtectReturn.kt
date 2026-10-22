@@ -28,7 +28,7 @@ import java.util.UUID
  *   Leech Seed, Curse), healing, Speed Boost and the like, scored as any turn is ([LocalImmediateTurnScorer]);
  * - a turn off each timed field effect still running after it (screens, Tailwind, weather...): its worth to whichever
  *   side it serves, by the same scorer, over the turns it had left (one that ends this turn is in the first term);
- * - a turn off every Dynamax in front, the user's own included: what that Dynamax changes in one exchange of the two in
+ * - a turn off the foe's Dynamax, and the cost of wasting the user's own stronger Dynamax: the change in one exchange of the two in
  *   front, each one's best hit on the other ([LocalMatchupScoreCalculator.pairMatchup]) with and without it. Not its
  *   change to their win chance spread over the turns left: the matchup reads a Dynamax as lasting the whole duel, so
  *   its last turn came out worth a knockout (a Max Guard at 212 against attacks at 7).
@@ -50,12 +50,15 @@ internal object LocalSinglesProtectReturn {
         val fieldTurns = fieldTurns(context, tuning, cache, shouldContinue)
         // After this turn's actions, so a Dynamax that starts on it (a Dynamax Max Guard) is counted from its first turn.
         val acted = projections.first().stateBeforeResidual
-        val dynamaxTurns = listOf(user, foe).sumOf { pokemon ->
+        val dynamaxTurns = listOf(user, foe).associate { pokemon ->
             val dynamaxed = acted.pokemon.firstOrNull { it.battlePokemonId == pokemon.battlePokemonId }?.takeIf(LocalDynamax::active)
-                ?: return@sumOf 0.0
-            dynamaxTurn(context, user, foe, dynamaxed, cache)
+            pokemon.side to if (dynamaxed == null) 0.0 else dynamaxTurn(context, user, foe, dynamaxed, cache)
         }
-        return turn + fieldTurns + dynamaxTurns
+        val value = turn + fieldTurns + dynamaxTurns.values.sum()
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("protectReturn:${candidate.actionId}", mapOf(
+            "turn" to turn, "field" to fieldTurns, "ownDynamax" to dynamaxTurns.getValue(user.side),
+            "foeDynamax" to dynamaxTurns.getValue(foe.side), "value" to value))
+        return value
     }
 
     /**
@@ -90,7 +93,10 @@ internal object LocalSinglesProtectReturn {
         val without = exchange(context, user, foe, dynamaxed.battlePokemonId, dynamaxed.knownVolatileEffectIds.filterNot {
             it == LocalDynamax.VOLATILE || it.startsWith(LocalDynamax.TURNS)
         }.toSet(), cache) ?: return 0.0
-        return -(with - without)
+        val change = without - with
+        // Wasting our stronger form is a cost of guarding. Returning to a stronger plain move happens with any
+        // action, so it gives Protect no exclusive benefit (fixed-damage users otherwise guarded to end Dynamax).
+        return if (dynamaxed.side == user.side) minOf(0.0, change) else change
     }
 
     /**

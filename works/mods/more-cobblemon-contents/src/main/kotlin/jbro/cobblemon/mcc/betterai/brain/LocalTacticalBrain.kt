@@ -263,7 +263,7 @@ internal class LocalTacticalBrain(
         val megaSetupViews = java.util.concurrent.ConcurrentHashMap<String, java.util.Optional<Pair<BattleDecisionContext, jbro.cobblemon.mcc.betterai.matchup.MatchupScores>>>()
         fun setupView(candidate: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate): Pair<BattleDecisionContext, jbro.cobblemon.mcc.betterai.matchup.MatchupScores>? {
             val mega = jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector.forMegaCandidate(difficultyContext, BattleSide.ALLY, candidate)
-            if (mega === difficultyContext) return baseRuleScores?.let { difficultyContext to it }
+            if (mega === difficultyContext) return baseRuleScores?.let { ruleBoard to it }
             if (rulesContext !== difficultyContext) return ruleScores?.let { rulesContext to it }
             return megaSetupViews.computeIfAbsent(candidate.actionId) {
                 val started = System.nanoTime()
@@ -455,8 +455,8 @@ internal class LocalTacticalBrain(
             (gimmickReserveAdjustments.asSequence() + dynamaxGuardReading.adjustments.asSequence())
                 .groupBy({ it.key }, { it.value }).mapValues { (_, values) -> values.sum() }
         }
-        // A stat raise is valued by whether its user still wins the one-on-one after it (yes or no), times the sweep bonus
-        // (LocalSetupGate.score; singles). Its ranking value is moved that far toward this value.
+        // A self-setup is priced by its actual marginal HP/KO pressure and order value against the remaining foes
+        // (LocalSetupGate.score; singles), including the chance the effect survives to be used.
         // A waiting opponent that turns into the raised Pokemon on entry takes the raise with it (LocalEntryCopyRisk).
         val copyRisk by lazy { try {
             jbro.cobblemon.mcc.betterai.search.LocalEntryCopyRisk.chance(context, profile.difficulty.tier)

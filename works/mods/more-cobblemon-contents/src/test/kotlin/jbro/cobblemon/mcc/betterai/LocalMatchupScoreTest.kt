@@ -188,20 +188,21 @@ class LocalMatchupScoreTest {
     }
 
     @Test
-    fun `a setup its user still loses the one-on-one after is worth nothing`() {
+    fun `a setup can gain pressure without passing a win threshold`() {
         // Slower and weaker: after +2 Attack, with the setup turn's hit paid, it still loses to the foe in front.
         val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 90.0, allySetup = mapOf("atk" to 2))
         val reading = LocalSetupGate.score(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context), knockoutMaterialScore = 200.0)!!
-        assertTrue(reading.win < LocalSetupGate.WIN_PASS) { reading.toString() }
-        assertEquals(0.0, reading.value, 1e-9)
+        assertTrue(reading.pressure > 0.0) { reading.toString() }
+        assertTrue(reading.value > 0.0 && reading.value < 200.0) { reading.toString() }
     }
 
     @Test
-    fun `a setup its user wins the one-on-one after is worth a full knockout times the bonus`() {
+    fun `a setup is worth its pressure and order change times the usable chance`() {
         val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, allySetup = mapOf("atk" to 1, "spe" to 1))
         val reading = LocalSetupGate.score(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context), knockoutMaterialScore = 200.0)!!
-        assertTrue(reading.win >= LocalSetupGate.WIN_PASS) { reading.toString() }
-        assertEquals(200.0 * reading.bonus, reading.value, 1e-9)
+        assertEquals((reading.pressure + reading.speed) * reading.survival * reading.holds * reading.effectChance,
+            reading.value, 1e-9)
+        assertTrue(reading.value > 0.0 && reading.value < 200.0) { reading.toString() }
     }
 
     @Test
@@ -210,8 +211,56 @@ class LocalMatchupScoreTest {
         // Read as a win alone, a Scizor kept Swords Dancing to +6 (dev server, 2026-10-20).
         val context = context(allySpeed = 150, foeSpeed = 100, allyPower = 300.0, foePower = 65.0, allySetup = mapOf("atk" to 2))
         val reading = LocalSetupGate.score(setupAction(context), context, LocalMatchupScoreCalculator.calculate(context), knockoutMaterialScore = 200.0)!!
-        assertTrue(reading.win >= LocalSetupGate.WIN_PASS) { reading.toString() }
         assertEquals(0.0, reading.value, 1e-9)
+    }
+
+    @Test
+    fun `all setup stats use their changed outcomes and saturated boosts gain nothing`() {
+        for (stages in listOf(mapOf("atk" to 2), mapOf("def" to 2), mapOf("spe" to 2),
+            mapOf("atk" to 1, "spe" to 1), mapOf("def" to 1, "spd" to 1))) {
+            val context = context(allySpeed = 100, foeSpeed = 120, allyPower = 65.0, foePower = 65.0, allySetup = stages)
+            val action = setupAction(context)
+            val reading = LocalSetupGate.score(action, context, LocalMatchupScoreCalculator.calculate(context), 200.0)!!
+            if (stages.keys == setOf("spe")) assertEquals(0.0, reading.value, 1e-9, "no knockout is decided by order")
+            else assertTrue(reading.value > 0.0, "$stages: $reading")
+            val capped = context.copy(state = context.state.copyState(pokemon = context.state.pokemon.map {
+                if (it.battlePokemonId == ALLY) it.copyState(statStages = mapOf("attack" to 6, "defense" to 6,
+                    "specialattack" to 6, "specialdefense" to 6, "speed" to 6)) else it }))
+            assertEquals(0.0, LocalSetupGate.score(action, capped, LocalMatchupScoreCalculator.calculate(capped), 200.0)!!.value, 1e-9)
+        }
+    }
+
+    @Test
+    fun `named physical special defensive and mixed setup moves use the common marginal formula`() {
+        for (id in listOf("swordsdance", "nastyplot", "calmmind", "quiverdance", "bulkup", "irondefense", "agility", "shellsmash", "bellydrum")) {
+            val details = BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 10,
+                BattleMoveTargetPattern.SELF, effects = BattleShowdownMoveEffects.resolve(id))
+            val option = BattlePublicMoveOptionView(id, details, BattlePublicMoveKnowledge.EXACT_OWN)
+            val physical = id in setOf("swordsdance", "bulkup", "irondefense", "agility", "shellsmash", "bellydrum")
+            val category = if (physical) BattleMoveDamageCategory.PHYSICAL else BattleMoveDamageCategory.SPECIAL
+            val built = context(100, 120, allyPower = if (id == "agility") 300.0 else 65.0, foePower = 40.0,
+                foeCategory = category, allyExtra = listOf(option))
+            val context = built.copy(publicActionCatalog = BattlePublicActionCatalogView(built.publicActionCatalog.entries.map { entry ->
+                if (entry.battlePokemonId != ALLY) entry else BattlePokemonActionCatalogView(ALLY, entry.moves.map {
+                    if (it.moveId == "probe") it.copy(details = it.details.copy(damageCategory = category)) else it }, true) }))
+            val action = BattleActionCandidate(id, BattleActionKind.USE_MOVE, 0, 1, id, moveDetails = details)
+            val reading = LocalSetupGate.score(action, context, LocalMatchupScoreCalculator.calculate(context), 200.0)!!
+            assertTrue(reading.pressure > 0.0 || reading.speed > 0.0, "$id: $reading")
+            assertEquals(((reading.pressure + reading.speed) * reading.survival * reading.holds - reading.hpCost) *
+                reading.effectChance, reading.value, 1e-9)
+            if (id == "bellydrum") assertEquals(50.0, reading.hpCost, 1e-9)
+        }
+    }
+
+    @Test
+    fun `a setup prices remaining foes without a sweep multiplier`() {
+        val context = context(allySpeed = 150, foeSpeed = 100, allyPower = 65.0, foePower = 40.0,
+            allySetup = mapOf("atk" to 2), secondFoe = true)
+        val action = setupAction(context)
+        val reading = LocalSetupGate.score(action, context, LocalMatchupScoreCalculator.calculate(context), 200.0)!!
+        val copied = LocalSetupGate.score(action, context, LocalMatchupScoreCalculator.calculate(context), 200.0, copyRisk = 0.5)!!
+        assertEquals(reading.value * 0.5, copied.value, 1e-9)
+        assertTrue(reading.value > 0.0, reading.toString())
     }
 
     @Test

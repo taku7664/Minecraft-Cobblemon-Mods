@@ -160,10 +160,8 @@ internal data class LocalDecisionTuning(
      */
     val matchupRecovery: Boolean = false,
     /**
-     * Weight of the credit a stat raise that passes the setup gate gets for the knockouts in a row it adds
-     * (LocalSetupGate.credit); singles. Off (0) from 2026-09-30, when the credit read one-on-one win chances: it picked
-     * Volcarona's Quiver Dance and Garchomp's Swords Dance in puzzles where they rolled out worst. On again with the
-     * knockout chain (2026-10-12): without it a setup move was picked about 1% of the times it was on offer.
+     * Weight of a self-setup's marginal HP/KO and action-order value across remaining opponents (singles).
+     * The historical property name is retained for configuration compatibility; no sweep/pass reward remains.
      */
     val setupSweepCredit: Double = 1.0,
     /**

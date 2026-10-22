@@ -348,26 +348,17 @@ internal object LocalTacticalScorer {
             unprojectedPressure(candidate, context, details, facts, tuning) + damagingStageUtility
         }
         val effectivePriority = LocalPublicTurnOrder.effectivePriority(context.state, BattleSide.ALLY, candidate)
-        val prioritySuccessProbability = if (LocalStallingProtectionRules.isStallingProtection(candidate)) {
-            LocalStallingProtectionRules.nextSuccessProbability(
-                LocalStallingProtectionRules.consecutiveSuccessfulUses(
-                    context.state,
-                    BattleSide.ALLY,
-                    candidate.actorSlot,
-                ),
-            )
-        } else {
-            1.0
-        }
         // Striking first at a target or from a user at critical HP is worth more only for an attack: Protect's +4 read as
         // finishing the target, and a Vaporeon Protected (100) rather than Scald a 1% Probopass (2026-10-18).
         val attacks = candidate.moveDetails?.damageCategory.let { it != null && it != jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory.STATUS }
         val priorityBonus = when {
+            // Its priority enables protection already priced by its actual effect; it is no separate HP gain.
+            LocalStallingProtectionRules.isStallingProtection(candidate) -> 0.0
             effectivePriority <= 0 -> effectivePriority * 2.0
             attacks && priorityTargetHp(candidate, context) <= CRITICAL_HP -> effectivePriority * 25.0
             attacks && priorityUserHp(candidate, context) <= CRITICAL_HP -> effectivePriority * 8.0
             else -> effectivePriority * 2.0
-        } * prioritySuccessProbability
+        }
         val knockoutBonus = LocalTacticalSituationalEvaluator.knockoutAdjustment(candidate, accuracy, tuning, context)
         // A spread move's other targets. Zero for every single-target move, so this changes nothing
         // outside doubles.
