@@ -11,7 +11,7 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
 internal object NativeInBattleFormes {
     fun startingSpecies(speciesId: String): String {
         val id = PublicIds.canonical(speciesId)
-        return IN_BATTLE[id] ?: id
+        return IN_BATTLE[id] ?: megaBase(id) ?: id
     }
 
     /**
@@ -22,16 +22,27 @@ internal object NativeInBattleFormes {
     fun samePublicIdentity(pokemon: BattlePokemonStateView, preview: BattleOpponentTeamPreviewPokemonView): Boolean {
         val publicForm = pokemon.formId
         val previewForm = preview.formId
-        val species = startingSpecies(pokemon.speciesId)
+        val original = PublicIds.canonical(pokemon.speciesId)
+        val separateMega = publicForm?.let { megaBase(original + PublicIds.canonical(it)) }
+        val species = separateMega ?: startingSpecies(pokemon.speciesId)
+        val transformed = species != original || separateMega != null
         val baseIdentity = species == PublicIds.canonical(preview.speciesId) &&
-            (publicForm == null || previewForm == null || PublicIds.canonical(publicForm) == PublicIds.canonical(previewForm))
+            (transformed || publicForm == null || previewForm == null || PublicIds.canonical(publicForm) == PublicIds.canonical(previewForm))
         val showdownIdentity = pokemon.speciesId.startsWith("showdown:") &&
             preview.showdownSpeciesId?.let { species == PublicIds.canonical(it) } == true
         return baseIdentity || showdownIdentity
     }
 
     /** The in-battle forme [speciesId] names, or null when it is a starting forme. */
-    fun inBattleForme(speciesId: String): String? = PublicIds.canonical(speciesId).takeIf { it in IN_BATTLE }
+    fun inBattleForme(speciesId: String): String? = PublicIds.canonical(speciesId).takeIf { it in IN_BATTLE || megaBase(it) != null }
+
+    /** Read the registered form's starting species; a regional form is never collapsed to its family. */
+    private fun megaBase(id: String): String? {
+        if ("mega" !in id) return null
+        val species = EngineRuntimeDex.current().second.species(id) ?: return null
+        if (!species.isMega && !species.forme.startsWith("Mega")) return null
+        return PublicIds.canonical(species.changesFrom ?: species.baseSpecies)
+    }
 
     private val IN_BATTLE = mapOf(
         "mimikyubusted" to "mimikyu",
