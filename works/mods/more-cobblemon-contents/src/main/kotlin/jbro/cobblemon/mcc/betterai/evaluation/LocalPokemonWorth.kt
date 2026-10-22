@@ -41,13 +41,14 @@ internal object LocalPokemonWorth {
         state: jbro.cobblemon.mcc.internal.ai.BattleStateView,
         fallbackFirst: Double?,
     ): Double {
+        val actor = state.pokemon.firstOrNull {
+            it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY && it.activeSlot == attack.actorSlot && !it.fainted
+        }
+        if (actor != null && !jbro.cobblemon.mcc.betterai.mechanics.LocalConsecutiveMoveRules.canAttempt(attack,state,actor)) return 0.0
         val worth = knockoutScore(id, tuning)
         val denial = id?.let { denials.get()?.get(it) } ?: return worth
         val mine = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder.effectivePriority(
             state, jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY, attack)
-        val actor = state.pokemon.firstOrNull {
-            it.side == jbro.cobblemon.mcc.internal.ai.BattleSide.ALLY && it.activeSlot == attack.actorSlot && !it.fainted
-        }
         val first = when {
             mine > denial.priority -> 1.0
             mine < denial.priority -> 0.0

@@ -113,10 +113,13 @@ internal object LocalActingChance {
             }
         }
         val knockout = expectedKnockout(choices, user.hpFraction)
-        val acts = 1.0 - knockout
+        val possible = jbro.cobblemon.mcc.betterai.mechanics.LocalConsecutiveMoveRules.canAttempt(part,state,user)
+        val survives = 1.0 - knockout
+        val acts = if (possible) survives else 0.0
         LocalDecisionInternals.record("actingModel:$trace", mapOf(
             "knockout" to knockout, "acts" to acts, "predictedFoes" to predictedFoes.toDouble(),
-            "fallbackFoes" to fallbackFoes.toDouble(), "foes" to choices.size.toDouble()))
+            "fallbackFoes" to fallbackFoes.toDouble(), "foes" to choices.size.toDouble(),
+            "survives" to survives,"possible" to LocalDecisionInternals.flag(possible)))
         return acts
     }
 

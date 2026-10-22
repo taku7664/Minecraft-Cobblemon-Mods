@@ -248,6 +248,7 @@ internal object EmbeddedTeamInput {
                         it.ability = id(abilitySource); event(BattleObservedEventKind.ABILITY_REVEALED, id(abilitySource))
                         return@let
                     }
+                    it.volatileEffects.removeAll(jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.repeatFailureVolatiles)
                     // The game's observer records the action's order first, with the move's base priority (the order
                     // evidence reads it), one step before the line's own events.
                     events += BattleObservedEventView(index.toLong() * 4 - 1, eventTurn, BattleObservedEventKind.ACTION_ORDER,
@@ -261,6 +262,11 @@ internal object EmbeddedTeamInput {
                         ?.let { target -> seen[identity(target)] }?.let { target -> setOf(uuid(target.ident)) }.orEmpty()
                     actionWindow = ActionWindow(eventTurn, index.toLong() * 4 - 1, uuid(it.ident), id(p[3]), targets)
                 }
+                "-singlemove" -> current?.let {
+                    val volatile = id(p.getOrNull(3).orEmpty())
+                    if (volatile in OBSERVED_VOLATILES) it.volatileEffects += volatile
+                }
+                "cant" -> current?.volatileEffects?.removeAll(jbro.cobblemon.mcc.betterai.mechanics.LocalMoveCode.repeatFailureVolatiles)
                 // As the game's observer records them: without the event, Toxic's counter ran from the last switch-in
                 // (six where the game had three) and a Protect read the opponent as poisoned out.
                 "-status" -> current?.let { it.status = id(p[3]); event(BattleObservedEventKind.STATUS_CHANGED, id(p[3])) }

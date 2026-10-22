@@ -50,6 +50,8 @@ internal object LocalNonDamagingMoveEvaluator {
             return Score(it.total, 0.0, it.itemUtility)
         }
         val actor = actor(candidate, context)
+        if (actor != null && !jbro.cobblemon.mcc.betterai.mechanics.LocalConsecutiveMoveRules.canAttempt(candidate,context.state,actor))
+            return Score(0.0,0.0)
         val missingHp = (1.0 - (actor?.hpFraction ?: 1.0)).coerceIn(0.0, 1.0)
         val recovery = candidate.facts?.selfHealingFractionRange?.let { range ->
             val averageHealing = (range.minimum + range.maximum) / 2.0

@@ -49,6 +49,10 @@ internal object LocalMoveCode {
 
     fun setsTerrain(moveId: String?): Boolean = BattleDeclarativeMoveEffects.SETS_TERRAIN_FLAG in flags(moveId)
 
+    val repeatFailureVolatiles: Set<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
+        BattleShowdownMoveEffects.flagValues(BattleDeclarativeMoveEffects.REPEAT_FAILS_WHILE_VOLATILE_FLAG)
+    }
+
     /** The bypass list in Max Guard's onTryHit, read from the bundled source rather than named in the scorer. */
     val maxGuardBypasses: Set<String> by lazy(LazyThreadSafetyMode.PUBLICATION) {
         val source = BattleShowdownMoveEffects.showdownSource("data/moves.js") ?: return@lazy emptySet()

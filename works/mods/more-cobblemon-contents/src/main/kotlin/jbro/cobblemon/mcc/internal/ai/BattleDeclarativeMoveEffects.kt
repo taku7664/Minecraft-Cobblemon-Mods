@@ -248,6 +248,13 @@ object BattleDeclarativeMoveEffects {
                     if (properties["condition"]?.contains("onDragOut") == true) add("$ANCHORS_USER_FLAG${canonicalMoveId(volatile)}")
                 }
                 if (properties["terrain"] != null) add(SETS_TERRAIN_FLAG)
+                // A self-targeted move that removes its existing volatile and fails when it was present.
+                // This reads the callback contract (Destiny Bond), rather than naming the move in the scorer.
+                if (moveTarget == "self") properties["onPrepareHit"]?.let { body ->
+                    REPEAT_VOLATILE_FAILURE.find(body)?.groupValues?.get(1)?.let {
+                        add("$REPEAT_FAILS_WHILE_VOLATILE_FLAG${canonicalMoveId(it)}")
+                    }
+                }
                 // The Max Move a Dynamaxed Pokemon's status move turns into (Max Guard).
                 if (booleanLike(properties["isMax"]) && booleanLike(properties["stallingMove"])) add(MAX_PROTECT_FLAG)
             },
@@ -983,6 +990,8 @@ object BattleDeclarativeMoveEffects {
     /** Followed by the volatile's id, as `anchors_user:ingrain`. */
     const val ANCHORS_USER_FLAG = "anchors_user:"
     const val MAX_PROTECT_FLAG = "max_protect"
+    const val REPEAT_FAILS_WHILE_VOLATILE_FLAG = "repeat_fails_while_volatile:"
+    private val REPEAT_VOLATILE_FAILURE = Regex("""return\s+!\s*[\w$]+\.removeVolatile\(\s*["']([^"']+)["']\s*\)""")
     private const val STALLING_MOVE_FLAG = "stalling_move"
     private const val STALL_COUNTER_ADVANCE_FLAG = "stall_counter_advance"
     private val STALL_MOVE_CHECK_PATTERN = Regex("runEvent\\(\\s*['\"]StallMove['\"]")

@@ -249,6 +249,9 @@ internal object LocalOpponentIntentPredictor {
         val moveId = PublicIds.canonical(option.moveId)
         val details = option.details
         if (details.currentPp <= 0) return emptyList()
+        val attempt = jbro.cobblemon.mcc.internal.ai.BattleActionCandidate("intent:repeat:${user.battlePokemonId}:$moveId",
+            jbro.cobblemon.mcc.internal.ai.BattleActionKind.USE_MOVE,user.activeSlot,0,moveId,moveDetails=details)
+        if (!jbro.cobblemon.mcc.betterai.mechanics.LocalConsecutiveMoveRules.canAttempt(attempt,state,user)) return emptyList()
         val effects = details.effects?.effects.orEmpty()
         fun option(kind: IntentKind, value: Double, targetId: UUID? = null) =
             IntentOption(kind, moveId, targetId, null, value, 0.0)

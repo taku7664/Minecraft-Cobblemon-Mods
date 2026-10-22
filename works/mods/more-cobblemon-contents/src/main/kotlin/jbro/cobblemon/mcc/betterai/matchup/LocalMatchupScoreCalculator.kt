@@ -374,6 +374,7 @@ internal object LocalMatchupScoreCalculator {
             .filterNot { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.isMaxMove(it.moveId) }
             // A Dynamaxed user's attacks are its Max Moves.
             .map { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.asMaxMove(it, user) }
+            .filter { jbro.cobblemon.mcc.betterai.mechanics.LocalConsecutiveMoveRules.canAttempt(it,state,user) }
             .mapNotNull { original ->
                 // Its own form change before it hits (Stance Change: Blade for an attack), as the turn projection reads it.
                 fun calculate(action: BattleActionCandidate): BattleDecisionContext {
@@ -427,8 +428,11 @@ internal object LocalMatchupScoreCalculator {
                 val disguised = jbro.cobblemon.mcc.betterai.mechanics.LocalDisguise.intact(state, target) &&
                     target.hpFraction > chip &&
                     !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(original, user, target, state)
-                val finalProfile = if (!disguised) profile
+                val guardedProfile = if (!disguised) profile
                     else (profile ?: LocalKnockoutProfile.of(rolls, accuracy, target.hpFraction, MAXIMUM_USES)).behindDisguise(chip)
+                val finalProfile = if (jbro.cobblemon.mcc.betterai.mechanics.LocalConsecutiveMoveRules.needsGap(action,user))
+                    (guardedProfile ?: LocalKnockoutProfile.of(rolls,accuracy,target.hpFraction,MAXIMUM_USES)).withGapBetweenUses()
+                    else guardedProfile
                 val firstRolls = if (firstHitLimit == null) rolls else rolls.map { minOf(it, firstHitLimit) }
                 ScoredMove(moveScore(userId, moveId, targetId, firstRolls, accuracy, target.hpFraction, finalProfile).copy(
                     selfKnockoutChance = selfKnockout,

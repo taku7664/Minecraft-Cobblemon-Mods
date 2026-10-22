@@ -21,6 +21,12 @@ internal class LocalKnockoutProfile private constructor(
     /** Expected uses to a knockout; infinite when the move cannot deal damage. */
     val expectedUses: Double,
 ) {
+    /** A legal first use, then an intervening turn between uses (the data's cantusetwice flag). */
+    fun withGapBetweenUses(): LocalKnockoutProfile = LocalKnockoutProfile(
+        survival.indices.map { survival[(it + 1) / 2] },
+        damageWhileStanding.indices.map { damageWhileStanding[(it + 1) / 2] },
+        if (expectedUses.isInfinite()) expectedUses else (2.0 * expectedUses - 1.0).coerceAtLeast(0.0),
+    )
     /**
      * The same move into an intact Disguise: the first use only breaks it for an eighth of the target's HP, so every
      * knockout comes one use later. Read without it, a Bisharp's Iron Head was a sure knockout into a fresh Mimikyu and
