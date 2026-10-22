@@ -404,11 +404,18 @@ internal object LocalMatchupScoreCalculator {
                 // A Max Move is scored under the move it came from: the battle's candidates keep that id (the game's adapter
                 // hands a Dynamax move over as the base move with the Max Move's details), and every reader matches by it.
                 val moveId = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.baseMoveId(original) ?: PublicIds.canonical(candidate.moveId ?: action.actionId)
+                val firstHitLimit = if (jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit.maximumCount(candidate) <= 1 &&
+                    !jbro.cobblemon.mcc.betterai.mechanics.LocalDisguise.intact(state, target) &&
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalFullHealthSurvivalRules.survivesAnySingleHit(state, target,
+                        jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, user, target, state))) {
+                    val oneHp = 1.0 / (target.combatStats?.maxHp?.maximum ?: LocalKnockoutProfile.MAXIMUM_CELLS)
+                    (target.hpFraction - oneHp).coerceAtLeast(0.0)
+                } else null
                 val profile = LocalRepeatedMoveMechanics.profile(position, action, userId, targetId, rolls, accuracy, cache)
-                    ?: if (selfCostRank(original) == SELF_KNOCKOUT_RANK) LocalKnockoutProfile.once(rolls, accuracy, target.hpFraction, MAXIMUM_USES)
+                    ?: if (selfCostRank(original) == SELF_KNOCKOUT_RANK) LocalKnockoutProfile.once(rolls, accuracy, target.hpFraction, MAXIMUM_USES, firstHitLimit)
                     else ownStageRolls(position, action, user, rolls, side, cache)?.let {
-                        LocalKnockoutProfile.byHits(it, accuracy, target.hpFraction, MAXIMUM_USES)
-                    }
+                        LocalKnockoutProfile.byHits(it, accuracy, target.hpFraction, MAXIMUM_USES, firstHitLimit)
+                    } ?: firstHitLimit?.let { LocalKnockoutProfile.of(rolls, accuracy, target.hpFraction, MAXIMUM_USES, it) }
                 // Its own knockout as the outcome projector reads it: Final Gambit's only when it lands.
                 val selfKnockout = original.moveDetails?.effects?.effects.orEmpty().filter {
                     it.target == jbro.cobblemon.mcc.internal.ai.BattleMoveEffectTarget.USER && it.kind == BattleMoveEffectKind.SELF_DESTRUCT
@@ -422,7 +429,8 @@ internal object LocalMatchupScoreCalculator {
                     !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(original, user, target, state)
                 val finalProfile = if (!disguised) profile
                     else (profile ?: LocalKnockoutProfile.of(rolls, accuracy, target.hpFraction, MAXIMUM_USES)).behindDisguise(chip)
-                ScoredMove(moveScore(userId, moveId, targetId, rolls, accuracy, target.hpFraction, finalProfile).copy(
+                val firstRolls = if (firstHitLimit == null) rolls else rolls.map { minOf(it, firstHitLimit) }
+                ScoredMove(moveScore(userId, moveId, targetId, firstRolls, accuracy, target.hpFraction, finalProfile).copy(
                     selfKnockoutChance = selfKnockout,
                     priority = LocalPublicTurnOrder.effectivePriority(state, side, action),
                 ), original)

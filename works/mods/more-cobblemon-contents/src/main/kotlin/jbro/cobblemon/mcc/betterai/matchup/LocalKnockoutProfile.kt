@@ -50,8 +50,9 @@ internal class LocalKnockoutProfile private constructor(
          * as [of] reads it, nothing after. Repeating its roll made an Explosion that leaves the target standing read as
          * two uses to a knockout, the opponent's best hit at every Pokemon in front of an Explosion user (2026-10-18).
          */
-        fun once(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
-            val first = of(rolls, accuracy, targetHp, 1)
+        fun once(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int,
+            firstHitLimit: Double? = null): LocalKnockoutProfile {
+            val first = of(rolls, accuracy, targetHp, 1, firstHitLimit)
             val survival = List(maximumUses + 1) { first.survival[minOf(it, 1)] }
             val damage = List(maximumUses + 1) { first.damageWhileStanding[minOf(it, 1)] }
             return LocalKnockoutProfile(survival, damage, if (survival[1] <= 0.0) 1.0 else Double.POSITIVE_INFINITY)
@@ -63,22 +64,36 @@ internal class LocalKnockoutProfile private constructor(
          * last list for every landing after. A miss changes nothing, so the table also tracks how many have landed.
          * Repeating the first roll read the third Draco Meteor as hard as the first (2026-10-18).
          */
-        fun byHits(rollsByHits: List<List<Double>>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
-            if (rollsByHits.size <= 1) return of(rollsByHits.firstOrNull().orEmpty(), accuracy, targetHp, maximumUses)
+        fun byHits(rollsByHits: List<List<Double>>, accuracy: Double, targetHp: Double, maximumUses: Int,
+            firstHitLimit: Double? = null): LocalKnockoutProfile {
+            if (rollsByHits.size <= 1) return of(rollsByHits.firstOrNull().orEmpty(), accuracy, targetHp, maximumUses, firstHitLimit)
             val hit = accuracy.coerceIn(0.0, 1.0)
             if (targetHp <= 0.0 || hit <= 0.0 || rollsByHits.first().isEmpty() || rollsByHits.first().average() <= 0.0) {
                 return of(rollsByHits.first(), accuracy, targetHp, maximumUses)
             }
             val steps = rollsByHits.map { rolls -> rolls.map { floor(it / targetHp * GRID).toInt().coerceIn(0, GRID) } }
             // standing[k][taken]: still up, having taken that much from k landed uses.
-            var standing = Array(maximumUses + 1) { DoubleArray(GRID) }.also { it[0][0] = 1.0 }
+            var standing = Array(maximumUses + 1) { DoubleArray(GRID) }.also { if (firstHitLimit == null) it[0][0] = 1.0 }
+            // Misses leave full-health survival ready. A landed damaging hit spends it even if max HP is one,
+            // where the surviving target still has its whole (one-HP) bar and cannot be distinguished by HP alone.
+            var fresh = DoubleArray(maximumUses + 1).also { if (firstHitLimit != null) it[0] = 1.0 }
+            val firstLimit = firstHitLimit?.let { floor(it / targetHp * GRID).toInt().coerceIn(0, GRID - 1) } ?: GRID
             val survival = ArrayList<Double>(maximumUses + 1).apply { add(1.0) }
             val damage = ArrayList<Double>(maximumUses + 1).apply { add(0.0) }
             repeat(maximumUses) {
                 val next = Array(maximumUses + 1) { DoubleArray(GRID) }
+                val nextFresh = DoubleArray(maximumUses + 1)
                 for (landed in 0 until maximumUses) {
                     val rolls = steps[minOf(landed, steps.lastIndex)]
                     val perRoll = if (rolls.isEmpty()) 0.0 else hit / rolls.size
+                    val ready = fresh[landed]
+                    if (ready > 0.0) {
+                        nextFresh[landed] += ready * (1.0 - hit)
+                        for (step in rolls) {
+                            if (step <= 0) nextFresh[landed + 1] += ready * perRoll
+                            else next[landed + 1][minOf(step, firstLimit)] += ready * perRoll
+                        }
+                    }
                     for (taken in 0 until GRID) {
                         val mass = standing[landed][taken]
                         if (mass == 0.0) continue
@@ -90,7 +105,8 @@ internal class LocalKnockoutProfile private constructor(
                     }
                 }
                 standing = next
-                var alive = 0.0
+                fresh = nextFresh
+                var alive = fresh.sum()
                 var taken = 0.0
                 for (row in standing) for (cell in row.indices) {
                     alive += row[cell]
@@ -110,7 +126,7 @@ internal class LocalKnockoutProfile private constructor(
                 while (remaining > 0.0) {
                     val mean = means[minOf(stage, means.lastIndex)]
                     if (mean <= 0.0) return Double.POSITIVE_INFINITY
-                    if (remaining <= mean) return uses + remaining / (mean * hit)
+                    if (remaining <= mean) return uses + if (firstHitLimit != null) 1.0 / hit else remaining / (mean * hit)
                     uses += 1.0 / hit
                     remaining -= mean
                     stage++
@@ -123,6 +139,17 @@ internal class LocalKnockoutProfile private constructor(
                 if (mass == 0.0) continue
                 tail += mass * usesLeft(landed, (targetHp - cell.toDouble() / GRID * targetHp).coerceAtLeast(0.0))
             }
+            fun freshUsesLeft(landed: Int): Double {
+                val stage = minOf(landed, steps.lastIndex)
+                val rolls = steps[stage]
+                val zero = rolls.count { it <= 0 }.toDouble() / rolls.size
+                val afterHit = rolls.filter { it > 0 }.sumOf { step ->
+                    usesLeft(landed + 1, targetHp * (1.0 - minOf(step, firstLimit).toDouble() / GRID))
+                } / rolls.size
+                return if (stage == steps.lastIndex) (1.0 / hit + afterHit) / (1.0 - zero)
+                    else 1.0 / hit + afterHit + if (zero > 0.0) zero * freshUsesLeft(landed + 1) else 0.0
+            }
+            for (landed in fresh.indices) if (fresh[landed] > 0.0) tail += fresh[landed] * freshUsesLeft(landed)
             return LocalKnockoutProfile(survival, damage, (0 until maximumUses).sumOf { survival[it] } + tail)
         }
 
@@ -130,14 +157,19 @@ internal class LocalKnockoutProfile private constructor(
          * The same rolls, accuracy and HP give the same profile, and the exchange tables ask for the same ones over and over
          * (every board a decision projects): kept, a bounded few thousand, cleared when full. The profile is never changed.
          */
-        private data class Key(val rolls: List<Double>, val accuracy: Double, val targetHp: Double, val maximumUses: Int)
+        private data class Key(val rolls: List<Double>, val accuracy: Double, val targetHp: Double, val maximumUses: Int,
+            val firstHitLimit: Double?)
         private val known = java.util.concurrent.ConcurrentHashMap<Key, LocalKnockoutProfile>()
         private const val KNOWN_LIMIT = 4096
 
-        fun of(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int): LocalKnockoutProfile {
-            val key = Key(rolls.toList(), accuracy, targetHp, maximumUses)
+        fun of(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int,
+            firstHitLimit: Double? = null): LocalKnockoutProfile {
+            val key = Key(rolls.toList(), accuracy, targetHp, maximumUses, firstHitLimit)
             known[key]?.let { return it }
-            return computed(rolls, accuracy, targetHp, maximumUses).also {
+            val result = if (firstHitLimit != null && targetHp > 0.0 && accuracy > 0.0 && rolls.isNotEmpty() && rolls.average() > 0.0)
+                byHits(listOf(rolls, rolls), accuracy, targetHp, maximumUses, firstHitLimit)
+                else computed(rolls, accuracy, targetHp, maximumUses)
+            return result.also {
                 if (known.size >= KNOWN_LIMIT) known.clear()
                 known[key] = it
             }
