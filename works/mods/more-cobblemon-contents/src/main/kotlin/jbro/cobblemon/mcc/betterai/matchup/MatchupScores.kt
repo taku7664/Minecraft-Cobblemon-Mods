@@ -247,6 +247,8 @@ internal data class SwitchInScore(
     val worstSurvival: Double,
     val afterEntry: PokemonMatchupScore?,
     val score: Double,
+    /** Falls to entry hazards before the opponent can act, even when it switches out. */
+    val entryFaints: Boolean = false,
 )
 
 /**

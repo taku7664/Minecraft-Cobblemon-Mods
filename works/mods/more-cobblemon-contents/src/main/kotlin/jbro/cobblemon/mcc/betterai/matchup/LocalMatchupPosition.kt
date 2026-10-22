@@ -38,7 +38,14 @@ internal object LocalMatchupPosition {
         }.firstOrNull {
             it.kind == BattleActionKind.SWITCH && it.switchPokemonId == pokemon.battlePokemonId && (slot == null || it.actorSlot == slot)
         }
-            ?: return null
+            // After an entry-hazard knockout there is nobody alive in front. The current-turn action factory has no
+            // switch for this projected position; its replacement still enters by the same public switch projection.
+            ?: if (!pokemon.fainted && pokemon.hpFraction > 0.0 && state.pokemon.any {
+                it.side == pokemon.side && it.activeSlot == (slot ?: 0) && (it.fainted || it.hpFraction <= 0.0)
+            } && state.pokemon.none {
+                it.side == pokemon.side && it.activeSlot == (slot ?: 0) && !it.fainted && it.hpFraction > 0.0
+            }) jbro.cobblemon.mcc.internal.ai.BattleActionCandidate("matchup:replacement:${pokemon.battlePokemonId}",
+                BattleActionKind.SWITCH, actorSlot = slot ?: 0, switchPokemonId = pokemon.battlePokemonId) else return null
         val calculated = cache.getOrCalculate(state, pokemon.side, action, source.publicActionCatalog) {
             PublicBattleTacticalCalculator.calculate(source.copy(state = state, candidates = listOf(action)), pokemon.side)
         }

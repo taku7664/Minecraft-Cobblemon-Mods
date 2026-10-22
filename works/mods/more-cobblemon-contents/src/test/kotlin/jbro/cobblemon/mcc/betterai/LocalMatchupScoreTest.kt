@@ -654,6 +654,115 @@ class LocalMatchupScoreTest {
         return BattleActionCandidate("setup", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 1, moveId = option.moveId, moveDetails = option.details)
     }
 
+    @Test
+    fun `entry hazards kill before an attack and cannot be avoided by an opponent switching`() {
+        val original = context(150, 100, allyPower = 65.0, foePower = 40.0, rocksOnAllySide = true)
+        val board = original.state.derive(pokemon = original.state.pokemon.map {
+            when (it.battlePokemonId) {
+                ALLY -> it.copyState(hpFraction = 0.5)
+                BENCH -> it.copyState(hpFraction = 0.04)
+                else -> it
+            }
+        })
+        val attack = BattleActionCandidate("move 1", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+            moveId = "probe", moveDetails = original.publicActionCatalog.forPokemon(ALLY).first().details)
+        val switch = BattleActionCandidate("switch 2", BattleActionKind.SWITCH, actorSlot = 0, switchPokemonId = BENCH)
+        val c = original.copy(state = board, candidates = listOf(attack, switch))
+        val scores = LocalMatchupScoreCalculator.calculate(c)
+        val entry = scores.switchIn(BENCH, FOE, ALLY)!!
+        assertTrue(entry.entryFaints)
+        assertEquals(0.0, entry.predictedSurvival)
+        assertEquals(0.0, entry.hpAfterEntry)
+        assertEquals(-1.0, entry.score)
+        val returned = c.copy(state = c.state.derive(pokemon = c.state.pokemon.map {
+            when (it.battlePokemonId) {
+                ALLY -> it.copyState(hpFraction = 0.5 - 18.0 / 150.0)
+                BENCH -> it.copyState(hpFraction = 0.0, fainted = true)
+                else -> it
+            }
+        }))
+        val returningScore = LocalMatchupScoreCalculator.pairMatchup(returned, ALLY, FOE, MatchupSpeedField.CURRENT,
+            jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache())!!.score
+        for (chance in listOf(0.0, 1.0)) {
+            jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.begin()
+            try {
+                LocalSwitchRules.judge(c.candidates, c, scores, foeSwitchChances = mapOf(FOE to chance))
+                val internals = jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.take().getValue("switch:switch 2")
+                assertEquals(0.0, internals.getValue("survival"))
+                assertEquals(1.0, internals.getValue("returns"))
+                assertEquals(0.5 - 18.0 / 150.0, internals.getValue("keptHp"), 1e-9)
+                assertEquals(returningScore, internals.getValue("freeAfterIncoming"), 1e-9)
+                assertEquals(internals.getValue("switchGoesOn") - internals.getValue("stayGoesOn") + internals.getValue("kept"),
+                    internals.getValue("gain"), 1e-9)
+            } finally {
+                jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.clear()
+            }
+        }
+    }
+
+    @Test
+    fun `a faster heal blocking hit scales only the heal by its probability and accuracy`() {
+        val (c, heal) = healingContext(100, 150, accuracy = 80.0)
+        val scores = LocalMatchupScoreCalculator.calculate(c)
+        val baseline = jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(listOf(heal), c, scores).getValue(heal.actionId)
+        assertTrue(baseline > 0.0)
+        val intent = healingIntent(0.4)
+        val blocked = jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(listOf(heal), c, scores, intent).getValue(heal.actionId)
+        assertEquals(baseline * (1.0 - 0.4 * 0.8), blocked, 1e-7)
+    }
+
+    @Test
+    fun `a heal before the blocking hit keeps its return`() {
+        val (c, heal) = healingContext(150, 100)
+        val scores = LocalMatchupScoreCalculator.calculate(c)
+        val baseline = jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(listOf(heal), c, scores).getValue(heal.actionId)
+        assertEquals(baseline, jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(listOf(heal), c, scores, healingIntent(1.0)).getValue(heal.actionId), 1e-9)
+    }
+
+    @Test
+    fun `an existing heal block removes the heal return`() {
+        val (base, heal) = healingContext(150, 100)
+        val c = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+            if (it.battlePokemonId == ALLY) it.copyState(knownVolatileEffectIds = setOf("healblock", "healblockturns:1")) else it
+        }))
+        assertEquals(0.0, jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(listOf(heal), c,
+            LocalMatchupScoreCalculator.calculate(c)).getValue(heal.actionId))
+    }
+
+    @Test
+    fun `a sound immunity or secondary shield prevents psychic noise from blocking recovery`() {
+        for ((ability, item) in listOf("soundproof" to null, "shielddust" to null, null to "covertcloak")) {
+            val (base, heal) = healingContext(100, 150)
+            val c = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+                if (it.battlePokemonId == ALLY) it.copyState(knownAbilityId = ability, knownHeldItemId = item) else it
+            }))
+            val scores = LocalMatchupScoreCalculator.calculate(c)
+            val baseline = jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(listOf(heal), c, scores).getValue(heal.actionId)
+            assertEquals(baseline, jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(listOf(heal), c, scores, healingIntent(1.0)).getValue(heal.actionId), 1e-9)
+        }
+    }
+
+    private fun healingIntent(chance: Double) = listOf(jbro.cobblemon.mcc.betterai.matchup.OpponentIntent(FOE, 0,
+        listOf(jbro.cobblemon.mcc.betterai.matchup.IntentOption(jbro.cobblemon.mcc.betterai.matchup.IntentKind.ATTACK,
+            "psychicnoise", ALLY, null, 0.0, chance))))
+
+    private fun healingContext(allySpeed: Int, foeSpeed: Int, accuracy: Double = 100.0): Pair<BattleDecisionContext, BattleActionCandidate> {
+        val noise = BattlePublicMoveOptionView("psychicnoise", BattleMoveCandidateView(typeId = "psychic",
+            damageCategory = BattleMoveDamageCategory.SPECIAL, power = 30.0, accuracy = accuracy, priority = 0, currentPp = 10,
+            effects = BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                listOf(BattleMoveEffectView(BattleMoveEffectKind.VOLATILE_STATUS, BattleMoveEffectTarget.SELECTED_TARGET,
+                    probability = 1.0, valueId = "healblock")), false, mechanicFlags = setOf("sound", "bypasssub"))),
+            BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+        val heal = BattleActionCandidate("heal", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0, moveId = "recover",
+            moveDetails = BattleMoveCandidateView(typeId = "normal", damageCategory = BattleMoveDamageCategory.STATUS,
+                power = 0.0, accuracy = 100.0, priority = 0, currentPp = 10, targetPattern = BattleMoveTargetPattern.SELF),
+            facts = BattleCandidateFactsView(baseAccuracyProbability = 1.0, selfHealingFractionRange = BattleFractionRange(0.5, 0.5)))
+        val base = context(allySpeed, foeSpeed, allyPower = 60.0, foePower = 30.0, foeExtra = listOf(noise))
+        return base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+            if (it.battlePokemonId == ALLY) it.copyState(hpFraction = 0.5) else it
+        }), candidates = listOf(heal)) to heal
+    }
+
     private fun context(
         allySpeed: Int,
         foeSpeed: Int,

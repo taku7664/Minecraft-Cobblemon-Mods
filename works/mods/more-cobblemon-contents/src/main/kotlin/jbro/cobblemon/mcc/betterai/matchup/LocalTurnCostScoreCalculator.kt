@@ -118,6 +118,13 @@ internal object LocalTurnCostScoreCalculator {
         cache: LocalProjectedActionCalculationCache,
     ): SwitchInScore? {
         val entered = LocalMatchupPosition.enter(context, incoming, cache, slot = replaced.activeSlot) ?: return null
+        val placedIncoming = entered.state.pokemon.firstOrNull { it.battlePokemonId == incoming.battlePokemonId } ?: return null
+        // Entry hazards happen before either side's move. No incoming attack to score does not mean this Pokemon lives.
+        if (placedIncoming.fainted || placedIncoming.hpFraction <= 0.0) return SwitchInScore(
+            incoming.battlePokemonId, opponent.battlePokemonId, replaced.battlePokemonId,
+            predictedMoveId = null, predictedSurvival = 0.0, hpAfterEntry = 0.0,
+            worstMoveId = null, worstSurvival = 0.0, afterEntry = null, score = -1.0, entryFaints = true,
+        )
         val position = LocalMatchupPosition.enter(entered, opponent, cache) ?: return null
         val predictedMoveId = pairs.pokemon(replaced.battlePokemonId, opponent.battlePokemonId)?.opponentMove?.moveId
         val againstIncoming = LocalMatchupScoreCalculator.moveMatchups(position, opponent.battlePokemonId, incoming.battlePokemonId, cache)

@@ -779,7 +779,7 @@ internal class LocalTacticalBrain(
         // A self-heal's ranking value becomes what it restores to the user's standing, in the same units as an attack
         // (LocalHealValue). Its heal race's own-heal charge is that reading's to make, so it is left out for these moves.
         val healValueAdjustments = if (!rulesApply || difficultyContext.state.format != BattleFormat.SINGLE) emptyMap() else ruleScores?.let { scores ->
-            val values = jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(searchedRanked.map { it.outcome.candidate }, rulesContext, scores)
+            val values = jbro.cobblemon.mcc.betterai.matchup.LocalHealValue.values(searchedRanked.map { it.outcome.candidate }, rulesContext, scores, opponentIntents)
             // A heal with nothing to restore keeps its publicly-inert tier.
             searchedRanked.mapNotNull { rank -> if (rank.outcome.publiclyInert) null
                 else values[rank.outcome.candidate.actionId]?.let { rank.outcome.candidate.actionId to it - rank.comparisonValue } }.toMap()
