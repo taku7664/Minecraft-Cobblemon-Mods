@@ -2,6 +2,15 @@
 
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 
+## [2026-10-23 03:34] 전체 기본 검사 OOM·별도 모듈 검사 결과와 미공개 특성 혼합 추가 검증 (재실행은 진행 중)
+
+- **전체 기본 JUnit:** 임시 Temp 클래스만 제외한 실행은 70분 54초 뒤 `Java heap space`로 종료됐다(`full-review-20261023/all.log`, `all-execution.json`, 힙 상한 6GB). 최종 XML이 생성되지 않아 성공 개수는 확정하지 않는다. `LocalFirstStrikeWeightTest`의 400판 측정 출력 뒤 `LocalSelfPlayMeasurementTest` 자체 대전에서 중단됐으며, 현재 장기 측정 두 클래스만 제외한 나머지 전체 스캔을 별도로 실행 중이다. 이 재실행에도 기본으로 켜지는 `LocalSearchAuthoritySweepTest`의 240판 실험 등이 들어 있다. `sweeps=false`로 모든 장기 실험이 꺼지지는 않는다. 측정 결과로 가중치를 변경하지 않았다.
+- **OOM의 범위:** 스택은 상태 지문 → 원자 행동 캐시 → 랭크 변화 → 재귀 탐색 경로였으나 할당 실패 위치만으로 보존 객체나 누수를 단정하지 않는다. 최초 실행에는 힙 덤프가 없다. 재실행 검사 JVM만 OOM 시 F 경로에 덤프를 쓰게 설정했다(`regression-oom-flags.txt`, F의 `validate.py`에도 반영). 강제 덤프·GC·검사 중지는 하지 않았다. 실게임/아레나는 탐색을 끄므로 실게임 OOM을 재현했다고 보고하지 않는다.
+- **별도 비-AI 모듈 검사:** 처음 660개 중 654 통과·6 실패. 형제 모듈 소스 경로 누락 3건은 F 사본을 보완했고, 원본 CRLF와 테스트의 LF 문자열 불일치 1건은 F 사본만 LF로 바꿔 대조했다. 재검사 658 통과·2 실패(`core-report.json`, `core-lf-reports/`). 두 실패는 `Cobblemon173ActionCandidateAdapterTest`가 포켓몬을 넘기지 않는 입력과 현재 `ManagedDynamax.permits(null, livingTeam)=false`의 계약 차이다. 저장소의 해당 테스트/게임 소스는 수정하지 않았다. LF 사본 검사를 원본 Windows 소스 전체 통과로 대신하지 않는다.
+- **미공개 특성 혼합의 별도 오류(미수정):** 앞선 옹골참/깨어진갑옷은 공개 KO 0.5, 대면 KO1 1.0이다. 추가로 부유/내열 균등 후보는 공개 KO 0.5인데 대면 KO1 0.9375, KO2 0.99609375였다(`worlds-crosscheck.json`, `worlds-run.log`). 면역 분기의 롤 1개와 일반 분기의 16개를 평탄화해 후보 가중치가 달라지고, 혼합 롤을 매 사용마다 다시 뽑는 형태라 고정 특성 조건도 사라진다. 후보별 누적표를 만든 뒤 확률로 합칠 공통 경로가 필요하다. 이번 검수에서는 AI 계산 소스를 추가로 바꾸지 않았다.
+- **아레나 기록 재대조:** 프로파일링 run `20261023-011215-profile-review`의 면역 35건은 실행 전 상대 교체 18·아군 지진 면역 12·반사된 맹독 1·광역기의 상대 한쪽 면역 2·정화의소금 2다(`immune-review.json`). 정화의소금은 앞선 검수에서 사용 전 `knownAbilityId=null`, 알려 준 재생에서는 면역 true였던 장면과 같은 로그다. 실패 16건 안의 `[notarget]` 5건을 놓치던 F 집계 스크립트와 JSON도 보완했다. 전투 동작은 바꾸지 않았다.
+- **문서·미확인 사항:** [`docs/BETTERAI_OPTIMIZATION_REVIEW.md`](docs/BETTERAI_OPTIMIZATION_REVIEW.md)에 위 결과와 랭크 간단식의 실제 적용 배율 조건을 추가했다. JSON 로더·최적화 옵션은 여전히 제안이며 미구현이다. AI main 소스는 `046028809`와 같다. 현재 셸 TEMP/TMP도 F임을 재확인했다. 게임용 JAR 생성·설치·서버/클라이언트 실행·실게임 확인은 하지 않았다. 재실행 JUnit의 최종 집계는 아직 없다.
+
 ## [2026-10-23 01:54] 계산 병목·JSON 옵션 후보 정리, 미공개 옹골참 대면 KO 불일치 발견 (전체 기본 JUnit은 진행 중)
 
 - **조사 결과:** [`docs/BETTERAI_OPTIMIZATION_REVIEW.md`](docs/BETTERAI_OPTIMIZATION_REVIEW.md)에 실제 JFR 근거, 함수별 병목, 같은 결과를 유지하는 캐시/해시 개선, 간단한 식으로 바꿀 JSON 옵션 7개와 손실되는 세부 판단을 정리했다. JSON 로더·옵션·최적화 계산은 구현하거나 켜지 않았다.
