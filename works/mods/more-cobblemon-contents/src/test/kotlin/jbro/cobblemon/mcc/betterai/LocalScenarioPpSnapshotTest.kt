@@ -6,6 +6,22 @@ import org.junit.jupiter.api.Test
 
 class LocalScenarioPpSnapshotTest {
     @Test
+    fun `scenario perspectives retain a type lost by Double Shock`() {
+        val contexts = mutableListOf<BattleDecisionContext>()
+        LocalTacticalScenarioBattle.run(LocalTacticalScenarioDefinition("type-loss-15",
+            listOf("perrserker_preset_4", "pelipper_preset_2", "pawmot_preset_2"),
+            listOf("jumpluff_preset_4", "volbeat_preset_2", "archaludon_preset_4"), -876703363),
+            maximumTurns = 15, recordedContexts = contexts)
+        val changed = contexts.filter { context -> context.state.pokemon.any { pokemon ->
+            PublicIds.canonical(pokemon.speciesId) == "pawmot" && pokemon.activeSlot != null &&
+                pokemon.knownTypeIds == setOf("fighting")
+        } }
+        assertTrue(changed.isNotEmpty(), "fixture must reach the lost Electric type")
+        assertTrue(changed.any { c -> c.state.pokemon.any { PublicIds.canonical(it.speciesId) == "pawmot" && it.side == BattleSide.ALLY } })
+        assertTrue(changed.any { c -> c.state.pokemon.any { PublicIds.canonical(it.speciesId) == "pawmot" && it.side == BattleSide.OPPONENT } })
+    }
+
+    @Test
     fun `both brains receive current PP consistent with executed public moves and legal candidates`() {
         val contexts = mutableListOf<BattleDecisionContext>()
         val definition = LocalTacticalScenarioDefinition(

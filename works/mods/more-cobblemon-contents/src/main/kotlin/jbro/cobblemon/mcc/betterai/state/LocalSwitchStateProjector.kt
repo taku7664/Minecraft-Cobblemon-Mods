@@ -113,7 +113,9 @@ internal object LocalSwitchStateProjector {
         knownAbilityId = knownAbilityId,
         knownHeldItemId = knownHeldItemId,
         fainted = fainted,
-        knownTypeIds = if (knownTeraTypeId == null) formState?.knownTypeIds ?: knownTypeIds else knownTypeIds,
+        // Temporary type changes end on leaving the field; a persistent mechanic keeps its battle type.
+        knownTypeIds = if (knownTeraTypeId == null)
+            formState?.knownTypeIds ?: knownBaseStabTypeIds.ifEmpty { knownTypeIds } else knownTypeIds,
         combatStats = formState?.combatStats ?: combatStats,
         knownFormStates = knownFormStates,
         actionConstraints = BattlePokemonActionConstraintView.empty(),

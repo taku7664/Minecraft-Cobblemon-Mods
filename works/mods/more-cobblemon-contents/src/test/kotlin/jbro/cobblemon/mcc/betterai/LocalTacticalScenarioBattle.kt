@@ -611,7 +611,9 @@ internal object LocalTacticalScenarioBattle {
                 knownAbilityId = template.abilityId.takeIf { own || pokemon.battlePokemonId in revealedAbilityIds },
                 knownHeldItemId = pokemon.knownHeldItemId.takeIf { own },
                 fainted = pokemon.fainted,
-                knownTypeIds = template.typeIds.takeIf { public }.orEmpty(),
+                knownTypeIds = pokemon.knownTypeIds.takeIf { public }.orEmpty(),
+                knownBaseStabTypeIds = pokemon.knownBaseStabTypeIds.takeIf { public }.orEmpty(),
+                knownVolatileEffectIds = emptySet(),
                 combatStats = when {
                     own -> template.stats.exactView()
                     public -> template.stats.publicView()

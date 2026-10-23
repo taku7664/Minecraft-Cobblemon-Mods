@@ -10,6 +10,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleMoveEffectsView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementKind
 import jbro.cobblemon.mcc.internal.ai.BattleMoveRequirementView
 import jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern
+import jbro.cobblemon.mcc.internal.ai.BattleShowdownMoveEffects
 import jbro.cobblemon.mcc.betterai.mechanics.LocalStallingProtectionRules
 
 /** Shared declarative mechanics for complete-preset battle simulations. */
@@ -120,11 +121,13 @@ internal object LocalTacticalSimulationMoveLibrary {
             "stealthrock", "stickyweb", "spikes", "toxicspikes" -> listOf(sideCondition(id))
             else -> emptyList()
         }
-        val requirements = if (id == "suckerpunch") {
+        // The scenario must carry the production parser's use conditions too. Without them a move
+        // needing the user's current type can succeed after that type has been lost in battle.
+        val requirements = (BattleShowdownMoveEffects.resolve(id)?.requirements.orEmpty() + if (id == "suckerpunch") {
             listOf(BattleMoveRequirementView(BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE))
         } else {
             emptyList()
-        }
+        }).distinctBy { Triple(it.kind, it.acceptedValueIds, it.threshold) }
         val mechanicFlags = buildSet {
             if (id in CONTACT_MOVES) add("contact")
             if (id in STALLING_PROTECTION_MOVES) add(LocalStallingProtectionRules.MECHANIC_FLAG)

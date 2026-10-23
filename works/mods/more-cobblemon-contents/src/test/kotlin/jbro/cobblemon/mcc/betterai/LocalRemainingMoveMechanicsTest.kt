@@ -11,6 +11,39 @@ import java.util.UUID
 import java.util.zip.ZipInputStream
 
 class LocalRemainingMoveMechanicsTest {
+    @Test fun `a temporary type loss ends on switching while a Tera type persists`() {
+        val user = mon(BattleSide.ALLY, 0).copyState(knownTypeIds = setOf("fighting"),
+            knownBaseStabTypeIds = setOf("electric", "fighting"))
+        val bench = mon(BattleSide.ALLY, null)
+        val foe = mon(BattleSide.OPPONENT, 0)
+        val action = BattleActionCandidate("switch", BattleActionKind.SWITCH, actorSlot = 0, switchPokemonId = bench.battlePokemonId)
+        fun switched(actor: BattlePokemonStateView) = jbro.cobblemon.mcc.betterai.state.LocalSwitchStateProjector.project(
+            testState(listOf(actor, bench, foe)), BattleSide.ALLY, action).pokemon.first()
+        assertEquals(setOf("electric", "fighting"), switched(user).knownTypeIds)
+        assertEquals(setOf("fighting"), switched(user.copyState(knownTeraTypeId = "fighting")).knownTypeIds)
+    }
+
+    @Test fun `scenario move data carries parsed type requirements into execution`() {
+        val details = LocalTacticalSimulationMoveLibrary.details(LocalTacticalSimulationMove(
+            "doubleshock", "electric", 120.0, BattleMoveDamageCategory.PHYSICAL, 100.0, 0, 5))
+        assertTrue(details.effects!!.requirements.any {
+            it.kind == BattleMoveRequirementKind.USER_TYPE_ANY_OF && "electric" in it.acceptedValueIds
+        })
+        val sucker = LocalTacticalSimulationMoveLibrary.details(LocalTacticalSimulationMove(
+            "suckerpunch", "dark", 70.0, BattleMoveDamageCategory.PHYSICAL, 100.0, 1, 5))
+        assertEquals(1, sucker.effects!!.requirements.count { it.kind == BattleMoveRequirementKind.TARGET_PENDING_DAMAGING_MOVE })
+        val action = BattleActionCandidate("shock", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0,
+            moveId = "doubleshock", moveDetails = details, targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)))
+        val user = mon(BattleSide.ALLY, 0).copyState(knownTypeIds = setOf("fighting"))
+        val foe = mon(BattleSide.OPPONENT, 0)
+        val failed = turns(listOf(user, foe), action)
+        assertTrue(failed.isNotEmpty())
+        failed.forEach { assertEquals(1.0, it.stateBeforeResidual.pokemon.last().hpFraction, 1e-9) }
+        val succeeded = turns(listOf(user.copyState(knownTypeIds = setOf("electric", "fighting")), foe), action)
+        assertTrue(succeeded.any { it.stateBeforeResidual.pokemon.last().hpFraction < 1.0 })
+        assertTrue(succeeded.all { "electric" !in it.stateBeforeResidual.pokemon.first().knownTypeIds })
+    }
+
     @Test fun `Substitute survives a small hit and the second hit consumes its remaining HP`() {
         val user = mon(BattleSide.ALLY, 0)
         val foe = mon(BattleSide.OPPONENT, 0)
