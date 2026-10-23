@@ -147,14 +147,14 @@ class NativeTogekissDecisionProductBrainIntegrationTest {
             val attacks = setOf("airslash", "aurasphere")
             assertTrue(evaluation.ranked.first().outcome.candidate.moveId in attacks)
 
-            val shippingSelector = LocalWeightedActionSelector()
             var shortlistedMoves: Set<String> = emptySet()
             val brain = LocalTacticalBrain(
-                actionSelector = LocalActionSelector { ranked, seed, mixing ->
-                    shortlistedMoves = shippingSelector.shortlist(ranked, mixing)
+                decisionObserver = jbro.cobblemon.mcc.betterai.brain.LocalDecisionObserver { observed ->
+                    shortlistedMoves = observed.ranked.filter {
+                        (observed.selection.probabilitiesByActionId[it.outcome.candidate.actionId] ?: 0.0) > 0.0
+                    }
                         .mapNotNull { it.outcome.candidate.moveId }
                         .toSet()
-                    shippingSelector.choose(ranked, seed, mixing)
                 },
                 nativeInitialDecision = { supplied, _, _, _, previous, _ ->
                     assertEquals(context.candidates.map { it.actionId }, supplied.candidates.map { it.actionId })
@@ -273,12 +273,12 @@ class NativeTogekissDecisionProductBrainIntegrationTest {
             assertEquals(NativeInitialProductDecisionStatus.AVAILABLE, evaluation.status)
             assertEquals(2, evaluation.depthCompleted)
             var shortlistMoves = emptySet<String>()
-            val shippingSelector = LocalWeightedActionSelector()
             val brain = LocalTacticalBrain(
-                actionSelector = LocalActionSelector { ranked, seed, mixing ->
-                    shortlistMoves = shippingSelector.shortlist(ranked, mixing)
+                decisionObserver = jbro.cobblemon.mcc.betterai.brain.LocalDecisionObserver { observed ->
+                    shortlistMoves = observed.ranked.filter {
+                        (observed.selection.probabilitiesByActionId[it.outcome.candidate.actionId] ?: 0.0) > 0.0
+                    }
                         .mapNotNull { it.outcome.candidate.moveId }.toSet()
-                    shippingSelector.choose(ranked, seed, mixing)
                 },
                 nativeInitialDecision = { _, _, _, _, _, _ -> evaluation },
             )

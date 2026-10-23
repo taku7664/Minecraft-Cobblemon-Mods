@@ -42,10 +42,10 @@ class EmbeddedTeamRoleDecisionTest {
         for (arm in listOf("CURRENT", "CURRENT_TEAM_COVERAGE", "CURRENT_UNCAPPED_LEAF", "CURRENT_ROOT_POOL")) {
             val delaysFinish = arm == "CURRENT_UNCAPPED_LEAF" && opponentLevel == 5
             val expectedAction = if (delaysFinish) "move 2" else "move 1"
-            val observer = LocalDecisionTraceSelector(choiceSeedOverride = 0)
+            val observer = LocalDecisionTraceObserver()
             val settings = if (arm == "CURRENT_ROOT_POOL") EmbeddedPolicyComparison.tuning("CURRENT")
                 .copy(id = "current_root_pool", revalidateRootChoicePool = true) else EmbeddedPolicyComparison.tuning(arm)
-            val brain = LocalTacticalBrain(actionSelector = observer, tuning = settings)
+            val brain = LocalTacticalBrain(decisionObserver = observer, tuning = settings)
             val session = brain.openSession(BattleBrainOpenContext(battleId, BattleFormat.SINGLE, trainerProfile = boss))
             try {
                 EmbeddedTeamBattle.NativeSession(directory.resolve("audit/engine"), pair,

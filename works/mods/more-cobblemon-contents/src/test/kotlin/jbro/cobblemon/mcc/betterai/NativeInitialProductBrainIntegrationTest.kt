@@ -212,7 +212,9 @@ class NativeInitialProductBrainIntegrationTest {
         val continuedState = nativeSessionState(context, "continued")
         var calls = 0
         var carriedAfterContinuation: NativeProductSessionState? = null
+        val observations = mutableListOf<jbro.cobblemon.mcc.betterai.brain.LocalDecisionObservation>()
         val brain = LocalTacticalBrain(
+            decisionObserver = jbro.cobblemon.mcc.betterai.brain.LocalDecisionObserver { observations += it },
             actionSelector = LocalActionSelector { ranked, seed, _ ->
                 LocalActionSelection(ranked.first(), seed, ranked.size, 1.0)
             },
@@ -252,6 +254,9 @@ class NativeInitialProductBrainIntegrationTest {
         val continued = brain.decide(session, context).toCompletableFuture().get()
         brain.decide(session, context).toCompletableFuture().get()
 
+        assertEquals(3, observations.size)
+        assertEquals(listOf("native_initial", "native_continuation"), observations.take(2).map { it.mode })
+        assertEquals(continued.actionId, observations[1].selected.outcome.candidate.actionId)
         assertEquals(continuedRanks.first().outcome.candidate.actionId, continued.actionId)
         assertTrue("native_showdown_continuation" in continued.tags)
         assertEquals("continued",

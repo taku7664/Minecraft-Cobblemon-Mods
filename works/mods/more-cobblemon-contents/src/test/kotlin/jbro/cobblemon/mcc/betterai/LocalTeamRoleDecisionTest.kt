@@ -48,7 +48,7 @@ class LocalTeamRoleDecisionTest {
         val current = trace(fixture(), positional, depth = 2)
         val team = trace(fixture(), positional.copy(
             id = "current_team_coverage", leafTeamCoverageWeight = 0.25), depth = 2)
-        fun scores(trace: LocalDecisionTraceSelector.Trace) = trace.ranked.associate {
+        fun scores(trace: jbro.cobblemon.mcc.betterai.brain.LocalDecisionObservation) = trace.ranked.associate {
             it.outcome.candidate.actionId to it.comparisonValue
         }
         val before = scores(current)
@@ -77,16 +77,16 @@ class LocalTeamRoleDecisionTest {
         assertSoleSelection(team, "sacrifice_redundant")
     }
 
-    private fun assertSoleSelection(trace: LocalDecisionTraceSelector.Trace, actionId: String) {
+    private fun assertSoleSelection(trace: jbro.cobblemon.mcc.betterai.brain.LocalDecisionObservation, actionId: String) {
         assertEquals(actionId, trace.selection.rank.outcome.candidate.actionId)
         assertEquals(1, trace.selection.shortlistSize)
         assertEquals(1.0, trace.selection.probability)
     }
 
     private fun trace(source: BattleDecisionContext, tuning: LocalDecisionTuning, depth: Int = 1,
-        foresightWeight: Double? = null): LocalDecisionTraceSelector.Trace {
-        val observer = LocalDecisionTraceSelector(choiceSeedOverride = 0)
-        val brain = LocalTacticalBrain(actionSelector = observer, tuning = tuning)
+        foresightWeight: Double? = null): jbro.cobblemon.mcc.betterai.brain.LocalDecisionObservation {
+        val observer = LocalDecisionTraceObserver()
+        val brain = LocalTacticalBrain(decisionObserver = observer, tuning = tuning)
         val boss = BattleTrainerProfile.balanced(5)
         val profile = boss.copy(difficulty = boss.difficulty.copy(lookaheadPlies = depth,
             foresightWeight = foresightWeight ?: boss.difficulty.foresightWeight))
@@ -95,6 +95,7 @@ class LocalTeamRoleDecisionTest {
             val decision = brain.decide(session, source).toCompletableFuture().get()
             assertTrue("lookahead_turns_$depth" in decision.tags)
             assertFalse("lookahead_truncated" in decision.tags)
+            assertEquals(1, observer.calls)
             return requireNotNull(observer.latest)
         } finally {
             brain.closeSession(session, BattleBrainCloseResult(BattleBrainCloseOutcome.CANCELLED, 1))

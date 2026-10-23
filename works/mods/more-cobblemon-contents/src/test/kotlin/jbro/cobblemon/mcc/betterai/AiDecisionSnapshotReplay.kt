@@ -7,11 +7,10 @@ import jbro.cobblemon.mcc.internal.ai.BattleBrainOpenContext
 import jbro.cobblemon.mcc.internal.ai.BattleDecision
 import jbro.cobblemon.mcc.betterai.brain.AiTestDecisionSnapshot
 import jbro.cobblemon.mcc.betterai.brain.LocalDecisionStages
+import jbro.cobblemon.mcc.betterai.brain.LocalDecisionObservation
 import jbro.cobblemon.mcc.betterai.brain.LocalTacticalBrain
 import jbro.cobblemon.mcc.betterai.policy.LocalActionSelection
-import jbro.cobblemon.mcc.betterai.policy.LocalActionSelector
 import jbro.cobblemon.mcc.betterai.policy.LocalBattleActionRank
-import jbro.cobblemon.mcc.betterai.policy.LocalWeightedActionSelector
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionEvaluation
 import jbro.cobblemon.mcc.betterai.search.NativeInitialProductDecisionStatus
 
@@ -38,26 +37,23 @@ internal object AiDecisionSnapshotReplay {
         snapshot: AiTestDecisionSnapshot,
         legacyOnly: Boolean = true,
         nowEpochMillis: Long = System.currentTimeMillis(),
-        /** The brain the game runs (MoreCobblemonContentsBetterAi): no search, the quick decider on. */
+        /** The brain the game runs (MoreCobblemonContentsBetterAi): no recursive search. */
         searchless: Boolean = false,
     ): Result {
-        val weighted = LocalWeightedActionSelector()
-        var captured: Pair<List<LocalBattleActionRank>, LocalActionSelection>? = null
-        val selector = LocalActionSelector { ranked, seed, mixing ->
-            weighted.choose(ranked, seed, mixing).also { captured = ranked to it }
-        }
+        var captured: LocalDecisionObservation? = null
+        val observer = jbro.cobblemon.mcc.betterai.brain.LocalDecisionObserver { captured = it }
         var stages: LocalDecisionStages? = null
         val brain = if (searchless) {
-            LocalTacticalBrain(actionSelector = selector, searchless = true, stageTrace = { stages = it })
+            LocalTacticalBrain(decisionObserver = observer, searchless = true, stageTrace = { stages = it })
         } else if (legacyOnly) {
             LocalTacticalBrain(
-                actionSelector = selector,
+                decisionObserver = observer,
                 nativeInitialDecision = { _, _, _, _, _, _ ->
                     NativeInitialProductDecisionEvaluation(NativeInitialProductDecisionStatus.NOT_APPLICABLE)
                 },
             )
         } else {
-            LocalTacticalBrain(actionSelector = selector)
+            LocalTacticalBrain(decisionObserver = observer)
         }
         val session = brain.openSession(BattleBrainOpenContext(
             battleId = snapshot.battleId,
@@ -68,9 +64,15 @@ internal object AiDecisionSnapshotReplay {
         ))
         val remaining = snapshot.context.deadlineEpochMillis - snapshot.capturedAtEpochMillis
         val context = snapshot.context.copy(deadlineEpochMillis = nowEpochMillis + remaining.coerceAtLeast(0L))
-        val decision = brain.decide(session, context).toCompletableFuture().get()
-        val (ranked, selection) = captured ?: error("The replayed decision never reached the selector")
-        return Result(decision, ranked, selection, stages)
+        try {
+            val decision = brain.decide(session, context).toCompletableFuture().get()
+            val observed = captured ?: error("The replayed decision did not publish its result")
+            check(observed.selected.outcome.candidate.actionId == decision.actionId)
+            return Result(decision, observed.ranked, observed.selection, stages)
+        } finally {
+            brain.closeSession(session, jbro.cobblemon.mcc.internal.ai.BattleBrainCloseResult(
+                jbro.cobblemon.mcc.internal.ai.BattleBrainCloseOutcome.CANCELLED, context.state.turn))
+        }
     }
 
     /** `./gradlew :more-cobblemon-contents:replayDecisionSnapshot -Psnapshot=<file>` */

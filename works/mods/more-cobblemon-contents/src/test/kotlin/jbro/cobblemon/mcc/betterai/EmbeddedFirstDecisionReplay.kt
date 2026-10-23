@@ -82,8 +82,10 @@ internal object EmbeddedFirstDecisionReplay {
         val turn = row["turn"].asInt
         val context = EmbeddedTeamInput.context(row.getAsJsonObject("input"), battleId, turn, snapshotIndex ?: 0)
         val choiceSeedOverride = choiceSeedOverride(args.getOrNull(8))
-        val observer = LocalDecisionTraceSelector(choiceSeedOverride)
-        val brain = LocalTacticalBrain(actionSelector = observer, tuning = tuning)
+        val observer = LocalDecisionTraceObserver()
+        val selector = choiceSeedOverride?.let(::LocalSeedOverrideActionSelector)
+            ?: jbro.cobblemon.mcc.betterai.policy.LocalWeightedActionSelector()
+        val brain = LocalTacticalBrain(actionSelector = selector, decisionObserver = observer, tuning = tuning)
         val session = brain.openSession(BattleBrainOpenContext(battleId, context.state.format, trainerProfile = profile))
         try {
             val started = System.nanoTime()
@@ -99,7 +101,11 @@ internal object EmbeddedFirstDecisionReplay {
                 "battleId" to battleId.toString(), "profile" to profile, "tuning" to tuning.id,
                 "recordedAction" to row["actionId"].asString, "replayedAction" to decision.actionId,
                 "tags" to decision.tags, "seed" to trace?.selection?.seed,
-                "choiceSeedMode" to if (choiceSeedOverride == null) "PRODUCTION_DERIVED" else "FIXED_DIAGNOSTIC",
+                "choiceSeedMode" to when {
+                    choiceSeedOverride == null -> "PRODUCTION_DERIVED"
+                    trace?.mixing == null || profile.difficulty.tier == BattleTrainerTier.BOSS -> "FIXED_DIAGNOSTIC_NOT_USED"
+                    else -> "FIXED_DIAGNOSTIC"
+                },
                 // Decimal strings preserve all 64 bits in consumers with floating-point JSON numbers.
                 "derivedChoiceSeed" to trace?.seed?.toString(),
                 "choiceSeedOverride" to choiceSeedOverride?.toString(),

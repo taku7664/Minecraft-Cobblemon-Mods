@@ -187,10 +187,11 @@ internal object LocalTacticalScenarioBattle {
             ).toCollection(linkedSetOf())
         private val revealedMoveIds = mutableMapOf<UUID, MutableSet<String>>()
         private val revealedAbilityIds = hashSetOf<UUID>()
-        private val selectors = BattleSide.entries.associateWith { CapturingWeightedSelector() }
+        private val selectors = BattleSide.entries.associateWith { CapturingDecisionObserver() }
         private val actualBrains = BattleSide.entries.associateWith { side ->
-            if (lookaheadBudget == null) LocalTacticalBrain(selectors.getValue(side), tunings.getValue(side))
-            else LocalTacticalBrain(selectors.getValue(side), tunings.getValue(side), lookaheadBudget)
+            if (lookaheadBudget == null) LocalTacticalBrain(tuning = tunings.getValue(side), decisionObserver = selectors.getValue(side))
+            else LocalTacticalBrain(tuning = tunings.getValue(side), lookaheadBudget = lookaheadBudget,
+                decisionObserver = selectors.getValue(side))
         }
         private val profiles = BattleSide.entries.associateWith { side ->
             BattleTrainerProfile(
@@ -900,7 +901,7 @@ internal object LocalTacticalScenarioBattle {
             return parts.ifEmpty { listOf("상태 변화 없음") }.joinToString("; ")
         }
 
-        private fun topLabel(selector: CapturingWeightedSelector): String = selector.lastRanked.take(TOP_LABELS).joinToString(" | ") {
+        private fun topLabel(selector: CapturingDecisionObserver): String = selector.lastRanked.take(TOP_LABELS).joinToString(" | ") {
             val excluded = selector.lastExclusions[it.outcome.candidate.actionId]?.let { reason -> "[$reason]" }.orEmpty()
             "${actionLabel(it.outcome.candidate)} %.1f(look %.1f)$excluded".format(it.comparisonValue, it.lookaheadUtility)
         }
@@ -986,19 +987,13 @@ internal object LocalTacticalScenarioBattle {
         }
     }
 
-    private class CapturingWeightedSelector : LocalActionSelector {
-        private val delegate = LocalWeightedActionSelector()
+    private class CapturingDecisionObserver : jbro.cobblemon.mcc.betterai.brain.LocalDecisionObserver {
         private var lastIdeal: LocalBattleActionRank? = null
 
-        override fun choose(
-            ranked: List<LocalBattleActionRank>,
-            seed: Long,
-            context: LocalActionMixingContext,
-        ): LocalActionSelection {
-            lastIdeal = ranked.first()
-            lastRanked = ranked
-            lastExclusions = context.ruleExclusions
-            return delegate.choose(ranked, seed, context)
+        override fun resolved(decision: jbro.cobblemon.mcc.betterai.brain.LocalDecisionObservation) {
+            lastIdeal = decision.ranked.first()
+            lastRanked = decision.ranked
+            lastExclusions = decision.selection.exclusionsByActionId
         }
 
         var lastRanked: List<LocalBattleActionRank> = emptyList()

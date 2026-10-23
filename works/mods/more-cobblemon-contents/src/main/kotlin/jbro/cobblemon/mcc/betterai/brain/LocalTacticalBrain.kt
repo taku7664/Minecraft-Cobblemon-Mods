@@ -144,6 +144,7 @@ internal class LocalTacticalBrain(
     private val nativeStatus: Boolean = true,
     /** Receives every candidate's value at each step of a searchless decision (diagnostics only; null in the game). */
     private val stageTrace: ((LocalDecisionStages) -> Unit)? = null,
+    private val decisionObserver: LocalDecisionObserver? = null,
 ) : BattleBrain {
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
@@ -574,10 +575,11 @@ internal class LocalTacticalBrain(
                     ranked = ranked,
                     perspectivePokemonIds = perspectivePokemonIds,
                 )
+                val selectionContext = mixingContext(ranked, authoritativeSimulationScores = true)
                 val selection = chooser.choose(
                     ranked,
                     seed,
-                    mixingContext(ranked, authoritativeSimulationScores = true),
+                    selectionContext,
                 )
                 val selected = selection.rank
                 decisionTrace?.resolved(if (continuingNative) "native_continuation" else "native_initial", ranked, selection)
@@ -585,6 +587,8 @@ internal class LocalTacticalBrain(
                     "An available native product decision must preserve its reusable roots"
                 }.withPendingOwnAction(selected.outcome.candidate)
                 val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
+                observeDecision(if (continuingNative) "native_continuation" else "native_initial",
+                    ranked, selection, selected, seed, selectionContext)
                 return CompletableFuture.completedFuture(
                     BattleDecision(
                         requestId = context.requestId,
@@ -648,8 +652,10 @@ internal class LocalTacticalBrain(
                 decidingProfile,
                 tuning,
             ).single()
-            decisionTrace?.resolved("single_legal", listOf(selected), LocalActionSelection(selected, 0L, 1, 1.0))
+            val selection = LocalActionSelection(selected, 0L, 1, 1.0)
+            decisionTrace?.resolved("single_legal", listOf(selected), selection)
             retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
+            observeDecision("single_legal", listOf(selected), selection, selected)
             return CompletableFuture.completedFuture(
                 BattleDecision(
                     requestId = context.requestId,
@@ -670,8 +676,10 @@ internal class LocalTacticalBrain(
         nativeFallbackStatus?.let { failed ->
             val ranked = LocalBattleActionPolicy.rank(difficultyContext, strategy, decidingProfile, tuning)
             val selected = ranked.first()
-            decisionTrace?.resolved("native_failed_policy", ranked, LocalActionSelection(selected, 0L, 1, 1.0))
+            val selection = LocalActionSelection(selected, 0L, 1, 1.0)
+            decisionTrace?.resolved("native_failed_policy", ranked, selection)
             retainedNativeState?.let { active?.nativeProductState = it.withPendingOwnAction(selected.outcome.candidate) }
+            observeDecision("native_failed_policy", ranked, selection, selected)
             return CompletableFuture.completedFuture(
                 BattleDecision(
                     requestId = context.requestId,
@@ -1071,10 +1079,11 @@ internal class LocalTacticalBrain(
         // quick decider, pokeemerald's trainer AI order on fixed thresholds, replaced the drawn action in 32 of 143 fixed
         // scenes, a Recover the heal value put first at 29.7 that stopped a 44% knockout among them).
         val drawRanked = ranked
+        val selectionContext = mixingContext(drawRanked)
         val selection = chooser.choose(
             drawRanked,
             seed,
-            mixingContext(drawRanked),
+            selectionContext,
         )
         val drawn = selection.rank
         // The draw chooses between actions, not between a move with its mechanic and the same move without: drawn
@@ -1130,6 +1139,8 @@ internal class LocalTacticalBrain(
         }
         val worldsMillis = (System.nanoTime() - worldsStarted) / 1_000_000L
         val confidence = (0.35 + selection.probability * 0.6).coerceIn(0.35, 0.99)
+        observeDecision(if (lookahead == null) "searchless" else "legacy_lookahead",
+            drawRanked, selection, selected, seed, selectionContext)
         return CompletableFuture.completedFuture(
             BattleDecision(
                 requestId = context.requestId,
@@ -1187,6 +1198,24 @@ internal class LocalTacticalBrain(
                 },
             ),
         )
+    }
+
+    private fun observeDecision(
+        mode: String,
+        ranked: List<LocalBattleActionRank>,
+        selection: LocalActionSelection,
+        selected: LocalBattleActionRank,
+        seed: Long = selection.seed,
+        mixing: LocalActionMixingContext? = null,
+    ) {
+        val observer = decisionObserver ?: return
+        try {
+            observer.resolved(LocalDecisionObservation(mode, ranked.toList(), seed, mixing,
+                selection.copy(probabilitiesByActionId = selection.probabilitiesByActionId.toMap(),
+                    exclusionsByActionId = selection.exclusionsByActionId.toMap()), selected))
+        } catch (exception: Exception) {
+            logger.warn("Better AI decision observer failed; preserving the selected action", exception)
+        }
     }
 
     override fun closeSession(session: BattleBrainSession, result: BattleBrainCloseResult) {
