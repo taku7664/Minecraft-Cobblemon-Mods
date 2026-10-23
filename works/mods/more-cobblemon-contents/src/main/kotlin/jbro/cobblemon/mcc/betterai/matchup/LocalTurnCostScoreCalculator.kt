@@ -116,6 +116,7 @@ internal object LocalTurnCostScoreCalculator {
         opponent: BattlePokemonStateView,
         pairs: MatchupScores,
         cache: LocalProjectedActionCalculationCache,
+        intent: OpponentIntent?,
     ): SwitchInScore? {
         val entered = LocalMatchupPosition.enter(context, incoming, cache, slot = replaced.activeSlot) ?: return null
         val placedIncoming = entered.state.pokemon.firstOrNull { it.battlePokemonId == incoming.battlePokemonId } ?: return null
@@ -126,48 +127,46 @@ internal object LocalTurnCostScoreCalculator {
             worstMoveId = null, worstSurvival = 0.0, afterEntry = null, score = -1.0, entryFaints = true,
         )
         val position = LocalMatchupPosition.enter(entered, opponent, cache) ?: return null
-        val predictedMoveId = pairs.pokemon(replaced.battlePokemonId, opponent.battlePokemonId)?.opponentMove?.moveId
         val againstIncoming = LocalMatchupScoreCalculator.moveMatchups(position, opponent.battlePokemonId, incoming.battlePokemonId, cache)
-        val predicted = againstIncoming.firstOrNull { it.score.moveId == predictedMoveId }?.score
         val worst = againstIncoming.firstOrNull()?.score
-        // Moves that do the same to [replaced] are an even choice for the opponent: the one listed first stands for none
-        // of them. Against a Hippowdon at 7%, every move knocks out, and a guessed Body Slam stood for a Dynamaxed
-        // Amoonguss whose revealed Max Overgrowth does four times to the Rhyperior coming in (2026-10-19).
-        // Even means as good in every way the exchange picks by: the same score, the same priority, no more self-knockout.
-        val forReplaced = pairs.moves(opponent.battlePokemonId, replaced.battlePokemonId)
-        val chosen = forReplaced.firstOrNull { it.moveId == predictedMoveId }
-        val even = if (chosen == null) emptySet()
-            else forReplaced.filter { kotlin.math.abs(it.score - chosen.score) <= EVEN_CHOICE && it.priority == chosen.priority &&
-                it.selfKnockoutChance <= chosen.selfKnockoutChance + EVEN_CHOICE }.mapTo(hashSetOf()) { it.moveId }
-        val choices = againstIncoming.map { it.score }.filter { it.moveId in even }.ifEmpty { listOfNotNull(predicted) }
         val state = position.state
         val placed = state.pokemon.firstOrNull { it.battlePokemonId == incoming.battlePokemonId } ?: return null
-        // Each choice played out on its own: the hit, then the exchange from the HP it leaves.
-        class Entry(val survival: Double, val hpAfterEntry: Double, val afterEntry: PokemonMatchupScore?, val score: Double)
-        fun entry(hit: MoveMatchupScore?): Entry {
+        // All move outcomes are calculated once. A later repeat/tendency reading changes only their weights.
+        val exchanges = HashMap<Double, PokemonMatchupScore?>()
+        fun entry(moveId: String?, hit: MoveMatchupScore?): SwitchInOutcome {
             val survival = hit?.survivalByUses?.getOrNull(1) ?: 1.0
             val taken = hit?.damageWhileStandingByUses?.getOrNull(1) ?: 0.0
             val hpAfterEntry = (placed.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP)
             val worn = state.copyState(pokemon = state.pokemon.map {
                 if (it.battlePokemonId != incoming.battlePokemonId) it else it.copyState(hpFraction = hpAfterEntry)
             })
-            val afterEntry = LocalMatchupScoreCalculator.pairMatchup(position.copy(state = worn), incoming.battlePokemonId,
-                opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
-            return Entry(survival, hpAfterEntry, afterEntry, survival * (afterEntry?.score ?: 0.0) - (1.0 - survival))
+            val afterEntry = exchanges.getOrPut(hpAfterEntry) {
+                LocalMatchupScoreCalculator.pairMatchup(position.copy(state = worn), incoming.battlePokemonId,
+                    opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
+            }
+            return SwitchInOutcome(moveId, survival, hpAfterEntry, afterEntry,
+                survival * (afterEntry?.score ?: 0.0) - (1.0 - survival))
         }
-        val entries = choices.ifEmpty { listOf(null) }.map(::entry)
-        return SwitchInScore(
+        val hits = againstIncoming.associateBy { PublicIds.canonical(it.score.moveId) }
+        val moveIds = (pairs.moves(opponent.battlePokemonId, replaced.battlePokemonId).map { it.moveId } +
+            intent?.options.orEmpty().filter { it.kind == IntentKind.ATTACK }.mapNotNull { it.moveId })
+            .map(PublicIds::canonical).distinct()
+        val outcomes = linkedMapOf<String?, SwitchInOutcome>(null to entry(null, null))
+        for (id in moveIds) outcomes[id] = entry(id, hits[id]?.score)
+        val result = SwitchInScore(
             incomingId = incoming.battlePokemonId,
             opponentId = opponent.battlePokemonId,
             replacedId = replaced.battlePokemonId,
-            predictedMoveId = predicted?.moveId,
-            predictedSurvival = entries.map { it.survival }.average(),
-            hpAfterEntry = entries.map { it.hpAfterEntry }.average(),
+            predictedMoveId = null,
+            predictedSurvival = 1.0,
+            hpAfterEntry = placed.hpFraction,
             worstMoveId = worst?.moveId,
             worstSurvival = worst?.survivalByUses?.getOrNull(1) ?: 1.0,
-            afterEntry = (entries.firstOrNull { choices.size == 1 } ?: entries.minByOrNull { it.score })?.afterEntry,
-            score = entries.map { it.score }.average().coerceIn(-1.0, 1.0),
+            afterEntry = outcomes.getValue(null).afterEntry,
+            score = outcomes.getValue(null).score,
+            outcomes = outcomes,
         )
+        return intent?.let(result::withIntent) ?: result
     }
 
     /** Each of [team]'s Pokemon: its team's coverage of [opponents] with and without it. */
@@ -246,6 +245,5 @@ internal object LocalTurnCostScoreCalculator {
     private val EVOLVED_STATUSES = setOf("brn", "par", "slp", "frz", "psn", "tox")
     private const val MINIMUM_STANDING_HP = 0.01
     /** Score gap under which two of the opponent's moves count as the same choice against the Pokemon in front. */
-    private const val EVEN_CHOICE = 1e-9
     private const val SOLE_ANSWER = 0.5
 }

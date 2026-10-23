@@ -653,6 +653,76 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `an immune top move keeps the other predicted switch entry risks`() {
+        val context = electricEntryContext()
+        val scores = LocalMatchupScoreCalculator.calculate(context)
+        val entry = scores.switchIn(BENCH, FOE, ALLY)!!
+        assertEquals("thunderbolt", entry.predictedMoveId)
+        assertEquals(1.0, entry.outcomes.getValue("thunderbolt").survival)
+        assertEquals(0.1, entry.outcomes.getValue("dracometeor").survival, 1e-9)
+        assertTrue(entry.predictedSurvival < 0.95, entry.toString())
+        val intent = jbro.cobblemon.mcc.betterai.matchup.OpponentIntent(FOE, 0, listOf(
+            jbro.cobblemon.mcc.betterai.matchup.IntentOption(jbro.cobblemon.mcc.betterai.matchup.IntentKind.ATTACK,
+                "thunderbolt", ALLY, null, 1.0, 0.6),
+            jbro.cobblemon.mcc.betterai.matchup.IntentOption(jbro.cobblemon.mcc.betterai.matchup.IntentKind.ATTACK,
+                "dracometeor", ALLY, null, 0.9, 0.4)))
+        val weighted = scores.withSwitchIntents(listOf(intent)).switchIn(BENCH, FOE, ALLY)!!
+        assertEquals(0.64, weighted.predictedSurvival, 1e-9)
+        assertEquals(0.6 * entry.outcomes.getValue("thunderbolt").score +
+            0.4 * entry.outcomes.getValue("dracometeor").score, weighted.score, 1e-9)
+        assertSame(entry.outcomes, weighted.outcomes, "changing intent probabilities must reuse the calculated outcomes")
+        assertEquals(scores.pokemon(ALLY, FOE), scores.withSwitchIntents(listOf(intent)).pokemon(ALLY, FOE))
+    }
+
+    @Test
+    fun `switch entry conditions out foe switching once and retains a no hit move choice`() {
+        val context = electricEntryContext()
+        val scores = LocalMatchupScoreCalculator.calculate(context)
+        val intent = jbro.cobblemon.mcc.betterai.matchup.OpponentIntent(FOE, 0, listOf(
+            jbro.cobblemon.mcc.betterai.matchup.IntentOption(jbro.cobblemon.mcc.betterai.matchup.IntentKind.ATTACK,
+                "thunderbolt", ALLY, null, 1.0, 0.3),
+            jbro.cobblemon.mcc.betterai.matchup.IntentOption(jbro.cobblemon.mcc.betterai.matchup.IntentKind.ATTACK,
+                "dracometeor", ALLY, null, 0.9, 0.2),
+            jbro.cobblemon.mcc.betterai.matchup.IntentOption(jbro.cobblemon.mcc.betterai.matchup.IntentKind.PROTECT,
+                "protect", null, null, 0.0, 0.25),
+            jbro.cobblemon.mcc.betterai.matchup.IntentOption(jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH,
+                null, null, FOE2, 0.0, 0.25)))
+        val weighted = scores.withSwitchIntents(listOf(intent)).switchIn(BENCH, FOE, ALLY)!!
+        assertEquals(0.76, weighted.predictedSurvival, 1e-9)
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.begin()
+        try {
+            LocalSwitchRules.judge(listOf(attackAction(), switchAction()), context, scores,
+                foeSwitchChances = mapOf(FOE to 0.25), opponentIntents = listOf(intent))
+            val internals = jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.take()
+            assertEquals(0.82, internals.getValue("switch:switch").getValue("survival"), 1e-9)
+            val branches = internals.filterKeys { it.startsWith("switchHit:switch:") }.values
+            assertEquals(1.0, branches.sumOf { it.getValue("probability") }, 1e-9)
+            assertEquals(0.76, branches.sumOf { it.getValue("probability") * it.getValue("survival") }, 1e-9)
+        } finally {
+            jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.take()
+        }
+    }
+
+    private fun electricEntryContext(): BattleDecisionContext {
+        val base = context(allySpeed = 80, foeSpeed = 120, allyPower = 40.0)
+        val state = base.state.derive(pokemon = base.state.pokemon.map {
+            when (it.battlePokemonId) {
+                ALLY -> it.copyState(knownTypeIds = setOf("water", "flying"), knownBaseStabTypeIds = setOf("water", "flying"))
+                BENCH -> it.copyState(knownTypeIds = setOf("electric", "fighting"),
+                    knownBaseStabTypeIds = setOf("electric", "fighting"), knownAbilityId = "voltabsorb")
+                else -> it
+            }
+        })
+        fun move(id: String, type: String, power: Double, accuracy: Double) = BattlePublicMoveOptionView(id,
+            BattleMoveCandidateView(typeId = type, damageCategory = BattleMoveDamageCategory.SPECIAL,
+                power = power, accuracy = accuracy, priority = 0, currentPp = 8), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+        return base.copy(state = state, publicActionCatalog = BattlePublicActionCatalogView(
+            base.publicActionCatalog.entries.map { entry -> if (entry.battlePokemonId != FOE) entry else
+                BattlePokemonActionCatalogView(FOE, listOf(move("thunderbolt", "electric", 300.0, 100.0),
+                    move("dracometeor", "dragon", 600.0, 90.0)), moveSetComplete = true) }))
+    }
+
+    @Test
     fun `a switch-in that the predicted hit knocks out is ruled out`() {
         // The faster ally knocks the foe out first; the foe knocks out anything that walks in.
         val context = context(allySpeed = 150, foeSpeed = 100)

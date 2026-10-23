@@ -73,9 +73,15 @@ internal object LocalMatchupScoreCalculator {
             statusMoves[opponent.battlePokemonId to ally.battlePokemonId] =
                 LocalTurnCostScoreCalculator.statusMoves(context, opponent, ally, withSweeps, cache)
         }
+        val entryIntents by lazy {
+            val moveBoard = MatchupScores(moves, pokemon, complete = true, sweeps = sweeps, stops = stops,
+                statusMovesByPair = statusMoves)
+            LocalOpponentIntentPredictor.predict(context, moveBoard).associateBy { it.pokemonId }
+        }
         for (incoming in allies.filter { it.activeSlot == null }) for (replaced in allyField) for (opponent in opponentField) {
             if (!shouldContinue()) return partial()
-            LocalTurnCostScoreCalculator.switchIn(context, incoming, replaced, opponent, withSweeps, cache)
+            LocalTurnCostScoreCalculator.switchIn(context, incoming, replaced, opponent, withSweeps, cache,
+                entryIntents[opponent.battlePokemonId])
                 ?.let { switchIns[Triple(incoming.battlePokemonId, opponent.battlePokemonId, replaced.battlePokemonId)] = it }
         }
         val preserves = LocalTurnCostScoreCalculator.preserves(allies, opponents, withSweeps) +

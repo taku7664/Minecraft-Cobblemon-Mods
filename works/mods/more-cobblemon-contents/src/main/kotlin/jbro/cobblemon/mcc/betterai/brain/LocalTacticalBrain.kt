@@ -312,7 +312,8 @@ internal class LocalTacticalBrain(
         fun switchChances(intents: List<jbro.cobblemon.mcc.betterai.matchup.OpponentIntent>) = intents.associate { intent ->
             intent.pokemonId to intent.options.filter { it.kind == jbro.cobblemon.mcc.betterai.matchup.IntentKind.SWITCH }.sumOf { it.probability }
         }
-        val switchTendedChances by lazy { switchChances(tended(tuning.switchTendencyWeight)) }
+        val switchTendedIntents by lazy { tended(tuning.switchTendencyWeight) }
+        val switchTendedChances by lazy { switchChances(switchTendedIntents) }
         val setupTendedChances by lazy { switchChances(tended(tuning.setupTendencyWeight)) }
         // Switches are on offer in almost every decision, so with the switching rules the table is built for most.
         val switchJudgement by lazy {
@@ -321,7 +322,8 @@ internal class LocalTacticalBrain(
                     .any { it.kind == BattleActionKind.SWITCH }
             }
             if (!rulesApply || !switching) LocalSwitchRules.Judgement.NONE
-            else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, rulesContext, it, profile.difficulty.tier, switchTendedChances) }
+            else ruleScores?.let { LocalSwitchRules.judge(difficultyContext.candidates, rulesContext, it, profile.difficulty.tier,
+                switchTendedChances, switchTendedIntents) }
                 ?: LocalSwitchRules.Judgement.NONE
         }
         val publicFailures = java.util.concurrent.ConcurrentHashMap<String, Boolean>()

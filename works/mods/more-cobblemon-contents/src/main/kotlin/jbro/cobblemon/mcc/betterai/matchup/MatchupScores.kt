@@ -231,9 +231,9 @@ internal data class StatusMoveMatchupScore(
  * [incomingId] switching in for [replacedId] in front of [opponentId]: the hit it takes on the way in,
  * then the exchange from what that leaves.
  *
- * The predicted hit is the opponent's best move against the Pokemon it expected to face; the worst hit is
- * its most damaging move against the incoming one, for an opponent that saw the switch coming. [score]
- * reads the predicted hit: `survival * afterEntry - (1 - survival)`.
+ * Each possible hit is evaluated on the incoming Pokemon, then weighted by the opponent's move intents
+ * against the slot it expected to face. Switch intents are conditioned out: the switching rules account
+ * for the opponent leaving separately. Immunity is a zero-damage branch, not a missing prediction.
  */
 internal data class SwitchInScore(
     val incomingId: UUID,
@@ -249,7 +249,42 @@ internal data class SwitchInScore(
     val score: Double,
     /** Falls to entry hazards before the opponent can act, even when it switches out. */
     val entryFaints: Boolean = false,
+    /** Probability-free outcomes, shared when repeats or tendencies change the move probabilities. */
+    val outcomes: Map<String?, SwitchInOutcome> = emptyMap(),
+    val choices: List<SwitchInChoice> = emptyList(),
+) {
+    fun withIntent(intent: OpponentIntent): SwitchInScore {
+        if (entryFaints || outcomes.isEmpty()) return this
+        val staying = intent.options.filter { it.kind != IntentKind.SWITCH && it.probability > 0.0 }
+        val total = staying.sumOf { it.probability }
+        val weighted = if (total <= 0.0) listOf(SwitchInChoice(1.0, outcomes.getValue(null))) else staying.map { option ->
+            val aimedHere = option.targetId == null || option.targetId == replacedId
+            val id = option.moveId?.let(jbro.cobblemon.mcc.internal.ai.PublicIds::canonical)
+            val outcome = if (option.kind == IntentKind.ATTACK && aimedHere) outcomes[id] else null
+            SwitchInChoice(option.probability / total, outcome ?: outcomes.getValue(null))
+        }
+        val survival = weighted.sumOf { it.probability * it.outcome.survival }
+        return copy(
+            predictedMoveId = weighted.maxByOrNull { it.probability }?.outcome?.moveId,
+            predictedSurvival = survival,
+            hpAfterEntry = if (survival <= 0.0) 0.0 else
+                weighted.sumOf { it.probability * it.outcome.survival * it.outcome.hpAfterEntry } / survival,
+            afterEntry = weighted.minByOrNull { it.outcome.score }?.outcome?.afterEntry,
+            score = weighted.sumOf { it.probability * it.outcome.score }.coerceIn(-1.0, 1.0),
+            choices = weighted,
+        )
+    }
+}
+
+internal data class SwitchInOutcome(
+    val moveId: String?,
+    val survival: Double,
+    val hpAfterEntry: Double,
+    val afterEntry: PokemonMatchupScore?,
+    val score: Double,
 )
+
+internal data class SwitchInChoice(val probability: Double, val outcome: SwitchInOutcome)
 
 /**
  * How much of its team's answer to the opposing team goes with [subjectId]: the team's coverage (for each
@@ -298,6 +333,14 @@ internal class MatchupScores(
         switchInsByKey[Triple(incomingId, opponentId, replacedId)]
 
     val switchIns: Collection<SwitchInScore> get() = switchInsByKey.values
+
+    /** Reuse the calculated entry outcomes with this decision's repeat/tendency-adjusted intents. */
+    fun withSwitchIntents(intents: List<OpponentIntent>): MatchupScores {
+        if (intents.isEmpty() || switchInsByKey.isEmpty()) return this
+        val byPokemon = intents.associateBy { it.pokemonId }
+        return MatchupScores(movesByPair, pokemonByPair, complete, sweeps, stops, statusMovesByPair,
+            switchInsByKey.mapValues { (_, entry) -> byPokemon[entry.opponentId]?.let(entry::withIntent) ?: entry }, preserves)
+    }
 
     /** The side's best sweeper, if any of its Pokemon was scored. */
     fun sweeper(side: jbro.cobblemon.mcc.internal.ai.BattleSide, state: jbro.cobblemon.mcc.internal.ai.BattleStateView): SweepScore? =

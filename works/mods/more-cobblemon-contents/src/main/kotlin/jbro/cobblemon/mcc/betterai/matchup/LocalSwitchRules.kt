@@ -108,7 +108,9 @@ internal object LocalSwitchRules {
          * Each opposing Pokemon's chance to switch out this turn, leaned to its record (LocalOpponentTendencies): a foe
          * that leaves does not hit the incoming Pokemon. Empty, every foe attacks it.
          */
-        foeSwitchChances: Map<java.util.UUID, Double> = emptyMap()): Judgement {
+        foeSwitchChances: Map<java.util.UUID, Double> = emptyMap(),
+        opponentIntents: List<OpponentIntent> = emptyList()): Judgement {
+        val switchScores = scores.withSwitchIntents(opponentIntents)
         val state = context.state
         val opponents = state.pokemon.filter {
             it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
@@ -166,8 +168,8 @@ internal object LocalSwitchRules {
             for (part in parts(candidate)) {
                 if (part.kind == BattleActionKind.USE_MOVE && pivots(part)) {
                     val user = active(state, part.actorSlot) ?: continue
-                    if (pivotBringsInKnockout(part, user, opponents, state, scores)) exclusions[candidate.actionId] = PIVOT_SWITCH_IN_DIES
-                    adjustment += pivot(part, user, opponents, state, scores)
+                    if (pivotBringsInKnockout(part, user, opponents, state, switchScores)) exclusions[candidate.actionId] = PIVOT_SWITCH_IN_DIES
+                    adjustment += pivot(part, user, opponents, state, switchScores)
                     continue
                 }
                 if (part.kind != BattleActionKind.SWITCH) continue
@@ -180,10 +182,10 @@ internal object LocalSwitchRules {
                     continue
                 }
                 if (part.actorSlot !in movingSlots) {
-                    replacementValues[part.actionId] = midTurnEntry(incoming, replaced, opponents, state, scores) ?: continue
+                    replacementValues[part.actionId] = midTurnEntry(incoming, replaced, opponents, state, switchScores) ?: continue
                     continue
                 }
-                val verdict = voluntary(incoming, replaced, opponents, scores, ::retreats, worths, bench, foeSwitchChances, ::afterHit, ::fallsAtTurnEnd, standings, part.actionId, context) ?: continue
+                val verdict = voluntary(incoming, replaced, opponents, switchScores, ::retreats, worths, bench, foeSwitchChances, ::afterHit, ::fallsAtTurnEnd, standings, part.actionId, context) ?: continue
                 verdict.exclusion?.let { exclusions[candidate.actionId] = it }
                 if (verdict.sacrifice) sacrifices += candidate.actionId
                 voluntarySlots.getOrPut(candidate.actionId) { linkedSetOf() } += part.actorSlot
@@ -244,6 +246,13 @@ internal object LocalSwitchRules {
         val byFoe = opponents.mapNotNull { foe -> scores.switchIn(incoming.battlePokemonId, foe.battlePokemonId, replaced.battlePokemonId)?.let { foe to it } }
         val entries = byFoe.map { it.second }
         if (entries.isEmpty()) return null
+        for ((foe, entry) in byFoe) for ((index, choice) in entry.choices.withIndex()) {
+            val hit = choice.outcome
+            jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record(
+                "switchHit:$actionId:${foe.battlePokemonId}:$index:${hit.moveId ?: "nohit"}", mapOf(
+                    "probability" to choice.probability, "survival" to hit.survival,
+                    "hpAfterHit" to hit.hpAfterEntry, "afterEntry" to (hit.afterEntry?.score ?: 0.0), "score" to hit.score))
+        }
         // Keep the existing board's matchup and worth. If hazards kill the incoming Pokemon, charge only the HP
         // the saved Pokemon loses on re-entry, in the same HP-bar units as gain (user, 2026-10-22).
         val returns = entries.any { it.entryFaints }
