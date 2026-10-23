@@ -38,22 +38,10 @@ internal object LocalMatchupScoreCalculator {
         cache.matchupRecovery = recovery
         val allies = living(context.state, BattleSide.ALLY)
         val opponents = living(context.state, BattleSide.OPPONENT)
-        val moves = linkedMapOf<Pair<UUID, UUID>, List<MoveMatchupScore>>()
-        val pokemon = linkedMapOf<Triple<UUID, UUID, MatchupSpeedField>, PokemonMatchupScore>()
-        for (ally in allies) for (opponent in opponents) {
-            if (!shouldContinue()) return MatchupScores(moves, pokemon, complete = false)
-            val position = LocalMatchupPosition.face(context, ally, opponent, cache) ?: continue
-            val allyMoves = moveMatchups(position, ally.battlePokemonId, opponent.battlePokemonId, cache)
-            val opponentMoves = moveMatchups(position, opponent.battlePokemonId, ally.battlePokemonId, cache)
-            moves[ally.battlePokemonId to opponent.battlePokemonId] = allyMoves.map { it.score }
-            moves[opponent.battlePokemonId to ally.battlePokemonId] = opponentMoves.map { it.score }
-            for (field in MatchupSpeedField.entries) {
-                val faced = if (field == MatchupSpeedField.CURRENT) position else withTrickRoomToggled(position)
-                bestExchange(faced, ally.battlePokemonId, opponent.battlePokemonId, allyMoves, opponentMoves, field, recovery)?.let {
-                    pokemon[Triple(ally.battlePokemonId, opponent.battlePokemonId, field)] = it
-                }
-            }
-        }
+        val built = buildPairs(context, allies, opponents, cache, shouldContinue, recovery, MatchupSpeedField.entries)
+        val moves = built.moves
+        val pokemon = built.pokemon
+        if (!built.complete) return MatchupScores(moves, pokemon, complete = false)
         val pairs = MatchupScores(moves, pokemon, complete = true)
         val sweeps = linkedMapOf<UUID, SweepScore>()
         for (subject in allies + opponents) {
@@ -94,6 +82,60 @@ internal object LocalMatchupScoreCalculator {
             LocalTurnCostScoreCalculator.preserves(opponents, allies, withSweeps)
         return MatchupScores(moves, pokemon, complete = true, sweeps = sweeps, stops = stops,
             statusMovesByPair = statusMoves, switchInsByKey = switchIns, preserves = preserves)
+    }
+
+    /** CURRENT pairs only, retaining the full calculator's ally-first orientation and arithmetic order. */
+    fun currentPairs(
+        context: BattleDecisionContext,
+        cache: LocalProjectedActionCalculationCache = LocalProjectedActionCalculationCache(),
+        recovery: Boolean = false,
+        allyIds: Set<UUID>? = null,
+        opponentIds: Set<UUID>? = null,
+    ): MatchupPairs {
+        cache.matchupRecovery = recovery
+        return buildPairs(context, living(context.state, BattleSide.ALLY), living(context.state, BattleSide.OPPONENT),
+            cache, { true }, recovery, listOf(MatchupSpeedField.CURRENT), allyIds, opponentIds)
+    }
+
+    private class PairCalculation(
+        val moves: Map<Pair<UUID, UUID>, List<MoveMatchupScore>>,
+        val pokemon: Map<Triple<UUID, UUID, MatchupSpeedField>, PokemonMatchupScore>,
+        override val complete: Boolean,
+    ) : MatchupPairs {
+        override fun moves(userId: UUID, targetId: UUID) = moves[userId to targetId].orEmpty()
+        override fun pokemon(subjectId: UUID, opponentId: UUID, speedField: MatchupSpeedField): PokemonMatchupScore? =
+            pokemon[Triple(subjectId, opponentId, speedField)] ?: pokemon[Triple(opponentId, subjectId, speedField)]?.mirrored()
+    }
+
+    private fun buildPairs(
+        context: BattleDecisionContext,
+        allies: List<BattlePokemonStateView>,
+        opponents: List<BattlePokemonStateView>,
+        cache: LocalProjectedActionCalculationCache,
+        shouldContinue: () -> Boolean,
+        recovery: Boolean,
+        fields: List<MatchupSpeedField>,
+        allyIds: Set<UUID>? = null,
+        opponentIds: Set<UUID>? = null,
+    ): PairCalculation {
+        val moves = linkedMapOf<Pair<UUID, UUID>, List<MoveMatchupScore>>()
+        val pokemon = linkedMapOf<Triple<UUID, UUID, MatchupSpeedField>, PokemonMatchupScore>()
+        for (ally in allies) for (opponent in opponents) {
+            if (allyIds != null && ally.battlePokemonId !in allyIds || opponentIds != null && opponent.battlePokemonId !in opponentIds) continue
+            if (!shouldContinue()) return PairCalculation(moves, pokemon, complete = false)
+            val position = LocalMatchupPosition.face(context, ally, opponent, cache) ?: continue
+            val allyMoves = moveMatchups(position, ally.battlePokemonId, opponent.battlePokemonId, cache)
+            val opponentMoves = moveMatchups(position, opponent.battlePokemonId, ally.battlePokemonId, cache)
+            moves[ally.battlePokemonId to opponent.battlePokemonId] = allyMoves.map { it.score }
+            moves[opponent.battlePokemonId to ally.battlePokemonId] = opponentMoves.map { it.score }
+            for (field in fields) {
+                val faced = if (field == MatchupSpeedField.CURRENT) position else withTrickRoomToggled(position)
+                bestExchange(faced, ally.battlePokemonId, opponent.battlePokemonId, allyMoves, opponentMoves, field, recovery)?.let {
+                    pokemon[Triple(ally.battlePokemonId, opponent.battlePokemonId, field)] = it
+                }
+            }
+        }
+        return PairCalculation(moves, pokemon, complete = true)
     }
 
     /**

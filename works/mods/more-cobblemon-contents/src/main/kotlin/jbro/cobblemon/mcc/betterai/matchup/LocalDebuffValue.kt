@@ -55,7 +55,7 @@ internal object LocalDebuffValue {
         val target = state.pokemon.firstOrNull { it.side == BattleSide.OPPONENT && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             ?: return null
         val team = state.pokemon.filter { it.side == BattleSide.ALLY && !it.fainted && it.hpFraction > 0.0 }.map { it.battlePokemonId }
-        fun exchange(table: MatchupScores): Double? = team.mapNotNull { ally -> table.pokemon(target.battlePokemonId, ally)?.score }
+        fun exchange(table: MatchupPairs): Double? = team.mapNotNull { ally -> table.pokemon(target.battlePokemonId, ally)?.score }
             .takeIf { it.isNotEmpty() }?.average()
         val before = exchange(scores) ?: return null
         val effects = move.moveDetails?.effects?.effects.orEmpty()
@@ -91,7 +91,7 @@ internal object LocalDebuffValue {
             }.takeIf { it.isNotEmpty() }?.average()
         }
         fun exchangeOn(board: jbro.cobblemon.mcc.internal.ai.BattleStateView): Double? = if (poison) poisonPairs(board)
-            else LocalMatchupScoreCalculator.calculate(context.copy(state = board), recovery = recovery).takeIf { it.complete }?.let(::exchange)
+            else LocalMatchupScoreCalculator.currentPairs(context.copy(state = board), recovery = recovery, opponentIds = setOf(target.battlePokemonId)).takeIf { it.complete }?.let(::exchange)
         // Haze resets every stage in play (its user's too), Clear Smog its target's: the board with them gone. Without a
         // reading, Haze kept the 20 of any status move and Toxapex laid Toxic Spikes in front of a +2 Gholdengo
         // (hand-played Nessa, 2026-10-20).

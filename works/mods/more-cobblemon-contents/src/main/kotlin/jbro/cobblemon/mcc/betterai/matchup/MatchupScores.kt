@@ -266,13 +266,20 @@ internal data class PreserveScore(
     val score: Double,
 )
 
+/** Only the requested damaging-move and exchange pairs; completeness never implies derived tables exist. */
+internal interface MatchupPairs {
+    val complete: Boolean
+    fun moves(userId: UUID, targetId: UUID): List<MoveMatchupScore>
+    fun pokemon(subjectId: UUID, opponentId: UUID, speedField: MatchupSpeedField = MatchupSpeedField.CURRENT): PokemonMatchupScore?
+}
+
 /** One decision's matchup scores, read from the deciding trainer's side of the board. */
 internal class MatchupScores(
     private val movesByPair: Map<Pair<UUID, UUID>, List<MoveMatchupScore>>,
     /** Keyed by (ally, opponent); the opponent's view is the mirror. */
     private val pokemonByPair: Map<Triple<UUID, UUID, MatchupSpeedField>, PokemonMatchupScore>,
     /** Whether every pair was scored before the budget ran out. */
-    val complete: Boolean,
+    override val complete: Boolean,
     /** Both sides' living Pokemon, keyed by battle Pokemon ID. */
     val sweeps: Map<UUID, SweepScore> = emptyMap(),
     /** Both sides' living Pokemon against the other side's sweeper, keyed by the subject. */
@@ -283,7 +290,7 @@ internal class MatchupScores(
     private val switchInsByKey: Map<Triple<UUID, UUID, UUID>, SwitchInScore> = emptyMap(),
     /** Both sides' living Pokemon. */
     val preserves: Map<UUID, PreserveScore> = emptyMap(),
-) {
+) : MatchupPairs {
     /** [userId]'s scored status moves against [targetId], best first. */
     fun statusMoves(userId: UUID, targetId: UUID): List<StatusMoveMatchupScore> = statusMovesByPair[userId to targetId].orEmpty()
 
@@ -297,12 +304,12 @@ internal class MatchupScores(
         state.pokemon.filter { it.side == side }.mapNotNull { sweeps[it.battlePokemonId] }.maxByOrNull { it.score }
 
     /** The damaging moves [userId] has against [targetId], best first. */
-    fun moves(userId: UUID, targetId: UUID): List<MoveMatchupScore> = movesByPair[userId to targetId].orEmpty()
+    override fun moves(userId: UUID, targetId: UUID): List<MoveMatchupScore> = movesByPair[userId to targetId].orEmpty()
 
-    fun pokemon(
+    override fun pokemon(
         subjectId: UUID,
         opponentId: UUID,
-        speedField: MatchupSpeedField = MatchupSpeedField.CURRENT,
+        speedField: MatchupSpeedField,
     ): PokemonMatchupScore? = pokemonByPair[Triple(subjectId, opponentId, speedField)]
         ?: pokemonByPair[Triple(opponentId, subjectId, speedField)]?.mirrored()
 

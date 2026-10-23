@@ -149,14 +149,15 @@ internal object LocalSwitchRules {
         }
         // Singles: the board once the Pokemon in front lands its best hit on the one opposite, read once per Pokemon. A free
         // entry after it falls faces that foe worn down by it.
-        val hitScores = HashMap<java.util.UUID, MatchupScores?>()
-        fun afterHit(user: BattlePokemonStateView): MatchupScores? = if (opponents.size != 1) null else hitScores.getOrPut(user.battlePokemonId) {
+        val hitScores = HashMap<java.util.UUID, MatchupPairs?>()
+        fun afterHit(user: BattlePokemonStateView): MatchupPairs? = if (opponents.size != 1) null else hitScores.getOrPut(user.battlePokemonId) {
             val foe = opponents.single()
             val hit = scores.pokemon(user.battlePokemonId, foe.battlePokemonId)?.subjectMove ?: return@getOrPut null
             val left = foe.hpFraction - hit.accuracy * (hit.minimumDamageFraction + hit.maximumDamageFraction) / 2.0
             if (left <= 0.0) return@getOrPut null
             val board = state.derive(pokemon = state.pokemon.map { if (it.battlePokemonId == foe.battlePokemonId) it.copyState(hpFraction = left) else it })
-            LocalMatchupScoreCalculator.calculate(context.copy(state = board))
+            LocalMatchupScoreCalculator.currentPairs(context.copy(state = board),
+                allyIds = bench.map { it.battlePokemonId }.toSet(), opponentIds = setOf(foe.battlePokemonId))
         }
         // A slot that may not move is being asked for a replacement.
         val movingSlots = candidates.flatMap(::parts).filter { it.kind == BattleActionKind.USE_MOVE }.map { it.actorSlot }.toSet()
@@ -234,7 +235,7 @@ internal object LocalSwitchRules {
         worths: Map<java.util.UUID, Double> = emptyMap(),
         bench: List<BattlePokemonStateView> = emptyList(),
         foeSwitchChances: Map<java.util.UUID, Double> = emptyMap(),
-        afterHit: (BattlePokemonStateView) -> MatchupScores? = { null },
+        afterHit: (BattlePokemonStateView) -> MatchupPairs? = { null },
         fallsAtTurnEnd: (BattlePokemonStateView) -> Boolean = { false },
         standings: Map<java.util.UUID, Double> = emptyMap(),
         actionId: String,

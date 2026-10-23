@@ -2,6 +2,7 @@ package jbro.cobblemon.mcc.betterai.simulation
 
 import com.google.gson.JsonParser
 import java.security.MessageDigest
+import java.util.HexFormat
 import jbro.cobblemon.mcc.betterai.engine.dex.EngineDex
 import org.slf4j.LoggerFactory
 
@@ -25,11 +26,29 @@ internal object EngineRuntimeDex {
     @Volatile
     internal var outsideGameSpecies: (() -> List<String>?)? = null
 
+    private class DecisionSnapshot(var dex: Pair<String, EngineDex>? = null)
+    private val decisionSnapshot = ThreadLocal<DecisionSnapshot?>()
+
+    /** A reload is observed at the next decision; every lookup within this one reads the same species generation. */
+    fun <T> withDecisionSnapshot(block: () -> T): T {
+        val previous = decisionSnapshot.get()
+        decisionSnapshot.set(DecisionSnapshot())
+        try { return block() } finally {
+            if (previous == null) decisionSnapshot.remove() else decisionSnapshot.set(previous)
+        }
+    }
+
     /**
      * The dex with the current Cobblemon species and the runtime abilities ([RuntimeAbilityScripts]), and a digest of
      * that data ("bundled" when there is none).
      */
     fun current(): Pair<String, EngineDex> {
+        val snapshot = decisionSnapshot.get()
+        snapshot?.dex?.let { return it }
+        return readCurrent().also { snapshot?.dex = it }
+    }
+
+    private fun readCurrent(): Pair<String, EngineDex> {
         val abilityDigest = RuntimeAbilityScripts.refresh()
         val abilities = RuntimeAbilityScripts.current()
         val data = cobblemonSpecies() ?: outsideGameSpecies?.invoke()
@@ -75,6 +94,6 @@ internal object EngineRuntimeDex {
     private fun digest(data: List<String>): String {
         val md = MessageDigest.getInstance("SHA-256")
         data.forEach { md.update(it.toByteArray(Charsets.UTF_8)); md.update(0) }
-        return md.digest().joinToString("") { "%02x".format(it) }.take(16)
+        return HexFormat.of().formatHex(md.digest(), 0, 8)
     }
 }

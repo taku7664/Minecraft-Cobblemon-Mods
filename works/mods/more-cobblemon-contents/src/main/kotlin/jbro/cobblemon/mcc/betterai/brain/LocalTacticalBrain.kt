@@ -162,7 +162,13 @@ internal class LocalTacticalBrain(
         // No worth until this decision reads one, so a decision that returns early leaves none behind for the trace.
         jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(null)
         LocalDecisionInternals.begin()
-        try { decideWithTuning(session, context) } finally {
+        try {
+            jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex.withDecisionSnapshot {
+                jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.with {
+                    decideWithTuning(session, context)
+                }
+            }
+        } finally {
             jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.clear()
             LocalDecisionInternals.clear()
         }

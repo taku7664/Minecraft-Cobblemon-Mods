@@ -21,6 +21,46 @@ import org.junit.jupiter.api.Test
 
 class LocalMatchupScoreTest {
     @Test
+    fun `current pair requests exactly preserve full table exchanges moves and worths`() {
+        for (recovery in listOf(false, true)) {
+            val context = context(allySpeed = 150, foeSpeed = 100, rocksOnAllySide = true,
+                secondFoe = true, allySetup = mapOf("atk" to 2))
+            val full = LocalMatchupScoreCalculator.calculate(context, recovery = recovery)
+            val pairs = LocalMatchupScoreCalculator.currentPairs(context, recovery = recovery)
+            assertTrue(pairs.complete)
+            assertFalse(pairs is jbro.cobblemon.mcc.betterai.matchup.MatchupScores)
+            for (ally in context.state.pokemon.filter { it.side == BattleSide.ALLY })
+                for (foe in context.state.pokemon.filter { it.side == BattleSide.OPPONENT }) {
+                    assertEquals(full.pokemon(ally.battlePokemonId, foe.battlePokemonId), pairs.pokemon(ally.battlePokemonId, foe.battlePokemonId))
+                    assertEquals(full.pokemon(foe.battlePokemonId, ally.battlePokemonId), pairs.pokemon(foe.battlePokemonId, ally.battlePokemonId))
+                    assertEquals(full.moves(ally.battlePokemonId, foe.battlePokemonId), pairs.moves(ally.battlePokemonId, foe.battlePokemonId))
+                    assertNull(pairs.pokemon(ally.battlePokemonId, foe.battlePokemonId, MatchupSpeedField.TRICK_ROOM_TOGGLED))
+                }
+            val worth = jbro.cobblemon.mcc.betterai.matchup.LocalKnockoutWorth
+            assertEquals(worth.read(context.state, full, 1.0), worth.read(context.state, pairs, 1.0))
+            val expected = worth.read(context.state, full, 200.0)
+            jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.with { scope ->
+                assertEquals(expected, worth.read(context.state, full, 200.0))
+                assertEquals(worth.read(context.state, pairs, 1.0).standings, worth.standings(context.state, full))
+                assertEquals(expected.worths, worth.worths(context.state, full, 200.0))
+                assertEquals(2, scope.hits)
+                assertEquals(2, scope.misses)
+            }
+            val subset = LocalMatchupScoreCalculator.currentPairs(context, allyIds = setOf(BENCH), opponentIds = setOf(FOE))
+            assertEquals(full.pokemon(BENCH, FOE), subset.pokemon(BENCH, FOE))
+            assertNull(subset.pokemon(ALLY, FOE))
+            val ace = LocalAceScore.calculate(context)
+            val freshMatchup = LocalAceScore.matchup(context, emptyMap())
+            jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.with { scope ->
+                assertEquals(ace, LocalAceScore.calculate(context))
+                assertEquals(freshMatchup, LocalAceScore.matchup(context, emptyMap()))
+                assertEquals(2, scope.hits)
+                assertEquals(2, scope.misses)
+            }
+        }
+    }
+
+    @Test
     fun `a knockout profile counts uses to the knockout, misses included`() {
         val sure = LocalKnockoutProfile.of(List(16) { 0.6 }, 1.0, 1.0, 6)
         assertEquals(listOf(1.0, 1.0, 0.0), sure.survival.take(3))

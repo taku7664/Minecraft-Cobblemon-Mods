@@ -17,9 +17,7 @@ import jbro.cobblemon.mcc.internal.ai.PublicIds
  */
 internal object LocalAceScore {
     fun calculate(context: BattleDecisionContext): Map<UUID, Double> {
-        val fresh = context.state.copyState(pokemon = context.state.pokemon.map {
-            it.copyState(hpFraction = 1.0, statusId = null, statStages = emptyMap(), fainted = false)
-        })
+        val fresh = freshBoard(context)
         val scores = freshScores(context, fresh)
         return fresh.pokemon.filter { it.side == BattleSide.ALLY }
             .associate { it.battlePokemonId to (scores.sweeps[it.battlePokemonId]?.score ?: 0.0) }
@@ -32,9 +30,7 @@ internal object LocalAceScore {
      * for Dynamax; Mega Evolution and Tera keep [calculate]).
      */
     fun matchup(context: BattleDecisionContext, weights: Map<UUID, Double>): Map<UUID, Double> {
-        val fresh = context.state.copyState(pokemon = context.state.pokemon.map {
-            it.copyState(hpFraction = 1.0, statusId = null, statStages = emptyMap(), fainted = false)
-        })
+        val fresh = freshBoard(context)
         val foes = fresh.pokemon.filter { it.side == BattleSide.OPPONENT }
         if (foes.isEmpty()) return emptyMap()
         val scores = freshScores(context, fresh)
@@ -46,12 +42,26 @@ internal object LocalAceScore {
         }
     }
 
+    private fun freshBoard(context: BattleDecisionContext) =
+        jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.reuse("aceFreshBoard",
+            jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.Identity(context)) {
+            context.state.copyState(pokemon = context.state.pokemon.map {
+                it.copyState(hpFraction = 1.0, statusId = null, statStages = emptyMap(), fainted = false)
+            })
+        }
+
     /**
      * The fresh board's table, kept for the boards seen last: it changes only with what is known of the Pokemon (species,
      * form, moves, ability, item), not with HP or stages. Each Dynamax reading worked it out again, several times a
      * decision in a Galar battle (profiled 2026-10-20).
      */
-    private fun freshScores(context: BattleDecisionContext, fresh: jbro.cobblemon.mcc.internal.ai.BattleStateView): MatchupScores {
+    private fun freshScores(context: BattleDecisionContext, fresh: jbro.cobblemon.mcc.internal.ai.BattleStateView): MatchupScores =
+        jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.reuse("aceFreshTable",
+            jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.Identity(context)) {
+            retainedFreshScores(context, fresh)
+        }
+
+    private fun retainedFreshScores(context: BattleDecisionContext, fresh: jbro.cobblemon.mcc.internal.ai.BattleStateView): MatchupScores {
         val key = fresh.format.name + "|" + fresh.pokemon.joinToString(";") {
             "${it.battlePokemonId}/${it.side}/${it.speciesId}/${it.formId}/${it.knownMoveIds.sorted()}/${it.knownAbilityId}/${it.knownHeldItemId}/${it.knownTypeIds}"
         } + "|" + context.publicActionCatalog.hashCode()

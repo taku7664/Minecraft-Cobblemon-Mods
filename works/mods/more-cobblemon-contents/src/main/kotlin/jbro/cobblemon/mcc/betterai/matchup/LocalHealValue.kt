@@ -72,7 +72,7 @@ internal object LocalHealValue {
             val healedHp = (minOf(1.0, user.hpFraction + restored) - asleep * foeHit).coerceAtLeast(0.0)
             if (healedHp <= user.hpFraction) return@mapNotNull heal.actionId to 0.0
             val board = state.derive(pokemon = state.pokemon.map { if (it.battlePokemonId == user.battlePokemonId) it.copyState(hpFraction = healedHp) else it })
-            val healedScores = LocalMatchupScoreCalculator.calculate(context.copy(state = board))
+            val healedScores = LocalMatchupScoreCalculator.currentPairs(context.copy(state = board))
             val healed = LocalKnockoutWorth.standings(board, healedScores)
             val standingNow = now[user.battlePokemonId] ?: return@mapNotNull null
             val standingHealed = healed[user.battlePokemonId] ?: return@mapNotNull null

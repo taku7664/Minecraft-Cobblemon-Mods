@@ -35,7 +35,7 @@ import java.util.UUID
  */
 internal object LocalKnockoutWorth {
     /** Each living Pokemon's worth in the units of [flat], the value of one average Pokemon of its side. */
-    fun worths(state: BattleStateView, scores: MatchupScores, flat: Double): Map<UUID, Double> = read(state, scores, flat).worths
+    fun worths(state: BattleStateView, scores: MatchupPairs, flat: Double): Map<UUID, Double> = read(state, scores, flat).worths
 
     /**
      * What each living Pokemon still does, in board units, before any per-side scaling: its fight's share of wins
@@ -44,7 +44,7 @@ internal object LocalKnockoutWorth {
      * shared worth, a Meganium, a Veluza and a Mabosstiff that all lost to a Regice switched into each other in turn, each
      * spared one counted as a whole Pokemon kept (self-play, 2026-10-21).
      */
-    fun standings(state: BattleStateView, scores: MatchupScores): Map<UUID, Double> = read(state, scores, 1.0).standings
+    fun standings(state: BattleStateView, scores: MatchupPairs): Map<UUID, Double> = read(state, scores, 1.0).standings
 
     data class Reading(
         /** Each living Pokemon's worth, in the units of the flat value asked for. */
@@ -82,7 +82,16 @@ internal object LocalKnockoutWorth {
     )
 
 
-    fun read(state: BattleStateView, scores: MatchupScores, flat: Double): Reading {
+    fun read(state: BattleStateView, scores: MatchupPairs, flat: Double): Reading {
+        val reading = jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.reuse("knockoutWorth",
+            jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.Identity(state),
+            jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.Identity(scores)) {
+            calculate(state, scores, 1.0)
+        }
+        return if (flat == 1.0) reading else reading.copy(worths = reading.worths.mapValues { (_, value) -> flat * value })
+    }
+
+    private fun calculate(state: BattleStateView, scores: MatchupPairs, flat: Double): Reading {
         val living = state.pokemon.filter { !it.fainted && it.hpFraction > 0.0 }
         val fight = living.mapNotNull { pokemon ->
             val values = living.filter { it.side != pokemon.side }.mapNotNull { other ->
@@ -170,7 +179,7 @@ internal object LocalKnockoutWorth {
      */
     private fun actingChance(
         state: BattleStateView,
-        scores: MatchupScores,
+        scores: MatchupPairs,
         subject: BattlePokemonStateView,
         other: BattlePokemonStateView,
         move: MoveMatchupScore,
@@ -191,7 +200,7 @@ internal object LocalKnockoutWorth {
         candidates: List<BattleActionCandidate>,
         ranked: BattleDecisionContext,
         board: BattleStateView,
-        scores: MatchupScores,
+        scores: MatchupPairs,
         tuning: LocalDecisionTuning,
     ): Map<String, Double> {
         val flat = tuning.knockoutMaterialScore
