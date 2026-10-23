@@ -21,10 +21,11 @@ internal object LocalMoveImpactProjector {
         return runCatching {
             val dex = EngineRuntimeDex.current().second
             (targets + actor).any { holder ->
+                val holderHooks = if (holder.battlePokemonId == actor.battlePokemonId) hooks else hooks - USER_ONLY_HOOKS
                 val ability = LocalPublicAbilityState.effectiveKnownAbility(state, holder)
                 val item = LocalPublicItemState.activeItemId(state, holder)
-                ability != null && hooks.any { dex.ability(ability).declares(it) } ||
-                    item != null && hooks.any { dex.item(item).declares(it) }
+                ability != null && holderHooks.any { dex.ability(ability).declares(it) } ||
+                    item != null && holderHooks.any { dex.item(item).declares(it) }
             } || !includeGuards && targets.any { target -> LocalMoveAbsorption.apply(state, action, actor, target) != null } ||
                 state.pokemon.any { holder -> holder.activeSlot != null && !holder.fainted &&
                 LocalPublicAbilityState.effectiveKnownAbility(state, holder)?.let { dex.ability(it).declares("onAnyFaint") } == true } ||
@@ -117,4 +118,5 @@ internal object LocalMoveImpactProjector {
         "onAfterMoveSecondary", "onAfterMoveSecondarySelf", "onSourceAfterFaint", "onAfterUseItem", "onBeforeMove")
     // Pure guards are already decided by the hit kernel. Absorbing TryHit effects are checked above.
     private val STATE_REACTION_HOOKS = REACTION_HOOKS - setOf("onTryHit", "onBeforeMove")
+    private val USER_ONLY_HOOKS = setOf("onAfterMoveSecondarySelf", "onSourceAfterFaint", "onBeforeMove")
 }

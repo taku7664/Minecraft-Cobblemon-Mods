@@ -252,6 +252,10 @@ class LocalHitReactionValueTest {
         val c = context(listOf(mon(TARGET, BattleSide.ALLY), mon(ACTOR, BattleSide.OPPONENT, ability = "flashfire")), move)
         assertTrue(LocalMoveImpactProjector.mayReact(move, c, BattleSide.ALLY))
         assertFalse(LocalMoveImpactProjector.mayReact(move, c, BattleSide.ALLY, includeGuards = false))
+        val heldByTarget = context(listOf(mon(TARGET, BattleSide.ALLY), mon(ACTOR, BattleSide.OPPONENT, item = "lifeorb")), move)
+        assertFalse(LocalMoveImpactProjector.mayReact(move, heldByTarget, BattleSide.ALLY))
+        val heldByUser = context(listOf(mon(TARGET, BattleSide.ALLY, item = "lifeorb"), mon(ACTOR, BattleSide.OPPONENT)), move)
+        assertTrue(LocalMoveImpactProjector.mayReact(move, heldByUser, BattleSide.ALLY, includeGuards = false))
         val water = BattleActionCandidate("water", BattleActionKind.USE_MOVE, 0, 0, "watergun", targets = move.targets,
             moveDetails = BattleMoveCandidateView("water", BattleMoveDamageCategory.SPECIAL, 40.0, 100.0, 0, 20))
         val absorb = context(listOf(mon(TARGET, BattleSide.ALLY), mon(ACTOR, BattleSide.OPPONENT, ability = "waterabsorb")), water)
