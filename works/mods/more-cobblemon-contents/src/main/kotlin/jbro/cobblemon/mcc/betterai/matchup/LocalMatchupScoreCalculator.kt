@@ -404,6 +404,15 @@ internal object LocalMatchupScoreCalculator {
         userId: UUID,
         targetId: UUID,
         cache: LocalProjectedActionCalculationCache,
+    ): List<ScoredMove> = cache.matchupMoves(position, userId, targetId) {
+        calculateMoveMatchups(position, userId, targetId, cache)
+    }
+
+    private fun calculateMoveMatchups(
+        position: BattleDecisionContext,
+        userId: UUID,
+        targetId: UUID,
+        cache: LocalProjectedActionCalculationCache,
     ): List<ScoredMove> {
         val state = position.state
         val user = state.pokemon.firstOrNull { it.battlePokemonId == userId && it.activeSlot != null } ?: return emptyList()

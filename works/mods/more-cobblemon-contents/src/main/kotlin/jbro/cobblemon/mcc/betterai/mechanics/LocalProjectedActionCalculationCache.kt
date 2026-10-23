@@ -1,6 +1,9 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
 import java.util.UUID
+import jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.Identity
+import jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning
+import jbro.cobblemon.mcc.betterai.matchup.LocalMatchupScoreCalculator.ScoredMove
 import jbro.cobblemon.mcc.internal.ai.BattleActionCandidate
 import jbro.cobblemon.mcc.internal.ai.BattleActionKind
 import jbro.cobblemon.mcc.internal.ai.BattleDecisionContext
@@ -73,6 +76,67 @@ internal class LocalProjectedActionCalculationCache(
     private val byStateIdentity = java.util.IdentityHashMap<BattleStateView, MutableSet<ActionKey>>()
     private val catalogKeys = java.util.IdentityHashMap<BattlePublicActionCatalogView, CatalogKey>()
     private val slotActionsByInputs = HashMap<SlotActionsKey, List<BattleActionCandidate>>()
+    private val matchupMoves = HashMap<MatchupMoveKey, List<ScoredMove>>()
+    private class MatchupEntry(val result: Pair<BattleStateView, BattlePublicActionCatalogView>?)
+    private val matchupEntries = HashMap<MatchupEntryKey, MatchupEntry>()
+
+    var matchupEntriesBuilt: Int = 0
+        private set
+    var matchupEntryHits: Int = 0
+        private set
+
+    /** Entry hazards/abilities are projected once for each identical virtual entry. */
+    internal fun matchupEntry(source: BattleDecisionContext, pokemonId: UUID, slot: Int?,
+        build: () -> BattleDecisionContext?): BattleDecisionContext? {
+        val key = MatchupEntryKey(fingerprints.of(source.state), pokemonId, slot,
+            catalogKey(source.publicActionCatalog),
+            Identity(
+                LocalActiveTuning.current()))
+        val cached = matchupEntries[key]
+        val entry = if (cached != null) { matchupEntryHits++; cached } else {
+            matchupEntriesBuilt++
+            MatchupEntry(build()?.let { it.state to it.publicActionCatalog }).also {
+                if (matchupEntries.size >= MAXIMUM_MATCHUP_ENTRIES) matchupEntries.clear()
+                matchupEntries[key] = it
+            }
+        }
+        return entry.result?.let { (state, catalog) -> source.copy(state = state, publicActionCatalog = catalog) }
+    }
+
+    private data class MatchupEntryKey(
+        val state: String, val pokemon: UUID, val slot: Int?, val catalog: CatalogKey,
+        val tuning: Identity,
+    )
+
+    var matchupMoveListsBuilt: Int = 0
+        private set
+    var matchupMoveListHits: Int = 0
+        private set
+
+    /** Reuse the complete move reading, not just the public damage calculation inside it. */
+    internal fun matchupMoves(
+        position: BattleDecisionContext, userId: UUID, targetId: UUID,
+        build: () -> List<ScoredMove>,
+    ): List<ScoredMove> {
+        val tuning = LocalActiveTuning.current()
+        // Evolving projections also depend on the remaining deadline and the recursion guard.
+        if (tuning.evolvingMatchups) return build()
+        val key = MatchupMoveKey(fingerprints.of(position.state), userId, targetId,
+            catalogKey(position.publicActionCatalog),
+            Identity(tuning), matchupRecovery)
+        matchupMoves[key]?.let { matchupMoveListHits++; return it }
+        matchupMoveListsBuilt++
+        return build().also {
+            if (matchupMoves.size >= MAXIMUM_MATCHUP_ENTRIES) matchupMoves.clear()
+            matchupMoves[key] = it
+        }
+    }
+
+    private data class MatchupMoveKey(
+        val state: String, val user: UUID, val target: UUID, val catalog: CatalogKey,
+        val tuning: Identity,
+        val recovery: Boolean,
+    )
 
     var slotActionListsBuilt: Int = 0
         private set
@@ -179,6 +243,8 @@ internal class LocalProjectedActionCalculationCache(
     }
 
     companion object {
+        private const val MAXIMUM_MATCHUP_ENTRIES = 4096
+
         /** Measurement switch for [calculationsUnderIdentityKeying]; off in play. */
         @Volatile
         internal var countIdentityKeying: Boolean = false

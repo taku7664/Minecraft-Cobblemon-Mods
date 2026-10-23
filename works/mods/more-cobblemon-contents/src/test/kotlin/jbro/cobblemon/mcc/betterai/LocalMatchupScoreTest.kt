@@ -21,6 +21,80 @@ import org.junit.jupiter.api.Test
 
 class LocalMatchupScoreTest {
     @Test
+    fun `virtual entry reuse retains hazard and ability results and the callers decision fields`() {
+        val base = context(150, 100, rocksOnAllySide = true, secondFoe = true)
+        val bench = base.state.pokemon.first { it.battlePokemonId == BENCH }
+        val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+        val first = requireNotNull(jbro.cobblemon.mcc.betterai.matchup.LocalMatchupPosition.enter(base, bench, cache))
+        val source = base.copy(deadlineEpochMillis = 987654321L,
+            candidates = listOf(BattleActionCandidate("another", BattleActionKind.WAIT)))
+        val repeated = requireNotNull(jbro.cobblemon.mcc.betterai.matchup.LocalMatchupPosition.enter(source, bench, cache))
+        assertSame(first.state, repeated.state)
+        assertEquals(source.candidates, repeated.candidates)
+        assertEquals(source.deadlineEpochMillis, repeated.deadlineEpochMillis)
+        assertEquals(1, cache.matchupEntriesBuilt)
+        assertEquals(1, cache.matchupEntryHits)
+        val variants = listOf(
+            base.copy(state = base.state.copyState(pokemon = base.state.pokemon.map {
+                if (it.battlePokemonId == BENCH) it.copyState(hpFraction = 0.4, knownAbilityId = "intimidate") else it })),
+            context(150, 100, rocksOnAllySide = false, secondFoe = true),
+        )
+        val keys = jbro.cobblemon.mcc.betterai.mechanics.LocalBattleStateFingerprint()
+        for (variant in variants) {
+            val member = variant.state.pokemon.first { it.battlePokemonId == BENCH }
+            val fresh = requireNotNull(jbro.cobblemon.mcc.betterai.matchup.LocalMatchupPosition.enter(variant, member,
+                jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()))
+            val reused = requireNotNull(jbro.cobblemon.mcc.betterai.matchup.LocalMatchupPosition.enter(variant, member, cache))
+            assertEquals(keys.of(fresh.state), keys.of(reused.state))
+            assertEquals(fresh.publicActionCatalog.entries, reused.publicActionCatalog.entries)
+        }
+        val trapped = base.copy(state = base.state.copyState(pokemon = base.state.pokemon.map {
+            if (it.battlePokemonId == ALLY) it.copyState(actionConstraints = it.actionConstraints.copy(trapped = true)) else it }))
+        assertNull(jbro.cobblemon.mcc.betterai.matchup.LocalMatchupPosition.enter(trapped, bench, cache))
+        assertNull(jbro.cobblemon.mcc.betterai.matchup.LocalMatchupPosition.enter(trapped, bench, cache))
+    }
+
+    @Test
+    fun `complete move reuse keeps HP ability field catalog and tuning inputs distinct`() {
+        val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+        val base = context(150, 100, allyExtra = listOf(BattlePublicMoveOptionView("quickattack",
+            BattleMoveCandidateView(typeId = "normal", damageCategory = BattleMoveDamageCategory.PHYSICAL,
+                power = 40.0, accuracy = 100.0, priority = 1, currentPp = 10), BattlePublicMoveKnowledge.EXACT_OWN)))
+        fun read(c: BattleDecisionContext, memo: jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache = cache) =
+            LocalMatchupScoreCalculator.moveMatchups(c, ALLY, FOE, memo).map { it.score }
+        val expected = read(base)
+        assertEquals(expected, read(base.copy(state = base.state.copyState())))
+        assertEquals(1, cache.matchupMoveListHits)
+        assertEquals(1, cache.matchupMoveListsBuilt)
+        val variants = listOf(
+            base.copy(state = base.state.copyState(pokemon = base.state.pokemon.map {
+                if (it.battlePokemonId == FOE) it.copyState(hpFraction = 0.21) else it })),
+            base.copy(state = base.state.copyState(pokemon = base.state.pokemon.map {
+                if (it.battlePokemonId == FOE) it.copyState(knownAbilityId = "sturdy") else it })),
+            base.copy(state = base.state.copyState(pokemon = base.state.pokemon.map {
+                if (it.battlePokemonId == ALLY) it.copyState(statStages = mapOf("atk" to -2)) else it })),
+            base.copy(state = base.state.derive(field = BattleFieldStateView(BattleTimedEffectView("raindance", 5), null, emptyList(), emptyList(),
+                mapOf(BattleSide.ALLY to emptyList(), BattleSide.OPPONENT to emptyList())))),
+            base.copy(publicActionCatalog = BattlePublicActionCatalogView(emptyList())),
+        )
+        for (variant in variants) {
+            val fresh = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+            assertEquals(read(variant, fresh), read(variant))
+        }
+        assertEquals(1 + variants.size, cache.matchupMoveListsBuilt)
+        val tuning = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current()
+        jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(tuning.copy(simpleFixedHpReactions = true)) {
+            assertEquals(expected, read(base))
+        }
+        assertEquals(2 + variants.size, cache.matchupMoveListsBuilt)
+        jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(tuning.copy(evolvingMatchups = true)) {
+            read(base)
+            read(base)
+        }
+        assertEquals(2 + variants.size, cache.matchupMoveListsBuilt)
+    }
+
+    @Test
     fun `current pair requests exactly preserve full table exchanges moves and worths`() {
         for (recovery in listOf(false, true)) {
             val context = context(allySpeed = 150, foeSpeed = 100, rocksOnAllySide = true,

@@ -33,6 +33,8 @@ internal object LocalRepeatedMoveMechanics {
 
     fun flinchProbabilities(context: BattleDecisionContext, action: BattleActionCandidate, userId: UUID, targetId: UUID,
         cache: LocalProjectedActionCalculationCache): List<Double>? {
+        // The disabled/nested projector returns no profile. Do not prepare damage rolls for it.
+        if (!jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().evolvingMatchups || projecting.get()) return null
         val side = context.state.pokemon.firstOrNull { it.battlePokemonId == userId }?.side ?: return null
         val rolls = PublicBattleTacticalCalculator.conservativeDamageRollFractions(action, context, side) ?: return null
         val probabilities = arrayListOf<Double>()

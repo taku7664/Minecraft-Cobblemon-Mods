@@ -32,6 +32,14 @@ internal object LocalMatchupPosition {
     ): BattleDecisionContext? {
         val state = source.state
         if (state.pokemon.any { it.battlePokemonId == pokemon.battlePokemonId && it.activeSlot != null }) return source
+        return cache.matchupEntry(source, pokemon.battlePokemonId, slot) {
+            calculateEntry(source, pokemon, cache, slot)
+        }
+    }
+
+    private fun calculateEntry(source: BattleDecisionContext, pokemon: BattlePokemonStateView,
+        cache: LocalProjectedActionCalculationCache, slot: Int?): BattleDecisionContext? {
+        val state = source.state
         // Single-slot actions: in doubles the turn-level actions pair both slots, so no plain switch is among them.
         val action = cache.slotActions(state, pokemon.side, source.publicActionCatalog, includeMoveHypotheses = false) {
             PublicFutureActionFactory.slotActions(state, pokemon.side, source.publicActionCatalog)
