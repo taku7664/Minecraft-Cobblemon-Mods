@@ -2,6 +2,18 @@
 
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 
+## [2026-10-23 11:29] 전체 기본 검사 405/408 클래스 결과 확보 — 20실패 원인 대조, 장기 3클래스는 진행 중
+
+- **사용자 요청·범위:** 전체 기본 검사를 다시 실행한다. 기준 체크아웃 `823cfd265`; AI main/리소스/빌드 설정은 `046028809`, 테스트 소스는 `3057800d7`과 같다. 기존 컴파일 산출물로 MCC 기본 JUnit 408클래스·2390테스트를 발견했고 Temp 임시 클래스만 제외했다. `betterai.sweeps=false`, `betterai.oracle=false`를 유지한다. 소스나 계산식/가중치/검사 기대값은 바꾸지 않았다.
+- **실행 방식:** 앞선 6GB 단일 배치 OOM과 결과 유실을 반복하지 않도록 클래스마다 새 JVM(힙 8GB, `ExitOnOutOfMemoryError`)에서 실행한다. 개별 테스트 시작/종료/건너뜀을 JSONL로 즉시 저장한다. 실행 cwd·tmp·로그·검사 소스 사본은 F에 두고 소스 사본의 원본 CRLF를 유지했다. 반복/동적 테스트 형식이 없는 것도 소스에서 확인했다. 관측용 F 진단 사본은 기본 검사 집계에 합치지 않는다.
+- **확정된 중간 집계:** 일반 405클래스의 2383개 테스트 ID가 완료 기록과 정확히 맞는다. **통과 2310 / 실패 20 / 조건 건너뜀 38 / assumption 미충족 ABORTED 15**이며 누락·예상 밖 ID 0이다. 장기 3클래스의 7항목만 남았으므로 전체 기본 검사 통과나 완료가 아니다. 선공 가중치 5종의 진영 교대 400판을 실행 중이고, 뒤에 `LocalSearchAuthoritySweepTest`, `LocalSelfPlayMeasurementTest`가 남아 있다. 이 시점의 OOM은 0건이다.
+- **공통 보스 관측 경로 7실패:** `AiDecisionSnapshotReplayTest` 1, `LocalSelfDropMoveTest` 1, `LocalTeamRoleDecisionTest` 3, `NativeTogekissDecisionProductBrainIntegrationTest` 2. 보스는 주입 `actionSelector` 대신 `LocalHighestRankedActionSelector`로 직접 고른다. 기록을 주입 선택기 호출에 의존하는 테스트의 captured/lastIdeal/observer.latest/shortlist가 비어 실패했다. 각 최종 선택 assertion에 도달하지 않은 사례를 실제 전투 선택 오류로 쓰지 않는다. 보스 최고순위 정책을 되돌리지는 않았다.
+- **난이도 계약 3실패:** `HumanlikeExternalBrainTest` 1, `RootTacticalFixturesTest` 2는 입문/일반 1턴을 전제하지만 현재 둘 다 2턴이다(`b99de0a691`, 2026-10-09). 외부 AI 프롬프트 문구도 여전히 1턴이어서 데이터/문구 계약 불일치가 있다. 입문 격자에서 무조건 공격을 기대하는 assertion도 이 변경 전의 전제다.
+- **선공/확률 기대 5실패:** `LocalImmediateTurnScorerTest` 1, `LocalLookaheadEvaluationTest` 2, `LocalPenaltyBehaviourTest` 1, `LocalCooperativeCandidateCoverageTest` 1. 원본 현재 턴 입력의 선공 확률은 0→1이지만 변경 전 판 stakes=0이라 선공 값은 `(1-0)*0=0`; 재실행한 F 진단의 material=0.1, stage=0.070625, status=0.25, speed=0, field=0, total=0.420625다. 공격기 없는 속도 3조건과 용의춤/튀어오르기만 있는 1/2턴 값도 모두 0(탐색 비중단)이었다. 방어 테스트는 제거된 별도 우선도 가산 `4*2/3`을 여전히 기대해 14/9 대 -10/9로 다르며, 성공률 1/3과 연속 감점 10/9 assertion은 통과했다. 더블 탐색 실험의 고정 추첨 횟수는 913 기대 대 509 실제(1024시드, 미탐색 질량 0.4940862190)다. 이 값들을 맞추려고 AI 식을 바꾸지 않았다.
+- **나머지 5실패:** 합동 재지정 점수 테스트 1은 무효 구성요소당 -500 항을 기대식에서 누락해 201 대 -299; 기존 보류 상수 항과 연결되며 피해 재지정 대조 이전에 실패했다. PP 스냅샷 1은 현재 대여 자료에 없는 `gurdurr_preset_3`을 지정해 팀 생성에서 중단되어 PP 비교에 도달하지 않았다. 기존 `Cobblemon173ActionCandidateAdapterTest` 2는 포켓몬 null로 다이맥스를 기대하지만 `ManagedDynamax.permits` 조건과 맞지 않는다(게임 호출부는 실제 포켓몬 전달). 기존 `BattleSceneLifecyclePolicyTest` 1은 LF 문자열 contains를 요구해 원본 CRLF 사본에서 실패했다. 앞선 LF 대조 진단에서 이 실패가 사라졌던 결과와 구분한다.
+- **완료한 장기·연동 항목:** 피해 처리 중심 스트레스 모의 5000판(5시드×1000판)은 정체 0으로 통과했고 해당 클래스 759.163초다. 완전 규칙 아레나 5000판으로 확대하지 않는다. 가지치기 자체 대전 120판을 포함한 클래스 3/3은 1161.007초, 네이티브 엔진 분기 26/26은 192.898초다. Showdown 기능 목록 대조, 여러 기술·상태의 엔진 통합, 일반 클라이언트/대전 연결 검사도 기록에 남았다. 조건부 대규모 격자/교정은 기본 옵션에 따라 건너뜀으로 구분했다.
+- **근거·남은 작업:** `F:/AI/builds/cobblemon-mods-1b39-entry-healblock/full-default-20261023-0940/`의 `run.py`, `manifest.json`, `plan.json`, `results/*/events.jsonl`, `audit.json`, `test-outcomes.json`, `failure-analysis.md`, `immediate-probe/`, `lookahead-probe/`를 참조한다. 11:28 확인에서 기존 C 로그 4개의 크기/mtime/SHA-256이 같고 검증 전까지 저장소도 깨끗했다. 이 기록은 중간 결과이며 장기 측정 종료 후 전체 ID/중단 여부를 다시 대조해 최종 기록을 추가한다. 게임용 JAR 생성·설치·서버/클라이언트 실행·실게임 확인은 하지 않았다.
+
 ## [2026-10-23 03:46] 전체 검사 재실행도 OOM — 지문 형식 배열 5.62GB 확인, 검수·최적화 후보 정리 종료 (전체 통과 아님)
 
 - **검수 최종 상태:** 최초 기본 스캔 70분 54초 OOM에 이어, 장기 측정 두 클래스만 제외한 재실행도 84분 50초 뒤 같은 재귀 탐색 → 랭크 변화 → 원자 행동 캐시 → 지문 생성 경로에서 힙 6GB를 소진했다(`regression.log`, `regression-execution.json`; 덤프 생성 약 60초 포함). 두 실행 모두 최종 XML이 없어 전체 통과/실패 개수를 만들지 않았다. 같은 배치 검사를 다시 반복하지 않는다. **전체 기본 검사 통과로 보고할 수 없다.**
