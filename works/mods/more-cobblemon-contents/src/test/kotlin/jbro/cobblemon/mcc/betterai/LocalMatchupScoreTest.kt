@@ -723,6 +723,97 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `switch entry carries integer absorb healing into the next exchange and internals`() {
+        val base = electricEntryContext()
+        val state = base.state.derive(pokemon = base.state.pokemon.map {
+            if (it.battlePokemonId != BENCH) it else it.copyState(hpFraction = 45.0 / 146,
+                combatStats = it.combatStats!!.copy(maxHp = BattleIntegerRange(146, 146)))
+        })
+        val c = base.copy(state = state)
+        val scores = LocalMatchupScoreCalculator.calculate(c)
+        val entry = scores.switchIn(BENCH, FOE, ALLY)!!
+        val hit = entry.outcomes.getValue("thunderbolt")
+        assertEquals(81.0 / 146, hit.hpAfterEntry, 1e-12)
+        assertEquals(36.0 / 146, hit.absorptionHealing, 1e-12)
+        assertTrue(hit.absorptionActivated)
+        assertEquals(1.0, hit.survival)
+        assertNotEquals(entry.outcomes.getValue(null).afterEntry, hit.afterEntry)
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.begin()
+        try {
+            LocalSwitchRules.judge(listOf(attackAction(), BattleActionCandidate("switch", BattleActionKind.SWITCH,
+                actorSlot = 0, switchPokemonId = BENCH)), c, scores)
+            val recorded = jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.take().filterKeys {
+                it.startsWith("switchHit:") && it.endsWith(":thunderbolt")
+            }.values.single()
+            assertEquals(36.0 / 146, recorded.getValue("absorptionHealing"), 1e-12)
+            assertEquals(81.0 / 146, recorded.getValue("hpAfterHit"), 1e-12)
+        } finally { jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.clear() }
+    }
+
+    @Test
+    fun `all TryHit absorption reactions share suppression healblock and base HP rules`() {
+        val base = electricEntryContext()
+        val actor = base.state.pokemon.first { it.battlePokemonId == FOE }
+        val bench = base.state.pokemon.first { it.battlePokemonId == BENCH }
+        fun reaction(ability: String, type: String, hp: Double = 45.0 / 146,
+            volatiles: Set<String> = emptySet(), actorAbility: String? = null, item: String? = null): BattleStateView? {
+            val target = bench.copyState(activeSlot = 0, hpFraction = hp, knownAbilityId = ability,
+                knownHeldItemId = item, knownVolatileEffectIds = volatiles,
+                combatStats = bench.combatStats!!.copy(maxHp = BattleIntegerRange(146, 146)))
+            val source = actor.copyState(knownAbilityId = actorAbility)
+            val state = base.state.derive(pokemon = listOf(source, target))
+            val move = BattleActionCandidate("absorb", BattleActionKind.USE_MOVE, actorSlot = 0, moveSlot = 0, moveId = "probe",
+                moveDetails = BattleMoveCandidateView(typeId = type, damageCategory = BattleMoveDamageCategory.SPECIAL,
+                    power = 100.0, accuracy = 1.0, priority = 0, currentPp = 10,
+                    effects = if (ability == "windrider") BattleMoveEffectsView(BattleMoveEffectCoverage.DECLARATIVE_PARTIAL,
+                        emptyList(), false, mechanicFlags = setOf("wind")) else null))
+            return jbro.cobblemon.mcc.betterai.mechanics.LocalMoveAbsorption.apply(state, move, source, target)
+        }
+        fun target(state: BattleStateView?) = state!!.pokemon.first { it.battlePokemonId == BENCH }
+        for ((ability, type) in listOf("voltabsorb" to "electric", "waterabsorb" to "water",
+            "dryskin" to "water", "eartheater" to "ground")) {
+            assertEquals(81.0 / 146, target(reaction(ability, type)).hpFraction, 1e-12, ability)
+            assertEquals(1.0, target(reaction(ability, type, hp = 140.0 / 146)).hpFraction, ability)
+            assertEquals(45.0 / 146, target(reaction(ability, type, volatiles = setOf("healblock"))).hpFraction, ability)
+            assertEquals(126.0 / 292, target(reaction(ability, type, volatiles = setOf("dynamax"))).hpFraction, 1e-12, ability)
+            assertNull(reaction(ability, type, actorAbility = "moldbreaker"), ability)
+            assertNull(reaction(ability, type, volatiles = setOf("gastroacid")), ability)
+            assertNotNull(reaction(ability, type, actorAbility = "moldbreaker", item = "abilityshield"), ability)
+            assertNull(reaction(ability, "normal"), ability)
+        }
+        for ((ability, type, stages) in listOf(
+            Triple("sapsipper", "grass", mapOf("attack" to 1)),
+            Triple("windrider", "flying", mapOf("attack" to 1)),
+            Triple("motordrive", "electric", mapOf("speed" to 1)),
+            Triple("lightningrod", "electric", mapOf("special_attack" to 1)),
+            Triple("stormdrain", "water", mapOf("special_attack" to 1)),
+            Triple("wellbakedbody", "fire", mapOf("defence" to 2)))) {
+            assertEquals(stages, target(reaction(ability, type)).statStages, ability)
+            assertNull(reaction(ability, type, actorAbility = "moldbreaker"), ability)
+        }
+        assertTrue("flashfire" in target(reaction("flashfire", "fire")).knownVolatileEffectIds)
+        assertNull(reaction("levitate", "ground"))
+    }
+
+    @Test
+    fun `switch entry does not reuse an unboosted exchange for an absorbing stat boost`() {
+        val base = electricEntryContext()
+        val c = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+            if (it.battlePokemonId != BENCH) it else it.copyState(knownAbilityId = "lightningrod")
+        }), publicActionCatalog = BattlePublicActionCatalogView(base.publicActionCatalog.entries.map {
+            if (it.battlePokemonId != BENCH) it else BattlePokemonActionCatalogView(BENCH,
+                listOf(BattlePublicMoveOptionView("watergun", BattleMoveCandidateView(typeId = "water",
+                    damageCategory = BattleMoveDamageCategory.SPECIAL, power = 80.0, accuracy = 100.0,
+                    priority = 0, currentPp = 20), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), moveSetComplete = true)
+        }))
+        val entry = LocalMatchupScoreCalculator.calculate(c).switchIn(BENCH, FOE, ALLY)!!
+        assertEquals(mapOf("special_attack" to 1), entry.outcomes.getValue("thunderbolt").absorptionStages)
+        assertTrue(entry.outcomes.getValue("thunderbolt").absorptionActivated)
+        assertEquals(0.0, entry.outcomes.getValue("thunderbolt").absorptionHealing)
+        assertNotEquals(entry.outcomes.getValue(null).afterEntry, entry.outcomes.getValue("thunderbolt").afterEntry)
+    }
+
+    @Test
     fun `a switch-in that the predicted hit knocks out is ruled out`() {
         // The faster ally knocks the foe out first; the foe knocks out anything that walks in.
         val context = context(allySpeed = 150, foeSpeed = 100)

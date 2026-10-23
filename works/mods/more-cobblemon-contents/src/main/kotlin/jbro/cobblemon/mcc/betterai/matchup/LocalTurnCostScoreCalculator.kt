@@ -131,28 +131,51 @@ internal object LocalTurnCostScoreCalculator {
         val worst = againstIncoming.firstOrNull()?.score
         val state = position.state
         val placed = state.pokemon.firstOrNull { it.battlePokemonId == incoming.battlePokemonId } ?: return null
+        val actor = state.pokemon.first { it.battlePokemonId == opponent.battlePokemonId }
+        // The ordinary attack table drops moves that fail on this new target. They can still be
+        // exactly what the opponent chose against the outgoing Pokemon, including absorbed status moves.
+        val absorptionActions by lazy {
+            PublicFutureActionFactory.primitiveActionsForPokemon(state, actor.side, actor.battlePokemonId,
+                position.publicActionCatalog, includeMoveHypotheses = actor.side == BattleSide.OPPONENT)
+                .filter { it.kind == BattleActionKind.USE_MOVE }
+                .map { jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.asMaxMove(it, actor) }
+                .filter { action -> LocalPublicMoveTargets.resolve(action, position, actor.side).any {
+                    it.battlePokemonId == incoming.battlePokemonId } }
+                .associateBy { PublicIds.canonical(it.moveId.orEmpty()) }
+        }
         // All move outcomes are calculated once. A later repeat/tendency reading changes only their weights.
-        val exchanges = HashMap<Double, PokemonMatchupScore?>()
-        fun entry(moveId: String?, hit: MoveMatchupScore?): SwitchInOutcome {
+        val exchanges = HashMap<Triple<Double, Map<String, Int>, Set<String>>, PokemonMatchupScore?>()
+        fun entry(moveId: String?, scored: LocalMatchupScoreCalculator.ScoredMove?): SwitchInOutcome {
+            val absorbed = (scored?.action ?: absorptionActions[moveId])?.let {
+                jbro.cobblemon.mcc.betterai.mechanics.LocalMoveAbsorption.apply(state, it, actor, placed)
+            }
+            val hit = scored?.score.takeIf { absorbed == null }
             val survival = hit?.survivalByUses?.getOrNull(1) ?: 1.0
             val taken = hit?.damageWhileStandingByUses?.getOrNull(1) ?: 0.0
-            val hpAfterEntry = (placed.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP)
-            val worn = state.copyState(pokemon = state.pokemon.map {
+            val reacted = absorbed ?: state
+            val hpAfterEntry = if (absorbed != null) absorbed.pokemon.first { it.battlePokemonId == incoming.battlePokemonId }.hpFraction
+                else (placed.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP)
+            val worn = reacted.copyState(pokemon = reacted.pokemon.map {
                 if (it.battlePokemonId != incoming.battlePokemonId) it else it.copyState(hpFraction = hpAfterEntry)
             })
-            val afterEntry = exchanges.getOrPut(hpAfterEntry) {
+            val arrived = worn.pokemon.first { it.battlePokemonId == incoming.battlePokemonId }
+            val afterEntry = exchanges.getOrPut(Triple(hpAfterEntry, arrived.statStages, arrived.knownVolatileEffectIds)) {
                 LocalMatchupScoreCalculator.pairMatchup(position.copy(state = worn), incoming.battlePokemonId,
                     opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
             }
             return SwitchInOutcome(moveId, survival, hpAfterEntry, afterEntry,
-                survival * (afterEntry?.score ?: 0.0) - (1.0 - survival))
+                survival * (afterEntry?.score ?: 0.0) - (1.0 - survival),
+                absorptionHealing = (hpAfterEntry - placed.hpFraction).coerceAtLeast(0.0),
+                absorptionStages = arrived.statStages.filter { (stat, value) -> value != (placed.statStages[stat] ?: 0) }
+                    .mapValues { (stat, value) -> value - (placed.statStages[stat] ?: 0) },
+                absorptionActivated = absorbed != null)
         }
         val hits = againstIncoming.associateBy { PublicIds.canonical(it.score.moveId) }
         val moveIds = (pairs.moves(opponent.battlePokemonId, replaced.battlePokemonId).map { it.moveId } +
-            intent?.options.orEmpty().filter { it.kind == IntentKind.ATTACK }.mapNotNull { it.moveId })
+            intent?.options.orEmpty().filter { it.kind != IntentKind.SWITCH }.mapNotNull { it.moveId })
             .map(PublicIds::canonical).distinct()
         val outcomes = linkedMapOf<String?, SwitchInOutcome>(null to entry(null, null))
-        for (id in moveIds) outcomes[id] = entry(id, hits[id]?.score)
+        for (id in moveIds) outcomes[id] = entry(id, hits[id])
         val result = SwitchInScore(
             incomingId = incoming.battlePokemonId,
             opponentId = opponent.battlePokemonId,

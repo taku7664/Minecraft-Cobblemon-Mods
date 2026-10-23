@@ -260,7 +260,7 @@ internal data class SwitchInScore(
         val weighted = if (total <= 0.0) listOf(SwitchInChoice(1.0, outcomes.getValue(null))) else staying.map { option ->
             val aimedHere = option.targetId == null || option.targetId == replacedId
             val id = option.moveId?.let(jbro.cobblemon.mcc.internal.ai.PublicIds::canonical)
-            val outcome = if (option.kind == IntentKind.ATTACK && aimedHere) outcomes[id] else null
+            val outcome = if (aimedHere) outcomes[id] else null
             SwitchInChoice(option.probability / total, outcome ?: outcomes.getValue(null))
         }
         val survival = weighted.sumOf { it.probability * it.outcome.survival }
@@ -282,6 +282,9 @@ internal data class SwitchInOutcome(
     val hpAfterEntry: Double,
     val afterEntry: PokemonMatchupScore?,
     val score: Double,
+    val absorptionHealing: Double = 0.0,
+    val absorptionStages: Map<String, Int> = emptyMap(),
+    val absorptionActivated: Boolean = false,
 )
 
 internal data class SwitchInChoice(val probability: Double, val outcome: SwitchInOutcome)

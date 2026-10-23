@@ -251,7 +251,10 @@ internal object LocalSwitchRules {
             jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record(
                 "switchHit:$actionId:${foe.battlePokemonId}:$index:${hit.moveId ?: "nohit"}", mapOf(
                     "probability" to choice.probability, "survival" to hit.survival,
-                    "hpAfterHit" to hit.hpAfterEntry, "afterEntry" to (hit.afterEntry?.score ?: 0.0), "score" to hit.score))
+                    "hpAfterHit" to hit.hpAfterEntry, "afterEntry" to (hit.afterEntry?.score ?: 0.0), "score" to hit.score,
+                    "absorptionActivated" to if (hit.absorptionActivated) 1.0 else 0.0,
+                    "absorptionHealing" to hit.absorptionHealing,
+                ) + hit.absorptionStages.mapKeys { (stat, _) -> "absorptionStage:$stat" }.mapValues { (_, value) -> value.toDouble() })
         }
         // Keep the existing board's matchup and worth. If hazards kill the incoming Pokemon, charge only the HP
         // the saved Pokemon loses on re-entry, in the same HP-bar units as gain (user, 2026-10-22).

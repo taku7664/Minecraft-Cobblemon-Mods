@@ -2313,25 +2313,7 @@ internal object PublicSingleTurnProjector {
         target: BattlePokemonStateView?,
     ): BattleStateView {
         target ?: return state
-        if (LocalPublicAbilityMechanics.ignoresTargetAbility(action, actor, target, state)) return state
-        val type = canonicalId(action.moveDetails?.typeId)
-        val ability = LocalPublicAbilityState.effectiveKnownAbility(state, target) ?: return state
-        val boost = when {
-            ability == "sapsipper" && type == "grass" -> mapOf("attack" to 1)
-            ability == "motordrive" && type == "electric" -> mapOf("speed" to 1)
-            ability == "lightningrod" && type == "electric" -> mapOf("special_attack" to 1)
-            ability == "stormdrain" && type == "water" -> mapOf("special_attack" to 1)
-            ability == "wellbakedbody" && type == "fire" -> mapOf("defence" to 2)
-            else -> null
-        }
-        if (boost != null) return LocalStatStageChange.apply(state, target.battlePokemonId, null, boost)
-        if (ability == "flashfire" && type == "fire") return LocalReactiveAbilityState.absorb(state, target.battlePokemonId, type)
-        val heals = ability in setOf("waterabsorb", "dryskin") && type == "water" ||
-            ability == "voltabsorb" && type == "electric" || ability == "eartheater" && type == "ground"
-        if (!heals) return state
-        return state.copyState(pokemon = state.pokemon.map {
-            if (it.battlePokemonId == target.battlePokemonId) it.copyState(hpFraction = (it.hpFraction + 0.25).coerceAtMost(1.0)) else it
-        })
+        return jbro.cobblemon.mcc.betterai.mechanics.LocalMoveAbsorption.apply(state, action, actor, target) ?: state
     }
 
     /**
