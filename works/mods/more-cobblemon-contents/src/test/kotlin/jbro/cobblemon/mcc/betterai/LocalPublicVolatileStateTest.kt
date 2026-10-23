@@ -25,6 +25,26 @@ class LocalPublicVolatileStateTest {
     }
 
     @Test
+    fun `shared Pokemon text preserves full and action input keys across HP projections`() {
+        val state = context().state
+        val keys = LocalBattleStateFingerprint()
+        for (member in state.pokemon) {
+            fun at(hp: Double) = state.copyState(pokemon = state.pokemon.map {
+                if (it === member) it.copyState(hpFraction = hp, fainted = false) else it
+            })
+            val low = at(0.61)
+            val high = at(0.73)
+            assertNotEquals(keys.of(low), keys.of(high))
+            assertEquals(keys.of(low), keys.of(at(0.61)))
+            if (member.activeSlot != null) assertEquals(keys.ofActionInputs(low), keys.ofActionInputs(high))
+            else assertNotEquals(keys.ofActionInputs(low), keys.ofActionInputs(high))
+            assertNotEquals(keys.ofActionInputs(at(0.0)), keys.ofActionInputs(at(1.0)))
+        }
+        assertEquals(keys.of(state), keys.of(state.copyState(pokemon = state.pokemon.reversed())))
+        assertEquals(keys.ofActionInputs(state), keys.ofActionInputs(state.copyState(pokemon = state.pokemon.reversed())))
+    }
+
+    @Test
     fun `native input preserves starts and ends and distinguishes transfer from ordinary switch`() {
         assertEquals(setOf("substitute"), active(context("|-start|$actor|Substitute")).knownVolatileEffectIds)
         assertTrue(active(context("|-start|$actor|Substitute", "|-end|$actor|Substitute")).knownVolatileEffectIds.isEmpty())

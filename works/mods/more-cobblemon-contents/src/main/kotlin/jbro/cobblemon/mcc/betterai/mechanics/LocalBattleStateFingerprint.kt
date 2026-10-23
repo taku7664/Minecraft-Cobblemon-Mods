@@ -1,6 +1,7 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
 import java.util.IdentityHashMap
+import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattleSide
 import jbro.cobblemon.mcc.internal.ai.BattleStateView
 import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
@@ -60,6 +61,39 @@ internal class LocalBattleStateFingerprint {
     private fun StringBuilder.build(state: BattleStateView, bands: MutableList<Int>) {
         append(state.battleId).append(':').append(state.format).append(':').append(state.turn).append('|')
         state.pokemon.sortedBy { it.battlePokemonId }.forEach { pokemon ->
+            val key = pokemonByIdentity.getOrPut(pokemon) { pokemonText(pokemon) }
+            val offset = length
+            append(key.text)
+            for (i in key.bands.indices step 3) {
+                bands.add(offset + key.bands[i])
+                bands.add(offset + key.bands[i + 1])
+                bands.add(key.bands[i + 2])
+            }
+        }
+        BattleSide.entries.forEach { side ->
+            append("remaining:").append(side.ordinal).append('=')
+                .append(state.remainingPokemonBySide.getValue(side)).append(';')
+            state.field.sideConditions.getValue(side).sortedBy { it.effectId }.forEach { effect ->
+                appendTimedEffect("side:${side.ordinal}", effect)
+            }
+        }
+        appendTimedEffect("weather", state.field.weather)
+        appendTimedEffect("terrain", state.field.terrain)
+        state.field.roomEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("room", it) }
+        state.field.globalEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("global", it) }
+        // Protect chains, last hits and public ability hypotheses can change mechanics without
+        // changing the visible HP, ranks or field. Keep that evidence in the calculation key.
+        append(evidence(state))
+    }
+
+    // Public Pokemon views are immutable; unchanged members are shared by projected boards.
+    // Keep their exact text and local HP offsets once, without weakening structural equality.
+    private class PokemonText(val text: String, val bands: IntArray)
+    private val pokemonByIdentity = IdentityHashMap<BattlePokemonStateView, PokemonText>()
+
+    private fun pokemonText(pokemon: BattlePokemonStateView): PokemonText {
+        val bands = ArrayList<Int>(3)
+        val text = buildString {
             append(pokemon.battlePokemonId).append(':')
             append(pokemon.side.ordinal).append(':')
             append(pokemon.activeSlot ?: -1).append(':')
@@ -100,20 +134,7 @@ internal class LocalBattleStateFingerprint {
             }
             append(';')
         }
-        BattleSide.entries.forEach { side ->
-            append("remaining:").append(side.ordinal).append('=')
-                .append(state.remainingPokemonBySide.getValue(side)).append(';')
-            state.field.sideConditions.getValue(side).sortedBy { it.effectId }.forEach { effect ->
-                appendTimedEffect("side:${side.ordinal}", effect)
-            }
-        }
-        appendTimedEffect("weather", state.field.weather)
-        appendTimedEffect("terrain", state.field.terrain)
-        state.field.roomEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("room", it) }
-        state.field.globalEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("global", it) }
-        // Protect chains, last hits and public ability hypotheses can change mechanics without
-        // changing the visible HP, ranks or field. Keep that evidence in the calculation key.
-        append(evidence(state))
+        return PokemonText(text, bands.toIntArray())
     }
 
     /**

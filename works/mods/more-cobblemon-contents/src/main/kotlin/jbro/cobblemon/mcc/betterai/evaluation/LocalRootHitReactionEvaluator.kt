@@ -94,22 +94,32 @@ internal object LocalRootHitReactionEvaluator {
             }
             // The same pre-hit HP in both boards. A knockout neither deletes the stage comparison
             // nor pays for the removed HP a second time. Only living recipients retain a reaction.
-            fun changed(stage: Boolean, item: Boolean, condition: Boolean) = context.state.copyState(pokemon = context.state.pokemon.map { original ->
-                val before = body[original.battlePokemonId] ?: return@map original
-                val next = after[original.battlePokemonId] ?: return@map original
-                if (next.fainted || next.hpFraction <= 0.0) return@map original
-                val statDelta = (before.statStages.keys + next.statStages.keys).associateWith {
-                    (next.statStages[it] ?: 0) - (before.statStages[it] ?: 0)
-                }.filterValues { it != 0 }
-                original.copyState(
-                    statStages = if (!stage) original.statStages else original.statStages.toMutableMap().apply {
+            fun changed(stage: Boolean, item: Boolean, condition: Boolean): BattleStateView {
+                val pokemon = context.state.pokemon.map { original ->
+                    val before = body[original.battlePokemonId] ?: return@map original
+                    val next = after[original.battlePokemonId] ?: return@map original
+                    if (next.fainted || next.hpFraction <= 0.0) return@map original
+                    val statDelta = if (!stage) emptyMap() else (before.statStages.keys + next.statStages.keys).associateWith {
+                        (next.statStages[it] ?: 0) - (before.statStages[it] ?: 0)
+                    }.filterValues { it != 0 }
+                    val statStages = if (statDelta.isEmpty()) original.statStages else original.statStages.toMutableMap().apply {
                         statDelta.forEach { (stat, delta) -> this[stat] = ((this[stat] ?: 0) + delta).coerceIn(-6, 6) }
-                    },
-                    knownHeldItemId = if (item && before.knownHeldItemId != next.knownHeldItemId) next.knownHeldItemId else original.knownHeldItemId,
-                    statusId = if (condition && before.statusId != next.statusId) next.statusId else original.statusId,
-                    knownVolatileEffectIds = if (condition) (original.knownVolatileEffectIds - (before.knownVolatileEffectIds - next.knownVolatileEffectIds)) +
-                        ((next.knownVolatileEffectIds - before.knownVolatileEffectIds) - LocalReactiveAbilityState.BOOSTED_THIS_TURN) else original.knownVolatileEffectIds)
-            })
+                    }
+                    val heldItem = if (item && before.knownHeldItemId != next.knownHeldItemId) next.knownHeldItemId else original.knownHeldItemId
+                    val statusId = if (condition && before.statusId != next.statusId) next.statusId else original.statusId
+                    val effects = if (condition) (original.knownVolatileEffectIds - (before.knownVolatileEffectIds - next.knownVolatileEffectIds)) +
+                        ((next.knownVolatileEffectIds - before.knownVolatileEffectIds) - LocalReactiveAbilityState.BOOSTED_THIS_TURN) else original.knownVolatileEffectIds
+                    // Keep copyState's inactive/fainted cleanup even when the reaction changed nothing.
+                    val retainedEffects = if (original.fainted || original.activeSlot == null)
+                        effects.filter { it.startsWith(LocalBerryMechanics.LAST_CONSUMED_ITEM) }.toSet() else effects
+                    if (statStages == original.statStages && heldItem == original.knownHeldItemId &&
+                        statusId == original.statusId && retainedEffects == original.knownVolatileEffectIds) original
+                    else original.copyState(statStages = statStages, knownHeldItemId = heldItem,
+                        statusId = statusId, knownVolatileEffectIds = retainedEffects)
+                }
+                return if (pokemon.indices.all { pokemon[it] === context.state.pokemon[it] }) context.state
+                    else context.state.copyState(pokemon = pokemon)
+            }
             val raised = changed(stage = true, item = false, condition = false)
             val knockedOutFoes = path.state.pokemon.filter { it.side == BattleSide.OPPONENT &&
                 (it.fainted || it.hpFraction <= 0.0) && context.state.pokemon.firstOrNull { old ->

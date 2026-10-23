@@ -73,6 +73,16 @@ internal class LocalKnockoutProfile private constructor(
         fun byHits(rollsByHits: List<List<Double>>, accuracy: Double, targetHp: Double, maximumUses: Int,
             firstHitLimit: Double? = null): LocalKnockoutProfile {
             if (rollsByHits.size <= 1) return of(rollsByHits.firstOrNull().orEmpty(), accuracy, targetHp, maximumUses, firstHitLimit)
+            val key = ByHitsKey(rollsByHits.map { it.toList() }, accuracy, targetHp, maximumUses, firstHitLimit)
+            knownByHits[key]?.let { return it }
+            return computedByHits(rollsByHits, accuracy, targetHp, maximumUses, firstHitLimit).also {
+                if (knownByHits.size >= KNOWN_LIMIT) knownByHits.clear()
+                knownByHits[key] = it
+            }
+        }
+
+        private fun computedByHits(rollsByHits: List<List<Double>>, accuracy: Double, targetHp: Double,
+            maximumUses: Int, firstHitLimit: Double?): LocalKnockoutProfile {
             val hit = accuracy.coerceIn(0.0, 1.0)
             if (targetHp <= 0.0 || hit <= 0.0 || rollsByHits.first().isEmpty() || rollsByHits.first().average() <= 0.0) {
                 return of(rollsByHits.first(), accuracy, targetHp, maximumUses)
@@ -166,6 +176,11 @@ internal class LocalKnockoutProfile private constructor(
         private data class Key(val rolls: List<Double>, val accuracy: Double, val targetHp: Double, val maximumUses: Int,
             val firstHitLimit: Double?)
         private val known = java.util.concurrent.ConcurrentHashMap<Key, LocalKnockoutProfile>()
+        // The landed-use table is immutable too. Snapshot nested rolls so caller mutations cannot
+        // corrupt a stored key; stage sequences and first-hit survival remain part of the input.
+        private data class ByHitsKey(val rolls: List<List<Double>>, val accuracy: Double, val targetHp: Double,
+            val maximumUses: Int, val firstHitLimit: Double?)
+        private val knownByHits = java.util.concurrent.ConcurrentHashMap<ByHitsKey, LocalKnockoutProfile>()
         private const val KNOWN_LIMIT = 4096
 
         fun of(rolls: List<Double>, accuracy: Double, targetHp: Double, maximumUses: Int,

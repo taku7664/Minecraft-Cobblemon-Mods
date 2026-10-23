@@ -8,6 +8,23 @@ import org.junit.jupiter.api.Test
 import java.util.UUID
 
 class LocalMatchupSurvivalTest {
+    @Test fun `landed use profiles retain miss probabilities and snapshot mutable damage sequences`() {
+        val first = mutableListOf(0.75, 0.75)
+        val rolls = mutableListOf<List<Double>>(first, listOf(0.25, 0.25))
+        val original = LocalKnockoutProfile.byHits(rolls, 0.5, 1.0, 6)
+        assertEquals(listOf(1.0, 1.0, 0.75, 0.5), original.survival.take(4))
+        assertEquals(listOf(0.0, 0.375, 0.5, 0.5625), original.damageWhileStanding.take(4))
+        first[0] = 0.5
+        first[1] = 0.5
+        val weaker = LocalKnockoutProfile.byHits(rolls, 0.5, 1.0, 6)
+        assertEquals(1.0, weaker.survival[2])
+        assertEquals(0.875, weaker.survival[3])
+        val replayed = LocalKnockoutProfile.byHits(listOf(listOf(0.75, 0.75), listOf(0.25, 0.25)), 0.5, 1.0, 6)
+        assertSame(original, replayed)
+        assertNotSame(original, LocalKnockoutProfile.byHits(listOf(listOf(0.75), listOf(0.25)), 1.0, 1.0, 6))
+        assertNotSame(original, LocalKnockoutProfile.byHits(listOf(listOf(0.75, 0.75), listOf(0.25, 0.25)), 0.5, 1.0, 6, 0.0))
+    }
+
     @Test fun `known Sturdy and Sash stop the first knockout and preserve the next landed knockout`() {
         for ((ability,item) in listOf("sturdy" to "", "" to "focussash")) {
             val c = context(ability,item)
