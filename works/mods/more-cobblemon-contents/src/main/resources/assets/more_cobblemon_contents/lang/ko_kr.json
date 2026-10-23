@@ -1,4 +1,11 @@
 {
+  "config.more_cobblemon_contents.betterai.title": "Better AI 계산 최적화",
+  "config.more_cobblemon_contents.betterai.fixed_hp": "독립 HP 반응 간단 계산",
+  "config.more_cobblemon_contents.betterai.poison": "독·맹독 단기 평가",
+  "config.more_cobblemon_contents.betterai.fixed_hp_help": "다른 반응이 없는 생구의 HP 비용을 간단히 계산합니다. 복합 반응과 반동사는 기존 계산을 사용합니다.",
+  "config.more_cobblemon_contents.betterai.poison_help": "독의 장기 대면 평가를 기본 2턴의 HP·KO 평가로 바꿉니다. 판단값과 선택이 달라질 수 있습니다.",
+  "config.more_cobblemon_contents.betterai.scope": "기본값은 모두 꺼짐입니다. 이 컴퓨터가 여는 서버의 다음 전투부터 반영됩니다. 원격 서버는 서버의 betterai-optimizations.json을 수정하세요.",
+  "config.more_cobblemon_contents.betterai.failed": "설정을 읽거나 저장하지 못했습니다. JSON 파일을 확인하세요.",
   "cobblemon.battle.cant.blocked_by_ability": "%3$s의 %4$s 때문에 %1$s은(는) %2$s을(를) 쓸 수 없다!",
   "npc.more_cobblemon_contents.managed_trainer": "트레이너",
   "screen.more_cobblemon_contents.access.provider_failed": "접근 조건을 확인할 수 없어 이 콘텐츠가 잠겼습니다.",

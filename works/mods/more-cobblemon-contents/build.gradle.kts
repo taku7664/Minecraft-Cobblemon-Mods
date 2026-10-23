@@ -10,12 +10,15 @@ group = "jbro.cobblemon.mcc"
 
 base { archivesName.set("more-cobblemon-contents") }
 
+repositories { maven("https://maven.terraformersmc.com/releases/") }
+
 dependencies {
     minecraft("com.mojang:minecraft:${property("minecraft_version")}")
     mappings(loom.officialMojangMappings())
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
+    modCompileOnly("com.terraformersmc:modmenu:11.0.3")
     modCompileOnly("com.cobblemon:mod:${property("cobblemon_maven_version")}") {
         isTransitive = false
     }

@@ -44,6 +44,16 @@ object MoreCobblemonContentsBetterAi {
 
     fun initialize() {
         val loader = FabricLoader.getInstance()
+        val optimizationPath = loader.configDir.resolve("more-cobblemon-contents")
+            .resolve(jbro.cobblemon.mcc.betterai.config.LocalOptimizationConfigStore.FILE_NAME)
+        val optimizations = {
+            try { jbro.cobblemon.mcc.betterai.config.LocalOptimizationConfigStore.loadOrCreate(optimizationPath) }
+            catch (exception: Exception) {
+                logger.error("Better AI optimization config could not be loaded; optimizations are disabled: {}", exception.javaClass.name)
+                jbro.cobblemon.mcc.betterai.config.LocalOptimizationConfig()
+            }
+        }
+        optimizations() // Create disabled defaults; reread at the start of each battle, never mid-decision.
         val config = try {
             BetterAiConfigStore.loadOrCreate(
                 loader.configDir
@@ -75,6 +85,7 @@ object MoreCobblemonContentsBetterAi {
             },
             decisionSummarySink = summarySink,
             decisionSummaryExecutor = summaryExecutor ?: ForkJoinPool.commonPool(),
+            optimizationConfig = optimizations,
         )
         NativeShowdownRuntimeService.install(loader)
         summaryExecutor?.let(::registerDecisionSummaryShutdown)
@@ -86,13 +97,17 @@ object MoreCobblemonContentsBetterAi {
         modelMetadataTransportFactory: ((URI, Long, java.util.concurrent.Executor) -> OpenRouterModelMetadataTransport)? = null,
         decisionSummarySink: OpenRouterDecisionSummarySink = OpenRouterDecisionSummarySink.NONE,
         decisionSummaryExecutor: Executor = ForkJoinPool.commonPool(),
+        optimizationConfig: () -> jbro.cobblemon.mcc.betterai.config.LocalOptimizationConfig = {
+            jbro.cobblemon.mcc.betterai.config.LocalOptimizationConfig()
+        },
     ) {
         val localStatus = registry.register(
             BattleBrainProvider(
                 id = BrainId("$MOD_ID:local_tactical"),
                 capabilities = setOf(BrainCapability.SINGLE, BrainCapability.DOUBLE),
                 // No search in play: the live host could not afford it (see LocalTacticalBrain.searchless).
-                factory = BattleBrainFactory { LocalTacticalBrain(searchless = true) },
+                factory = BattleBrainFactory { LocalTacticalBrain(searchless = true,
+                    tuning = optimizationConfig().applyTo(jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT)) },
                 role = BattleBrainProviderRole.LOCAL,
                 selectionPolicy = BattleBrainSelectionPolicy.ALWAYS,
             ),

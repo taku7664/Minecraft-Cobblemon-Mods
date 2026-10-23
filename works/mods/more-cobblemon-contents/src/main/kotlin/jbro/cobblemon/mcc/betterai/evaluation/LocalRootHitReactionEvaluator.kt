@@ -26,6 +26,7 @@ internal object LocalRootHitReactionEvaluator {
         tuning: LocalDecisionTuning): Score? {
         if (candidate.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS ||
             !LocalMoveImpactProjector.mayReact(candidate, context, BattleSide.ALLY)) return null
+        if (tuning.simpleFixedHpReactions) LocalFixedHpReactionValue.read(candidate, context, tuning)?.let { return it }
         val cache = LocalProjectedActionCalculationCache()
         val paths = LocalMoveImpactProjector.project(candidate, context, BattleSide.ALLY, cache)
         if (paths.all { cache.fingerprints.of(it.state) == cache.fingerprints.of(it.bodyState) }) return null

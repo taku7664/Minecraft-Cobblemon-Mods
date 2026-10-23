@@ -17,6 +17,31 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class LocalHitReactionValueTest {
+    @Test fun `isolated orb fast path preserves full projection across hit chances and HP`() {
+        for (accuracy in listOf(40.0, 70.0, 100.0)) for (hp in listOf(1.0, 83.0 / 146, 15.0 / 146)) {
+            val move = BattleActionCandidate("orb", BattleActionKind.USE_MOVE, 0, 0, "tackle",
+                targets = listOf(BattleTargetSlot(BattleSide.OPPONENT, 0)), moveDetails = BattleMoveCandidateView("normal",
+                    BattleMoveDamageCategory.PHYSICAL, 40.0, accuracy, 0, 20))
+            val c = PublicBattleTacticalCalculator.calculate(context(listOf(mon(TARGET, BattleSide.ALLY, hp, item = "lifeorb"),
+                mon(ACTOR, BattleSide.OPPONENT)), move))
+            val a = c.candidates.single()
+            assertNotNull(LocalFixedHpReactionValue.read(a, c, LocalDecisionTuning.CURRENT))
+            val full = LocalRootHitReactionEvaluator.score(a, c, LocalDecisionTuning.CURRENT.copy(simpleFixedHpReactions = false))!!
+            val fast = LocalRootHitReactionEvaluator.score(a, c, LocalDecisionTuning.CURRENT.copy(simpleFixedHpReactions = true))!!
+            assertEquals(full.total, fast.total, 1e-10, "$accuracy/$hp")
+        }
+    }
+
+    @Test fun `orb shortcut declines recoil death target berry and substitute interactions`() {
+        val move = tackle()
+        for ((hp, item, volatile) in listOf(Triple(14.0 / 146, null, emptySet()),
+            Triple(1.0, "sitrusberry", emptySet()), Triple(1.0, null, setOf("substitute")))) {
+            val c = PublicBattleTacticalCalculator.calculate(context(listOf(mon(TARGET, BattleSide.ALLY, hp, item = "lifeorb"),
+                mon(ACTOR, BattleSide.OPPONENT, item = item, volatile = volatile)), move))
+            assertNull(LocalFixedHpReactionValue.read(c.candidates.single(), c, LocalDecisionTuning.CURRENT))
+        }
+    }
+
     @Test fun `native regenerator dynamax HP and alternating truant phase reach their scoring readers`() {
         EngineReferee.assumeAvailable()
         val process = ProcessBuilder("node", Path.of(System.getProperty("aiengine.tools")).resolve("hit-reaction-audit.cjs").toString(),

@@ -22,9 +22,11 @@ import jbro.cobblemon.mcc.internal.ai.BattleSide
  * move data; no move is named. Drops applied raw once read Charm on a Defiant Kingambit as a gain (2026-10-12).
  */
 internal object LocalDebuffValue {
-    data class Reading(val before: Double, val after: Double, val accuracy: Double) {
+    data class Reading(val before: Double, val after: Double, val accuracy: Double, val hpHorizonScore: Double? = null) {
         /** What the debuff takes off its target's mean exchange score against this team, at its accuracy. */
         val gain: Double get() = (before - after) * accuracy
+        fun score(tuning: jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning): Double =
+            hpHorizonScore ?: gain * tuning.knockoutMaterialScore
     }
 
     /** Whether a status move only weakens its target: every effect a status condition or a stat drop on it. */
@@ -77,6 +79,8 @@ internal object LocalDebuffValue {
             !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicStatusImmunity.blocked(state, target, status, user,
                 ignoreTargetAbility = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(move, user, target, state),
                 abilityIgnoringMove = jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(move, user, null, state))
+        if (poison && drops.isEmpty()) LocalPoisonHorizonValue.read(move, context, target, status!!, lands, accuracy,
+            before, jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current())?.let { return it }
         // Poison and Toxic, with or without drops beside them (Toxic Thread): the exchange that plays each turn's residual
         // out (evolving matchups), for the target's pairs with this team only, before and after (user decision
         // 2026-10-19: Toxic is a debuff). Anything else: the pair table, as the ranking reads it.

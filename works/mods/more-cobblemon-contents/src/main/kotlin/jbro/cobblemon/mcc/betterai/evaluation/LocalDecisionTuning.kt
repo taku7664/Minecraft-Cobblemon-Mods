@@ -198,6 +198,10 @@ internal data class LocalDecisionTuning(
      * (singles 71% to 54%, doubles 49% to 40%): back off.
      */
     val evolvingMatchups: Boolean = false,
+    /** Price an isolated, nonlethal Life Orb tick without projecting damage-roll states. */
+    val simpleFixedHpReactions: Boolean = false,
+    /** Poison-only HP/KO horizon; null retains the evolving team-exchange evaluation for ablation. */
+    val poisonEvaluationTurns: Int? = null,
     /**
      * Doubles opponent responses (Codex 8d0328d5): learned move/switch tendencies apply to each slot's part of a joint
      * response, and observed complete attack pairs condition how often both slots focus one target. Off until a duel

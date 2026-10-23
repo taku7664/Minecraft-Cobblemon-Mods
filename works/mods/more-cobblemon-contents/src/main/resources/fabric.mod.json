@@ -16,6 +16,9 @@
         "value": "jbro.cobblemon.mcc.MoreCobblemonContents"
       }
     ],
+    "modmenu": [
+      "jbro.cobblemon.mcc.client.BetterAiModMenu"
+    ],
     "client": [
       {
         "adapter": "kotlin",

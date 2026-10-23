@@ -823,7 +823,10 @@ internal class LocalTacticalBrain(
             // Its own value only: an attack that knocks the foe out is priced by its own knockout credit, so the debuff is not
             // scaled down by it (user, 2026-10-21; it used to be cut by the user's best attack's knockout chance this turn).
             searchedRanked.firstOrNull { it.outcome.candidate.actionId == id }?.takeUnless { it.outcome.publiclyInert }?.let {
-                id to (reading.gain * tuning.knockoutMaterialScore - it.comparisonValue)
+                LocalDecisionInternals.record("debuffValue:$id", mapOf("before" to reading.before, "after" to reading.after,
+                    "accuracy" to reading.accuracy, "gain" to reading.gain,
+                    "hpHorizon" to LocalDecisionInternals.flag(reading.hpHorizonScore != null), "value" to reading.score(tuning)))
+                id to (reading.score(tuning) - it.comparisonValue)
             }
         }.toMap()
         // Trick Room's value becomes how much turning the speed order over changes both teams' matchups (LocalTrickRoomCredit).

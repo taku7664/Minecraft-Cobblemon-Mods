@@ -13,7 +13,7 @@ internal object LocalMoveImpactProjector {
         val directDamage: Double = 0.0, val connected: Boolean = false)
 
     fun mayReact(action: BattleActionCandidate, context: BattleDecisionContext, side: BattleSide,
-        includeGuards: Boolean = true): Boolean {
+        includeGuards: Boolean = true, ignoreActorItem: Boolean = false): Boolean {
         val state = context.state
         val actor = state.pokemon.firstOrNull { it.side == side && it.activeSlot == action.actorSlot } ?: return false
         val targets = LocalPublicMoveTargets.resolve(action, context, side)
@@ -23,7 +23,8 @@ internal object LocalMoveImpactProjector {
             (targets + actor).any { holder ->
                 val holderHooks = if (holder.battlePokemonId == actor.battlePokemonId) hooks else hooks - USER_ONLY_HOOKS
                 val ability = LocalPublicAbilityState.effectiveKnownAbility(state, holder)
-                val item = LocalPublicItemState.activeItemId(state, holder)
+                val item = if (ignoreActorItem && holder.battlePokemonId == actor.battlePokemonId) null
+                    else LocalPublicItemState.activeItemId(state, holder)
                 ability != null && holderHooks.any { dex.ability(ability).declares(it) } ||
                     item != null && holderHooks.any { dex.item(item).declares(it) }
             } || !includeGuards && targets.any { target -> LocalMoveAbsorption.apply(state, action, actor, target) != null } ||

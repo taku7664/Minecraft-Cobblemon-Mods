@@ -44,10 +44,15 @@ UI 키트는 본체 JAR에 포함돼 있으므로 MCC용 UI 키트를 별도로 
 
 ## 설정과 콘텐츠 편집
 
-본체 설정은 서버가 관리합니다. 현재 본체에는 별도 Mod Menu 설정 화면이 없습니다. 플레이어는 `/mcc` 또는 콘텐츠 터미널로 허브를 엽니다.
+본체 설정은 서버가 관리합니다. Mod Menu의 본체 설정 화면에서는 이 컴퓨터가 여는 서버의 Better AI 계산 최적화를 켜고 끕니다. 원격 서버에는 서버의 JSON 설정을 사용합니다. 플레이어는 `/mcc` 또는 콘텐츠 터미널로 허브를 엽니다.
 
 - `config/more-cobblemon-contents/hub_tabs.json`: `/mcc`와 각 터미널에 표시할 탭, 허브 명령어 권한.
 - `config/more-cobblemon-contents/wiki.json`: 서버 위키 연동 설정.
+- `config/more-cobblemon-contents/betterai-optimizations.json`: 아래 두 최적화는 기본값이 모두 `false`이며, 켠 항목만 다음 새 전투부터 적용합니다. 진행 중인 전투는 시작할 때 읽은 설정을 유지합니다. 잘못된 파일은 덮어쓰지 않고 해당 새 전투에서 두 항목을 끕니다. 이 설정은 재시작이나 `/reload` 없이 새 전투를 시작할 때 다시 읽습니다.
+  - `simpleFixedHpReactions`: 독립적인 생구 HP 반응을 간단 계산합니다. 복합 반응·반동사 등은 기존 계산을 유지합니다. 미세한 점수 차이로 추첨 선택이 달라질 수 있습니다.
+  - `simplePoisonEvaluation`: 독·맹독의 장기 대면 평가를 단기 HP·KO 평가로 바꿉니다. 점수·선택이 달라질 수 있습니다. 기본 평가 기간은 `poisonEvaluationTurns: 2`이며 JSON에서 1~8턴을 지정할 수 있습니다. 도구 소모·상태에 따른 능력치 변화 등은 기존 계산을 유지합니다.
+
+두 항목은 실험 옵션입니다. 속도와 판단값의 전후 비교는 [계산 최적화 검토](docs/BETTERAI_OPTIMIZATION_REVIEW.md)에 기록합니다.
 - `config/more-cobblemon-contents/bp-shop.json`: BP 상점 전체를 관리하는 단일 JSON입니다. 최초 로드 때 기본 파일을 생성하고 이후에는 이 파일만 읽습니다.
   - `entries`: 판매 품목 목록. 품목을 추가·삭제하거나 `price_bp`를 바꾸고 `/reload`하면 적용됩니다. 삭제한 품목은 재시작해도 돌아오지 않으며, `[]`는 빈 상점입니다.
   - `categories`, `shopkeeper`, `limits`: 분류 순서·상점 외형·구매 제한도 같은 파일에서 관리합니다. 품목이 없는 분류는 표시하지 않습니다.

@@ -79,7 +79,7 @@ internal object LocalEndTurnStateProjector {
             // Hydration cures in rain before the status deals its damage.
             if (ability == "hydration" && rain && !umbrella && status != null) status = null
             if (pokemon.battlePokemonId in curedPokemonIds) status = null
-            val poisonHeal = ability == "poisonheal" && status in POISON_IDS
+            val poisonHeal = poisonHeals(ability, status)
             var hp = pokemon.hpFraction
             fun apply(change: Double) {
                 val blockedHeal = change > 0.0 && pokemon.knownVolatileEffectIds.any { canonical(it) == "healblock" }
@@ -182,6 +182,9 @@ internal object LocalEndTurnStateProjector {
         // or Unnerve may have fainted. Curing here does not refund earlier poison/burn damage.
         return if (deferBerryUpdate) projected else LocalPublicStatusBerry.afterUpdate(projected)
     }
+
+    /** Canonical ability/status IDs. Poison Heal replaces poison damage, including at full HP. */
+    fun poisonHeals(ability: String?, status: String?): Boolean = ability == "poisonheal" && status in POISON_IDS
 
     private fun hpFractionTick(pokemon: BattlePokemonStateView, divisor: Int, ticks: Int = 1): Double {
         val maxHp = pokemon.combatStats?.maxHp
