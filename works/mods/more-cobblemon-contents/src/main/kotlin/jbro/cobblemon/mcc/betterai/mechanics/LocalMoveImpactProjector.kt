@@ -12,18 +12,21 @@ internal object LocalMoveImpactProjector {
     data class Path(val state: BattleStateView, val bodyState: BattleStateView, val probability: Double,
         val directDamage: Double = 0.0, val connected: Boolean = false)
 
-    fun mayReact(action: BattleActionCandidate, context: BattleDecisionContext, side: BattleSide): Boolean {
+    fun mayReact(action: BattleActionCandidate, context: BattleDecisionContext, side: BattleSide,
+        includeGuards: Boolean = true): Boolean {
         val state = context.state
         val actor = state.pokemon.firstOrNull { it.side == side && it.activeSlot == action.actorSlot } ?: return false
         val targets = LocalPublicMoveTargets.resolve(action, context, side)
+        val hooks = if (includeGuards) REACTION_HOOKS else STATE_REACTION_HOOKS
         return runCatching {
             val dex = EngineRuntimeDex.current().second
             (targets + actor).any { holder ->
                 val ability = LocalPublicAbilityState.effectiveKnownAbility(state, holder)
                 val item = LocalPublicItemState.activeItemId(state, holder)
-                ability != null && REACTION_HOOKS.any { dex.ability(ability).declares(it) } ||
-                    item != null && REACTION_HOOKS.any { dex.item(item).declares(it) }
-            } || state.pokemon.any { holder -> holder.activeSlot != null && !holder.fainted &&
+                ability != null && hooks.any { dex.ability(ability).declares(it) } ||
+                    item != null && hooks.any { dex.item(item).declares(it) }
+            } || !includeGuards && targets.any { target -> LocalMoveAbsorption.apply(state, action, actor, target) != null } ||
+                state.pokemon.any { holder -> holder.activeSlot != null && !holder.fainted &&
                 LocalPublicAbilityState.effectiveKnownAbility(state, holder)?.let { dex.ability(it).declares("onAnyFaint") } == true } ||
                 action.moveId?.let { id -> dex.move(PublicIds.canonical(id))?.let { move ->
                     move.declares("onAfterHit") || move.declares("onHit") } } == true
@@ -112,4 +115,6 @@ internal object LocalMoveImpactProjector {
 
     private val REACTION_HOOKS = setOf("onTryHit", "onDamage", "onDamagingHit", "onHit", "onUpdate",
         "onAfterMoveSecondary", "onAfterMoveSecondarySelf", "onSourceAfterFaint", "onAfterUseItem", "onBeforeMove")
+    // Pure guards are already decided by the hit kernel. Absorbing TryHit effects are checked above.
+    private val STATE_REACTION_HOOKS = REACTION_HOOKS - setOf("onTryHit", "onBeforeMove")
 }

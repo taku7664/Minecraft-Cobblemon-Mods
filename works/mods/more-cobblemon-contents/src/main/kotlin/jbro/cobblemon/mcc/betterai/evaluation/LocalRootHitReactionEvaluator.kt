@@ -45,7 +45,8 @@ internal object LocalRootHitReactionEvaluator {
         if (actions.size != 2 || actions.any { it.kind != BattleActionKind.USE_MOVE ||
                 it.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS }) return Score()
         val targets = actions.map { LocalPublicMoveTargets.resolve(it, context, BattleSide.ALLY).map { mon -> mon.battlePokemonId }.toSet() }
-        if (targets[0].intersect(targets[1]).isEmpty() || actions.none { LocalMoveImpactProjector.mayReact(it, context, BattleSide.ALLY) }) return Score()
+        if (targets[0].intersect(targets[1]).isEmpty() || actions.none {
+                LocalMoveImpactProjector.mayReact(it, context, BattleSide.ALLY, includeGuards = false) }) return Score()
         val cache = LocalProjectedActionCalculationCache()
         val first = LocalPublicTurnOrder.actsFirstProbability(context.state, BattleSide.ALLY, actions[0], BattleSide.ALLY, actions[1]) ?: 0.5
         val paths = listOf(actions to first, actions.reversed() to 1.0 - first).filter { it.second > 0.0 }.flatMap { (order, chance) ->
@@ -59,7 +60,8 @@ internal object LocalRootHitReactionEvaluator {
             }
             branches
         }
-        val joint = price(paths, candidate.actionId, context, cache, tuning)
+        val joint = if (paths.all { cache.fingerprints.of(it.state) == cache.fingerprints.of(it.bodyState) }) Score()
+            else price(paths, candidate.actionId, context, cache, tuning)
         val independent = actions.map { score(it, context, tuning) ?: Score() }
         return Score(joint.total - independent.sumOf { it.total },
             joint.statStageUtility - independent.sumOf { it.statStageUtility }, joint.itemUtility - independent.sumOf { it.itemUtility })

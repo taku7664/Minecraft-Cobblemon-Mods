@@ -236,13 +236,26 @@ class LocalHitReactionValueTest {
         val second = BattleActionCandidate("partner", BattleActionKind.USE_MOVE, 1, 0, "tackle",
             targets = first.targets, moveDetails = first.moveDetails)
         val partner = mon(UUID(0, 3), BattleSide.ALLY).copyState(activeSlot = 1)
-        val c = context(listOf(mon(TARGET, BattleSide.ALLY), partner,
-            mon(ACTOR, BattleSide.OPPONENT, hp = 81.0 / 146, item = "sitrusberry")), first)
         val joint = BattleActionCandidate("joint", BattleActionKind.COMPOSITE,
             componentActionIds = listOf(first.actionId, second.actionId), componentActions = listOf(first, second))
-        val independent = listOf(first, second).sumOf { LocalRootHitReactionEvaluator.score(it, c, LocalDecisionTuning.CURRENT)!!.total }
-        val correction = LocalRootHitReactionEvaluator.compositeCorrection(joint, c, LocalDecisionTuning.CURRENT)
-        assertEquals(-36.0 / 146 * 100, independent + correction.total, 1e-9)
+        for (hp in listOf(81.0, 100.0)) {
+            val c = context(listOf(mon(TARGET, BattleSide.ALLY), partner,
+                mon(ACTOR, BattleSide.OPPONENT, hp = hp / 146, item = "sitrusberry")), first)
+            val independent = listOf(first, second).sumOf { LocalRootHitReactionEvaluator.score(it, c, LocalDecisionTuning.CURRENT)?.total ?: 0.0 }
+            val correction = LocalRootHitReactionEvaluator.compositeCorrection(joint, c, LocalDecisionTuning.CURRENT)
+            assertEquals(-36.0 / 146 * 100, independent + correction.total, 1e-9)
+        }
+    }
+
+    @Test fun `inactive try hit absorption skips joint reactions but later absorption remains eligible`() {
+        val move = tackle()
+        val c = context(listOf(mon(TARGET, BattleSide.ALLY), mon(ACTOR, BattleSide.OPPONENT, ability = "flashfire")), move)
+        assertTrue(LocalMoveImpactProjector.mayReact(move, c, BattleSide.ALLY))
+        assertFalse(LocalMoveImpactProjector.mayReact(move, c, BattleSide.ALLY, includeGuards = false))
+        val water = BattleActionCandidate("water", BattleActionKind.USE_MOVE, 0, 0, "watergun", targets = move.targets,
+            moveDetails = BattleMoveCandidateView("water", BattleMoveDamageCategory.SPECIAL, 40.0, 100.0, 0, 20))
+        val absorb = context(listOf(mon(TARGET, BattleSide.ALLY), mon(ACTOR, BattleSide.OPPONENT, ability = "waterabsorb")), water)
+        assertTrue(LocalMoveImpactProjector.mayReact(water, absorb, BattleSide.ALLY, includeGuards = false))
     }
 
     private fun mon(id: UUID, side: BattleSide, hp: Double = 1.0, ability: String? = null, item: String? = null,
