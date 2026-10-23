@@ -77,7 +77,7 @@ internal object LocalSwitchStateProjector {
 
     fun projectedSwitchOutHp(state: BattleStateView, pokemon: BattlePokemonStateView): Double =
         if (LocalPublicAbilityState.effectiveKnownAbility(state, pokemon) == "regenerator") {
-            (pokemon.hpFraction + 1.0 / 3.0).coerceAtMost(1.0)
+            jbro.cobblemon.mcc.betterai.mechanics.LocalHpArithmetic.healBaseShare(pokemon, 3)
         } else {
             pokemon.hpFraction
         }

@@ -45,6 +45,10 @@ internal object LocalRootItemEffectEvaluator {
     /** Replace independent prices when two public actions compete for the same known item state. */
     fun compositeCorrection(candidate: BattleActionCandidate, context: BattleDecisionContext,
         tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT): Score {
+        if (candidate.componentActions.all { it.kind == BattleActionKind.USE_MOVE &&
+                it.moveDetails?.damageCategory != BattleMoveDamageCategory.STATUS }) {
+            return LocalRootHitReactionEvaluator.compositeCorrection(candidate, context, tuning)
+        }
         if (!tuning.itemTransitionValue) return Score()
         val actions = candidate.componentActions.filter {
             it.kind == BattleActionKind.USE_MOVE && (isSwap(it) ||

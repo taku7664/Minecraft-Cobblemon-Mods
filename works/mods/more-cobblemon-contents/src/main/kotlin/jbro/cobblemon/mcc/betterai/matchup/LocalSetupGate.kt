@@ -266,6 +266,7 @@ internal object LocalSetupGate {
      * the classic moment to set up.
      */
     internal fun actingChance(opponent: BattlePokemonStateView, state: jbro.cobblemon.mcc.internal.ai.BattleStateView? = null): Double {
+        if (state != null && jbro.cobblemon.mcc.betterai.mechanics.LocalTruant.loafs(state, opponent)) return 0.0
         if (RECHARGE in opponent.canonicalKnownVolatileEffectIds) return 0.0
         // A sleep whose start was seen: its counter and Sleep Talk (LocalSleepClock); the flat half otherwise.
         state?.let { jbro.cobblemon.mcc.betterai.mechanics.LocalSleepClock.acts(it, opponent) }?.let { return it }

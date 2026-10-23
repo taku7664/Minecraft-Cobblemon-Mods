@@ -285,7 +285,14 @@ internal data class SwitchInOutcome(
     val absorptionHealing: Double = 0.0,
     val absorptionStages: Map<String, Int> = emptyMap(),
     val absorptionActivated: Boolean = false,
+    /** Conditional mean continuation; [afterEntry] is a representative state only when reactions branch. */
+    val continuationScore: Double = afterEntry?.score ?: 0.0,
+    val reactionBranches: List<SwitchInReactionBranch> = emptyList(),
 )
+
+internal data class SwitchInReactionBranch(val probability: Double, val survives: Boolean,
+    val hp: Double, val continuation: Double, val score: Double, val healing: Double,
+    val stages: Map<String, Int>, val itemChanged: Boolean)
 
 internal data class SwitchInChoice(val probability: Double, val outcome: SwitchInOutcome)
 

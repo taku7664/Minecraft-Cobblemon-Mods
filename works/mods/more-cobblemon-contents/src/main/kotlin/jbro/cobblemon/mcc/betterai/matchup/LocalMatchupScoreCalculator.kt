@@ -478,8 +478,11 @@ internal object LocalMatchupScoreCalculator {
                     !jbro.cobblemon.mcc.betterai.mechanics.LocalPublicAbilityMechanics.ignoresTargetAbility(original, user, target, state)
                 val guardedProfile = if (!disguised) profile
                     else (profile ?: LocalKnockoutProfile.of(rolls, accuracy, target.hpFraction, MAXIMUM_USES)).behindDisguise(chip)
-                val finalProfile = if (jbro.cobblemon.mcc.betterai.mechanics.LocalConsecutiveMoveRules.needsGap(action,user))
-                    (guardedProfile ?: LocalKnockoutProfile.of(rolls,accuracy,target.hpFraction,MAXIMUM_USES)).withGapBetweenUses()
+                val truant = jbro.cobblemon.mcc.betterai.mechanics.LocalTruant.active(state, user) &&
+                    !jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().evolvingMatchups
+                val finalProfile = if (truant || jbro.cobblemon.mcc.betterai.mechanics.LocalConsecutiveMoveRules.needsGap(action,user))
+                    (guardedProfile ?: LocalKnockoutProfile.of(rolls,accuracy,target.hpFraction,MAXIMUM_USES))
+                        .withGapBetweenUses(!truant || !jbro.cobblemon.mcc.betterai.mechanics.LocalTruant.loafs(state, user))
                     else guardedProfile
                 val firstRolls = if (firstHitLimit == null) rolls else rolls.map { minOf(it, firstHitLimit) }
                 ScoredMove(moveScore(userId, moveId, targetId, firstRolls, accuracy, target.hpFraction, finalProfile).copy(

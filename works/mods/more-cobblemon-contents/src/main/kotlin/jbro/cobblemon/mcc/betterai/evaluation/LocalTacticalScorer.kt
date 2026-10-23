@@ -371,7 +371,9 @@ internal object LocalTacticalScorer {
         } else {
             0.0
         }
-        val itemScore = if (nonDamagingScore != null) null else LocalRootItemEffectEvaluator.damagingScore(candidate, context, accuracy, tuning)
+        val reactionScore = if (nonDamagingScore != null) null else LocalRootHitReactionEvaluator.score(candidate, context, tuning)
+        val itemScore = if (nonDamagingScore != null) null else reactionScore ?:
+            LocalRootItemEffectEvaluator.damagingScore(candidate, context, accuracy, tuning)
         val flinchValue = LocalRootFlinchValue.score(candidate, context, accuracy, tuning)
         val total = pressure + (itemScore?.total ?: 0.0) + priorityBonus + knockoutBonus + spreadBonus + flinchValue -
             recoilPenalty -
@@ -381,7 +383,7 @@ internal object LocalTacticalScorer {
                 0.0
             }) + LocalSetupMovePreference.bonus(candidate, context) -
             publicAllyCollateral(candidate, context, tuning) -
-            contactRecoilCost(candidate, context, tuning) -
+            (if (reactionScore == null) contactRecoilCost(candidate, context, tuning) else 0.0) -
             LocalTacticalSituationalEvaluator.activePersistentEffectRefreshPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.expiredFirstActiveTurnPenalty(candidate, context) -
             LocalTacticalSituationalEvaluator.saturatedStatStagePenalty(candidate, context) -
@@ -396,7 +398,8 @@ internal object LocalTacticalScorer {
             selfPatternAdjustment(candidate, context, profile) +
             strategyMoveAdjustment(candidate, context, strategy)
         jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("base:${candidate.actionId}", mapOf("pressure" to pressure, "stage" to damagingStageUtility,
-            "item" to (itemScore?.total ?: 0.0), "priority" to priorityBonus, "knockout" to knockoutBonus, "spread" to spreadBonus,
+            "item" to (if (reactionScore == null) itemScore?.total ?: 0.0 else 0.0), "reaction" to (reactionScore?.total ?: 0.0),
+            "priority" to priorityBonus, "knockout" to knockoutBonus, "spread" to spreadBonus,
             "flinch" to flinchValue, "recoil" to recoilPenalty, "setupPreference" to LocalSetupMovePreference.bonus(candidate, context), "total" to total))
         return LocalTacticalScore(
             total = total,

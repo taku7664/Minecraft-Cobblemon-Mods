@@ -145,8 +145,46 @@ internal object LocalTurnCostScoreCalculator {
         }
         // All move outcomes are calculated once. A later repeat/tendency reading changes only their weights.
         val exchanges = HashMap<Triple<Double, Map<String, Int>, Set<String>>, PokemonMatchupScore?>()
+        val reactedExchanges = HashMap<String, PokemonMatchupScore?>()
+        fun reactionEntry(moveId: String, action: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate): SwitchInOutcome? {
+            val impact = jbro.cobblemon.mcc.betterai.mechanics.LocalMoveImpactProjector
+            val paths = impact.project(action, position, actor.side, cache)
+            // A declared hook that never fires does not replace the existing ordinary hit formula.
+            // Truant still advances the attacker's phase in both control and actual states.
+            if (!jbro.cobblemon.mcc.betterai.mechanics.LocalTruant.active(state, actor) && paths.all {
+                    cache.fingerprints.of(it.state) == cache.fingerprints.of(it.bodyState) }) return null
+            var representative: PokemonMatchupScore? = null
+            val branches = paths.map { path ->
+                val arrived = path.state.pokemon.first { it.battlePokemonId == incoming.battlePokemonId }
+                val body = path.bodyState.pokemon.first { it.battlePokemonId == incoming.battlePokemonId }
+                val survives = !arrived.fainted && arrived.hpFraction > 0.0
+                val after = if (!survives) null else reactedExchanges.getOrPut(cache.fingerprints.of(path.state)) {
+                    LocalMatchupScoreCalculator.pairMatchup(position.copy(state = path.state), incoming.battlePokemonId,
+                        opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
+                }
+                if (representative == null) representative = after
+                SwitchInReactionBranch(path.probability, survives, arrived.hpFraction, after?.score ?: 0.0,
+                    if (survives) after?.score ?: 0.0 else -1.0,
+                    (arrived.hpFraction - body.hpFraction).coerceAtLeast(0.0), arrived.statStages,
+                    arrived.knownHeldItemId != placed.knownHeldItemId)
+            }
+            val survival = branches.filter { it.survives }.sumOf { it.probability }
+            val hp = if (survival > 0.0) branches.filter { it.survives }.sumOf { it.probability * it.hp } / survival else 0.0
+            val continuation = if (survival > 0.0) branches.filter { it.survives }.sumOf { it.probability * it.continuation } / survival else 0.0
+            val absorbs = !jbro.cobblemon.mcc.betterai.mechanics.LocalTruant.loafs(state, actor) &&
+                jbro.cobblemon.mcc.betterai.mechanics.LocalMoveAbsorption.apply(state, action, actor, placed) != null
+            return SwitchInOutcome(moveId, survival, hp, representative, branches.sumOf { it.probability * it.score },
+                absorptionHealing = if (absorbs) (hp - placed.hpFraction).coerceAtLeast(0.0) else 0.0,
+                absorptionStages = if (absorbs) branches.firstOrNull()?.stages.orEmpty().filter { (stat, value) ->
+                    value != (placed.statStages[stat] ?: 0) }.mapValues { (stat, value) -> value - (placed.statStages[stat] ?: 0) } else emptyMap(),
+                absorptionActivated = absorbs, continuationScore = continuation, reactionBranches = branches)
+        }
         fun entry(moveId: String?, scored: LocalMatchupScoreCalculator.ScoredMove?): SwitchInOutcome {
-            val absorbed = (scored?.action ?: absorptionActions[moveId])?.let {
+            val action = scored?.action ?: moveId?.let { absorptionActions[it] }
+            if (moveId != null && action != null &&
+                jbro.cobblemon.mcc.betterai.mechanics.LocalMoveImpactProjector.mayReact(action, position, actor.side))
+                reactionEntry(moveId, action)?.let { return it }
+            val absorbed = action?.let {
                 jbro.cobblemon.mcc.betterai.mechanics.LocalMoveAbsorption.apply(state, it, actor, placed)
             }
             val hit = scored?.score.takeIf { absorbed == null }

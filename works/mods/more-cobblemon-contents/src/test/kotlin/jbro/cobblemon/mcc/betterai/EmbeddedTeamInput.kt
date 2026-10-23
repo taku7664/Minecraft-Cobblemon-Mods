@@ -30,7 +30,8 @@ internal object EmbeddedTeamInput {
         /** Transformed: its types are the copied Pokemon's, never its own species' (until it leaves). */
         var transformed: Boolean = false,
         /** Its types before it terastallized (Transform copies these, Showdown's getTypes(true, true)). */
-        var preTeraTypes: Set<String>? = null)
+        var preTeraTypes: Set<String>? = null,
+        var lastMovedTurn: Int? = null)
 
     fun identity(ident: String): String = ident.take(2) + ":" + ident.substringAfter(':').trim()
     private fun uuid(ident: String) = UUID.nameUUIDFromBytes(identity(ident).toByteArray(Charsets.UTF_8))
@@ -240,6 +241,7 @@ internal object EmbeddedTeamInput {
                 }
                 "faint" -> current?.let { it.hp = 0.0; it.volatileEffects.clear(); event(BattleObservedEventKind.FAINTED) }
                 "move" -> current?.let {
+                    it.lastMovedTurn = eventTurn
                     // A move its ability called (Magic Bounce's reflection, Dancer's copy) only reveals the ability, as
                     // the game's observer reads it: not its move, PP or action.
                     val abilitySource = p.drop(4).firstOrNull { tag -> tag.startsWith("[from]") }?.removePrefix("[from]")?.trim()
@@ -422,6 +424,11 @@ internal object EmbeddedTeamInput {
         // A recorded input from before a map existed (ownMegaForms) has none.
         fun privateMap(name: String, ident: String) = input.getAsJsonObject(name)?.entrySet()
             ?.firstOrNull { identity(it.key) == identity(ident) }?.value
+        fun volatiles(entry: Seen?, ability: String?): Set<String> {
+            entry ?: return emptySet()
+            val truant = id(ability.orEmpty()) == "truant" || id(entry.species) in setOf("slakoth", "slaking")
+            return entry.volatileEffects + if (truant && (entry.lastMovedTurn ?: -2) >= turn - 1) setOf("truant") else emptySet()
+        }
         val allies = own.map { pokemon ->
             val ident = pokemon["ident"].asString
             val details = pokemon["details"].asString.split(',').map(String::trim)
@@ -448,7 +455,7 @@ internal object EmbeddedTeamInput {
                 }.orEmpty(),
                 actionConstraints = constraints.forPokemon(ident),
                 knownVolatileEffectIds = if (pokemon["active"].asBoolean && hp.first > 0.0)
-                    seen[identity(ident)]?.volatileEffects.orEmpty() else emptySet())
+                    volatiles(seen[identity(ident)], privateMap("ownAbilities", ident)?.asString) else emptySet())
         }
         val opponents = seen.values.filter { side(it.ident) == BattleSide.OPPONENT }.map { pokemon ->
             val stats = speciesData.getAsJsonObject(pokemon.species)?.getAsJsonObject("baseStats")
@@ -472,7 +479,7 @@ internal object EmbeddedTeamInput {
                             form["ability"]?.asString?.takeIf { it.isNotEmpty() })
                     }.orEmpty(),
                 actionConstraints = constraints.forPokemon(pokemon.ident),
-                knownVolatileEffectIds = if (pokemon.active && pokemon.hp > 0.0) pokemon.volatileEffects else emptySet())
+                knownVolatileEffectIds = if (pokemon.active && pokemon.hp > 0.0) volatiles(pokemon, pokemon.ability) else emptySet())
         }
         fun moveDetails(moveId: String, pp: Int): BattleMoveCandidateView =
             publicMoveDetails(requireNotNull(ruleMoves.getAsJsonObject(moveId)) { "Missing public move metadata $moveId" }, moveId, pp)

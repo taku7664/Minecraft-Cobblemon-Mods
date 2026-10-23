@@ -1,8 +1,6 @@
 package jbro.cobblemon.mcc.betterai.mechanics
 
 import jbro.cobblemon.mcc.internal.ai.*
-import kotlin.math.floor
-import kotlin.math.roundToLong
 
 /** The target's TryHit ability reaction, shared by turn projection and switch-entry valuation.
  * Call after protection/invulnerability checks, before accuracy (Showdown gen 7+).
@@ -37,15 +35,7 @@ internal object LocalMoveAbsorption {
         if ("healblock" in target.canonicalKnownVolatileEffectIds) return state
         // These four abilities heal floor(baseMaxhp / 4), even while Dynamaxed. Public combat stats
         // describe base maximum HP; hpFraction describes the current (possibly doubled) HP bar.
-        val maxima = target.combatStats?.maxHp
-        val share = LocalDynamax.damageShare(target)
-        val hp = if (maxima != null) (maxima.minimum..maxima.maximum).map { base ->
-            val maximum = base / share
-            val current = target.hpFraction * maximum
-            val rounded = current.roundToLong()
-            val exact = if (rounded / maximum == target.hpFraction) rounded.toDouble() else current
-            ((exact + floor(base / 4.0).coerceAtLeast(1.0)) / maximum).coerceAtMost(1.0)
-        }.average() else (target.hpFraction + share / 4.0).coerceAtMost(1.0)
+        val hp = LocalHpArithmetic.healBaseShare(target, 4)
         return state.copyState(pokemon = state.pokemon.map {
             if (it.battlePokemonId == target.battlePokemonId) it.copyState(hpFraction = hp) else it
         })

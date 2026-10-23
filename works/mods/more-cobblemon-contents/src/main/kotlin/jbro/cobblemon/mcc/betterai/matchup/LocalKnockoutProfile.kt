@@ -22,10 +22,10 @@ internal class LocalKnockoutProfile private constructor(
     val expectedUses: Double,
 ) {
     /** A legal first use, then an intervening turn between uses (the data's cantusetwice flag). */
-    fun withGapBetweenUses(): LocalKnockoutProfile = LocalKnockoutProfile(
-        survival.indices.map { survival[(it + 1) / 2] },
-        damageWhileStanding.indices.map { damageWhileStanding[(it + 1) / 2] },
-        if (expectedUses.isInfinite()) expectedUses else (2.0 * expectedUses - 1.0).coerceAtLeast(0.0),
+    fun withGapBetweenUses(firstAvailable: Boolean = true): LocalKnockoutProfile = LocalKnockoutProfile(
+        survival.indices.map { survival[(it + if (firstAvailable) 1 else 0) / 2] },
+        damageWhileStanding.indices.map { damageWhileStanding[(it + if (firstAvailable) 1 else 0) / 2] },
+        if (expectedUses.isInfinite()) expectedUses else (2.0 * expectedUses - if (firstAvailable) 1.0 else 0.0).coerceAtLeast(0.0),
     )
     /**
      * The same move into an intact Disguise: the first use only breaks it for an eighth of the target's HP, so every

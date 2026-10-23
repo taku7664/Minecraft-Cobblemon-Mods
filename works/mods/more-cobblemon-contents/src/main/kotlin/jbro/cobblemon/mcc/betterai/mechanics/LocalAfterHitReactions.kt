@@ -49,6 +49,9 @@ internal object LocalAfterHitReactions {
         directDamage: Double,
         /** Once per move: false for every target of a spread move after the first. */
         userEffects: Boolean = true,
+        /** A substitute can take move damage without direct damage to its holder. Life Orb still activates. */
+        connected: Boolean = directDamage > 0.0,
+        finishMove: Boolean = userEffects,
     ): BattleStateView {
         val details = action.moveDetails ?: return after
         if (details.damageCategory == BattleMoveDamageCategory.STATUS) return after
@@ -74,8 +77,8 @@ internal object LocalAfterHitReactions {
                     }.toSet()) else it
                 })
                 if (item == AIR_BALLOON) state = setItem(state, target.battlePokemonId, "")
-                val chart = StandardTypeEffectiveness.multiplier(details.typeId, target.knownTypeIds, false)
-                if (item == WEAKNESS_POLICY && target.knownTypeIds.isNotEmpty() && chart > 1.0) {
+                if (item == WEAKNESS_POLICY && weaknessPolicyActivates(state, target, action,
+                        before.pokemon.firstOrNull { it.battlePokemonId == actorId })) {
                     state = LocalStatStageChange.apply(state, target.battlePokemonId, null, mapOf("attack" to 2, "special_attack" to 2))
                     state = setItem(state, target.battlePokemonId, "")
                 }
@@ -125,7 +128,6 @@ internal object LocalAfterHitReactions {
                     LocalPublicAbilityState.effectiveKnownAbility(state, it) == "soulheart"
             }.forEach { state = LocalStatStageChange.apply(state, it.battlePokemonId, null, mapOf("special_attack" to 1)) }
         }
-        if (!userEffects) return state
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId } ?: return state
         if (actor.fainted || actor.hpFraction <= 0.0) return state
         val actorAbility = LocalPublicAbilityState.effectiveKnownAbility(state, actor)
@@ -134,6 +136,7 @@ internal object LocalAfterHitReactions {
         if (knockedOut) {
             knockoutBoost(actorAbility, actor)?.let { state = LocalStatStageChange.apply(state, actorId, null, it) }
         }
+        if (!userEffects) return state
         // Magician takes the item of a Pokemon it hit when its own hands are empty.
         val hitTarget = targetId?.let { id -> state.pokemon.firstOrNull { it.battlePokemonId == id } }
         if (actorAbility == "magician" && directDamage > 0.0 && actor.canonicalKnownHeldItemId == null && hitTarget != null &&
@@ -143,7 +146,17 @@ internal object LocalAfterHitReactions {
             val item = hitTarget.knownHeldItemId
             state = setItem(setItem(state, hitTarget.battlePokemonId, ""), actorId, item)
         }
-        if (directDamage > 0.0 && LocalPublicItemState.activeItemId(state, actor) == LIFE_ORB &&
+        return if (finishMove) afterMove(state, actorId, action, connected) else state
+    }
+
+    /** Once after every target and hit, including damage intercepted by a substitute. */
+    fun afterMove(initial: BattleStateView, actorId: UUID, action: BattleActionCandidate, connected: Boolean): BattleStateView {
+        var state = initial
+        val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId } ?: return state
+        if (actor.fainted || actor.hpFraction <= 0.0) return state
+        val actorAbility = LocalPublicAbilityState.effectiveKnownAbility(state, actor)
+        val details = action.moveDetails ?: return state
+        if (connected && LocalPublicItemState.activeItemId(state, actor) == LIFE_ORB &&
             actorAbility != "magicguard" && !(actorAbility == "sheerforce" && LocalDamageAbilityModifiers.hasSecondaryEffect(details))
         ) {
             val current = state.pokemon.first { it.battlePokemonId == actorId }
@@ -213,8 +226,9 @@ internal object LocalAfterHitReactions {
 
     private fun tick(pokemon: BattlePokemonStateView, divisor: Int): Double {
         val maxHp = pokemon.combatStats?.maxHp
-        if (maxHp == null || maxHp.minimum != maxHp.maximum) return 1.0 / divisor
-        return (maxHp.minimum / divisor).coerceAtLeast(1).toDouble() / maxHp.minimum
+        val share = LocalDynamax.damageShare(pokemon)
+        if (maxHp == null || maxHp.minimum != maxHp.maximum) return share / divisor
+        return (maxHp.minimum / divisor).coerceAtLeast(1).toDouble() / maxHp.minimum * share
     }
 
     private fun canonical(value: String?): String = value?.let(PublicIds::canonical).orEmpty()

@@ -15,7 +15,8 @@ internal object LocalMoveHitSequence {
     fun project(initial: BattleStateView, actorId: UUID, targetId: UUID?, action: BattleActionCandidate,
                 totalDamage: Double, effects: List<BattleMoveEffectView>, bypassesSubstitute: Boolean,
                 source: BattleDecisionContext, side: BattleSide, userEffects: Boolean = true,
-                hitCountOverride: Int? = null, rollPercentile: Double? = null): List<LocalMoveHitSequenceResult> {
+                hitCountOverride: Int? = null, rollPercentile: Double? = null,
+                reactions: Boolean = true, finishMove: Boolean = userEffects): List<LocalMoveHitSequenceResult> {
         val actor = initial.pokemon.firstOrNull { it.battlePokemonId == actorId } ?: return emptyList()
         val beatUpMembers = if (PublicIds.canonical(action.moveId.orEmpty()) == "beatup") initial.pokemon.filter {
             it.side == actor.side && !it.fainted && it.hpFraction > 0.0 && it.statusId == null
@@ -64,9 +65,15 @@ internal object LocalMoveHitSequence {
                     val direct = LocalDirectHitMechanics.apply(hitState, actorId, targetId, damage, hitEffects,
                         LocalPublicAbilityMechanics.ignoresTargetAbility(action, currentActor, target, hitState),
                         bypassesSubstitute, updateItems = false)
+                    if (!reactions) return@flatMap listOf(LocalMoveHitSequenceResult(direct.state,
+                        previous.probability * chance, previous.directDamageFraction + direct.directDamageFraction,
+                        previous.recoilHpFraction + direct.recoilHpFraction,
+                        previous.substituteInterceptedWholeMove && hadDecoy))
                     val onHit = LocalPersistentMoveState.afterHit(direct.state, actorId, targetId, action, !hadDecoy)
                     val reacted = hitFieldReactions(LocalAfterHitReactions.apply(hitState, onHit, actorId, targetId, action,
-                        direct.directDamageFraction, userEffects = userEffects && index == count - 1),
+                        direct.directDamageFraction, userEffects = userEffects && index == count - 1,
+                        connected = direct.directDamageFraction > 0.0 || hadDecoy && damage > 0.0,
+                        finishMove = finishMove && index == count - 1),
                         targetId, action, direct.directDamageFraction, hadDecoy).let {
                             raisedThisTurnSecondary(it, actorId, targetId, action, direct.directDamageFraction, hadDecoy) }
                     LocalContactAfterHitMechanics.project(reacted, actorId, targetId, action, direct.directDamageFraction).map {

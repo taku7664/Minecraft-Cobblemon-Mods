@@ -32,6 +32,8 @@ internal data class PublicDamageRollSummary(
 
 /** How a hit's damage roll and critical hit become branches. */
 internal enum class LocalChanceModel {
+    /** Keep all sixteen roll positions for HP thresholds and on-hit state transitions. */
+    EXACT_ROLLS,
     /** The sixteen rolls split into knockout and survival, one representative roll each; no random critical hits. */
     ROLL_CLASSES,
     /**
@@ -135,6 +137,7 @@ internal object PublicMoveOutcomeBranchProjector {
     ): List<PublicMoveOutcomeBranch> {
         if (rolls.isEmpty()) return listOf(PublicMoveOutcomeBranch(probability, true, 0.0))
         val usesCritical = criticalHits > 0.0 && criticalRolls.isNotEmpty() && (criticalHits >= 1.0 || criticalReaction ||
+            chanceModel.get() == LocalChanceModel.EXACT_ROLLS ||
             chanceModel.get() == LocalChanceModel.HIGH_ROLL && targetHp != null && criticalRolls.any { it + DAMAGE_EPSILON >= targetHp })
         if (usesCritical) {
             return (damageBranches(rolls, targetHp, probability * (1.0 - criticalHits), 0.0, emptyList(), false, false) +
@@ -143,6 +146,11 @@ internal object PublicMoveOutcomeBranchProjector {
         }
         if (chanceModel.get() == LocalChanceModel.HIGH_ROLL) return highRollBranches(rolls, targetHp, probability, guaranteed)
         val sorted = rolls.sorted()
+        if (chanceModel.get() == LocalChanceModel.EXACT_ROLLS) return sorted.mapIndexed { index, damage ->
+            // Equal first-hit damage need not stay equal after a reaction changes the next hit's defence.
+            PublicMoveOutcomeBranch(probability / rolls.size, true, damage, guaranteed,
+                rollPercentile = index.toDouble() / (sorted.size - 1).coerceAtLeast(1))
+        }
         return rolls.groupBy { targetHp != null && it >= targetHp }.values.map { group ->
             val orderedGroup = group.sorted()
             val rank = sorted.indexOf(orderedGroup.first()) + (orderedGroup.size - 1) / 2
