@@ -342,12 +342,6 @@ internal object LocalSwitchRules {
         ))
         if (gain >= SWITCH_MARGIN) adjustment += gain * SCORE_SCALE
         if (retreat > 0.0 && survival >= SURVIVAL_PASS) adjustment += retreat * SCORE_SCALE
-        if (keepLeaving <= WORTHLESS && keepIncoming >= WORTH_KEEPING) {
-            // What the incoming Pokemon would face walking in after a knockout, without the hit.
-            val free = opponents.mapNotNull { scores.pokemon(incoming.battlePokemonId, it.battlePokemonId)?.score }.averageOrNull()
-            val freeEntryGain = free?.let { it - switchValue } ?: 0.0
-            if (freeEntryGain >= FREE_ENTRY_MARGIN) adjustment -= freeEntryGain * SCORE_SCALE
-        }
         val exclusion = if (survival < SURVIVAL_PASS && !sacrifice) SWITCH_IN_DIES else null
         val uncredited = if (gain >= SWITCH_MARGIN) 0.0 else gain * SCORE_SCALE
         return Verdict(exclusion, adjustment, sacrifice, uncredited)
@@ -449,7 +443,6 @@ internal object LocalSwitchRules {
     const val PIVOT_FIRST_PASS = 0.5
     const val SURVIVAL_PASS = 0.5
     const val SWITCH_MARGIN = 0.5
-    const val FREE_ENTRY_MARGIN = 0.3
     const val DOOMED = 0.8
     const val WORTH_KEEPING = 0.25
     const val WORTHLESS = 0.05

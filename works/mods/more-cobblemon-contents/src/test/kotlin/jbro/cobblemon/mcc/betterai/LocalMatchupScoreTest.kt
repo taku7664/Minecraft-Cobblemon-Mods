@@ -723,6 +723,28 @@ class LocalMatchupScoreTest {
     }
 
     @Test
+    fun `free entry opportunity cost is charged once inside the switch gain`() {
+        val base = context(allySpeed = 80, foeSpeed = 150, allyPower = 40.0, benchPower = 300.0)
+        val c = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+            when (it.battlePokemonId) {
+                ALLY -> it.copyState(hpFraction = 0.05)
+                BENCH -> it.copyState(combatStats = it.combatStats!!.copy(speed = BattleIntegerRange(200, 200)))
+                else -> it
+            }
+        }))
+        val scores = LocalMatchupScoreCalculator.calculate(c)
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.begin()
+        try {
+            val judgement = LocalSwitchRules.judge(listOf(attackAction(), switchAction()), c, scores)
+            val values = jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.take().getValue("switch:switch")
+            assertTrue(values.getValue("gain") < 0.0)
+            assertTrue((scores.preserves[BENCH]?.score ?: 0.0) >= LocalSwitchRules.WORTH_KEEPING)
+            assertEquals(values.getValue("gain") * 100,
+                (judgement.adjustments["switch"] ?: 0.0) + (judgement.uncreditedGains["switch"] ?: 0.0), 1e-9)
+        } finally { jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.clear() }
+    }
+
+    @Test
     fun `switch entry carries integer absorb healing into the next exchange and internals`() {
         val base = electricEntryContext()
         val state = base.state.derive(pokemon = base.state.pokemon.map {
