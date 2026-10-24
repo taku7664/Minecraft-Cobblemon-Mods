@@ -6,6 +6,12 @@
 
 
 
+## [2026-10-24 17:13] BP·상점 자동 복구 개발 배포
+
+- **요청·배치:** 빡대리의 개발배포 지시로 main 09bafa71d에서 검증한 more-cobblemon-contents-0.1.0.jar와 jbro-policy를 정식 체크아웃 C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product의 server/mods 및 client/mods에 교체했다. client는 기존 Modrinth cobblemon-dev junction이다. 현재 main 3b3c8679c와 빌드 기준 사이에는 두 모듈 MEMORY.md 변경만 있어 검증 산출물을 재사용했다.
+- **파일 검증:** 양쪽 core SHA256 9d4cd982b95b5433865d3deec26e482b684e76e6508459a8b83a530526b6161b로 검증 빌드와 일치한다. 양쪽 대상 mod ID가 각각 1개임을 확인했다. 두 환경 전체 134개 JAR 중 core·jbro-policy 4개만 변경되고 나머지 130개는 해시가 같다. 기존 JAR 백업과 before.json/after.json은 F:/AI/builds/pichu-inquiry-117d/development-deploy-20261024-171312에 보관했다.
+- **실행·미확인:** 게임 클라이언트·개발 서버 프로세스 및 25566 리스너가 없는 상태에서 교체했다. 서버/클라이언트를 시작하거나 실제 보상·강제 종료를 검증하지 않았다. 설정·월드·거래 저널·운영/VPS·릴리스 제품은 변경하지 않았다. 이번 배포는 설치 해시 확인이며 단위 검사 재실행은 없다. 이전 복구17/17·피츄115/115 통과, core674성공·기존3실패·1중단 결과를 전체 통과로 해석하지 않는다.
+
 ## [2026-10-24 17:03] BP 원거래 기록·상점 전달 실패 복구 및 중복 방지
 
 - **병합 후 검증(2026-10-24 17:09):** main 병합 커밋 09bafa71d의 관련 빌드 입력 2,248개와 F 소스 불일치 0을 확인하고 최신 main으로 다시 JAR을 생성했다. 복구17/17·피츄115/115 통과, core678=성공674·기존 실패3·중단1은 동일하다. 상세 로그 compensation-main-verified.log와 compensation-verification.json. 개발·운영·VPS 설치·재시작은 하지 않았다.
