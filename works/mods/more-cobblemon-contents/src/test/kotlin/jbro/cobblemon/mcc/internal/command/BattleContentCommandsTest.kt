@@ -36,11 +36,16 @@ class BattleContentCommandsTest {
         }
 
         val bp = root.getChild("bp")
-        assertEquals(setOf("get", "history", "add", "remove", "set"), bp.children.map { it.name }.toSet())
+        assertEquals(setOf("get", "history", "recoveryhold", "add", "remove", "set"), bp.children.map { it.name }.toSet())
         assertEquals(setOf("player"), bp.getChild("get").children.map { it.name }.toSet())
         assertEquals(setOf("player"), bp.getChild("add").children.map { it.name }.toSet())
         assertEquals(setOf("player"), bp.getChild("remove").children.map { it.name }.toSet())
         assertEquals(setOf("player"), bp.getChild("set").children.map { it.name }.toSet())
+        val hold = bp.getChild("recoveryhold")
+        assertFalse(hold.requirement.test(source(0)))
+        assertFalse(hold.requirement.test(source(1)))
+        assertTrue(hold.requirement.test(source(2)))
+        assertNotNull(hold.getChild("player_uuid").getChild("transaction_uuid").command)
         assertEquals(2, BattlePointCommands.ADMIN_PERMISSION_LEVEL)
         assertNotSame(bp.requirement, bp.getChild("get").requirement)
         assertNotSame(bp.requirement, bp.getChild("add").requirement)

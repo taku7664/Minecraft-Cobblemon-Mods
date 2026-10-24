@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-24 17:03] 원거래 기반 BP·상점 자동 복구 연동
+
+- **사용자 요청:** BP 미지급·상점 전달 실패부터 자동 복구하고, 재문의·재시작의 중복 지급을 막으며 불명확한 결과는 관리자에게 넘긴다. 포켓몬 복구와 과거 로그 추정 보상은 이번 범위가 아니다.
+- **구현:** autoResolve가 켜진 reward/shop 문의만 MCC 원거래 API에 연결했다. AI가 고른 금액·상품·명령은 사용하지 않는다. 문의 본문의 거래 UUID 또는 본인·문의 전후 구간·동일 종류의 유일한 원거래로 한정한다. 후보 여러 건·원거래 없음·미확인 상태는 관리자에게 넘기고, 실제 처리 결과 문장은 서버 결과로 교체한다. 대기 중 서버 확인이 시간 초과되면 뒤늦게 지급을 시작하지 못하도록 했다. 구형 MCC의 API 미존재도 서버 스레드에서 LinkageError를 잡아 관리자 확인으로 보낸다.
+- **중복·수동 처리:** 원거래 상태는 MCC 월드 data/mcc-compensation-v1에 남고 문의 종결 시 지우지 않는다. 운영자 BP 조정은 거래 순서로 검사한다. 수동 /give 등 BP 내역에 남지 않는 지급 전에는 OP2 /bp recoveryhold <플레이어UUID> <원거래UUID>의 성공을 확인해야 한다. 외부 수동 아이템 지급을 자동 감지한다고 설명하지 않는다.
+- **검증:** jbro-policy build 성공, JUnit XML 115/115 실패·중단 0. MCC 새 복구 17/17 통과. MCC core 범위 전체 678건은 성공674·실패3·중단1이며 전체 통과가 아니다. BattleSceneLifecyclePolicyTest 1건과 Cobblemon173ActionCandidateAdapterTest 2건 실패는 변경 전 HEAD 7fc3d12b0의 별도 검사에서도 동일하게 재현했다. 검증 자료 F:/AI/builds/pichu-inquiry-117d/compensation-verification.json, compensation-verified-core.log, compensation-assembled.log, final-core-junit, final-pichu-junit, baseline-junit.
+- **산출물·범위:** jbro-policy-0.1.8.jar SHA256 e2c51ae20c200ff330d906b29d5de8389caad7871d1983ddda902e763329b8dd, CRC 정상. MCC와 함께 서버를 업데이트해야 복구 API를 사용할 수 있다. JAR은 F 검증 폴더에만 생성했다. 개발·운영·VPS 배치와 실제 게임/Discord 지급·강제 종료 검증은 하지 않았고 서버를 종료·재시작하지 않았다. 재시작 시나리오는 파일 저널과 BP NBT를 다시 읽는 단위 검사로 확인한 범위다.
+
 ## [2026-10-24 16:34] 피츄 문의의 자료 조회·질문 답변 확대, 불확실한 자동 보상 차단
 
 - **사용자 요청:** 실제 문의 목록을 보고 자동 처리 범위를 개선하되 보상 예외를 엄격하게 처리한다. 이 채팅에서 조회한 10/11~10/21 문의 12건은 모두 관리자에게 넘겨졌고 BP 누락 문의는 없었다. 일반 사용자 후속 메시지 본문은 Discord API에서 비어 반환돼 실제 최종 해결 경위는 확인하지 못했다.

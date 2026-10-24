@@ -163,7 +163,7 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
             ${if (playerData == null) "그 플레이어의 저장 자료는 이번에 받지 못했다." else "<player_data>에는 검토하는 지금 시점의 그 플레이어 자료가 JSON으로 있다: bp(현재 BP), bp_history(최근 BP 내역, 최신순, at은 KST, kind는 CONTENT_REWARD=콘텐츠 보상, SHOP_PURCHASE=상점 구매, ADMIN_ADD/ADMIN_REMOVE/ADMIN_SET=운영자 조정), records(콘텐츠별 누적 승패와 연승), sections.legends.caught(직접 잡은 전설 포켓몬). 로그만큼 중요한 근거다."}
 
             유형별로 이렇게 확인해라.
-            - 보상·BP(reward): 로그와 BP 내역은 조사 단서일 뿐이다. 승리 수와 지급 건수의 차이, 현재 잔액, 비슷한 과거 지급액만으로 미지급·지급액을 확정하지 마라. 원래 거래 ID·수령자·원래 지급액·처리 상태가 필요하며 지금 자료만으로 재지급하지 않는다. 운영자가 수동 보상했을 가능성, 재문의·중복 문의, 기록 누락·잘림도 확인 대상으로 적어라.
+            - 보상·BP(reward): 로그와 BP 내역은 조사 단서일 뿐이다. 승리 수와 지급 건수의 차이, 현재 잔액, 비슷한 과거 지급액만으로 미지급·지급액을 확정하지 마라. 원래 거래 ID·수령자·원래 지급액·처리 상태가 필요하다. compensation_records가 있으면 원거래 상태를 설명한다. 지급 가능 여부와 재지급은 서버의 별도 검증 코드가 결정하며 너는 처리 결과를 약속하지 않는다. 운영자가 수동 보상했을 가능성, 재문의·중복 문의, 기록 누락·잘림도 확인 대상으로 적어라.
             - 상점(shop): bp_history의 SHOP_PURCHASE와 잔액 변화, 그 시각의 오류 로그를 본다.
             - 배틀 오류(battle): 그 시각의 WARN/ERROR 줄과 스택트레이스, 배틀 관련 줄을 본다. 원인 후보로 예외 이름과 처음 나오는 모드 패키지를 적어라.
             - 아이템·포켓몬 분실(loss): live_player의 party·pc·inventory의 개체 UUID와 종을 먼저 찾는다. 찾으면 보관 위치를 안내하고, 없으면 사라진 종·시각·직전 행동을 질문해라. 상자·목장·오프라인·백업 미조회는 명시한다. 원래 개체 데이터 없이 새 개체 소환을 복구라고 제안하지 마라.

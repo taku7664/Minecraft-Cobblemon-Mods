@@ -167,5 +167,8 @@
   "screen.more_cobblemon_contents.dashboard.format.double_normal": "Double · Normal",
   "modmenu.nameTranslation.more_cobblemon_contents": "More Cobblemon Contents Core",
   "modmenu.descriptionTranslation.more_cobblemon_contents": "The shared foundation for Cobblemon battle facilities: managed battles, tactical AI, Battle Points, a reward shop, records, the battle hub and hologram terminals. Add content with MCC addons.",
-  "screen.more_cobblemon_contents.versus.tournament": "Champion Cup"
+  "screen.more_cobblemon_contents.versus.tournament": "Champion Cup",
+  "message.more_cobblemon_contents.shop.recovery": "Check the purchase result. If goods are missing, use /inquiry shop delivery failed %s. Another purchase is a separate charge.",
+  "message.more_cobblemon_contents.recovery.held": "Automatic recovery is held for this original transaction. Automatic retries remain blocked after manual handling.",
+  "message.more_cobblemon_contents.recovery.hold_failed": "Could not hold recovery. Check both UUIDs and the journal. Confirm a successful hold before manual grants."
 }

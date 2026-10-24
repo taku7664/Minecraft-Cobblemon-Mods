@@ -85,6 +85,7 @@ internal class BattlePointShopService(
     private val catalog: () -> BattlePointShopCatalog?,
     private val battlePoints: BattlePointAtomicApplier,
     private val delivery: BattlePointShopDelivery,
+    private val settlePurchase: ((BattlePointRequest, List<BattlePointShopGrant>) -> BattlePointShopPurchaseResult)? = null,
 ) {
     fun purchase(request: BattlePointShopPurchaseRequest): BattlePointShopPurchaseResult {
         val currentCatalog = catalog()
@@ -103,6 +104,8 @@ internal class BattlePointShopService(
             sourceId = SOURCE_ID,
             reason = purchaseReason(currentCatalog.catalogId, currentCatalog.revision, request.lines),
         )
+
+        settlePurchase?.let { return it(bpRequest, resolved.grants) }
 
         var plan: BattlePointShopDeliveryPlan? = null
         var deliveryState = DeliveryState.NOT_ATTEMPTED
