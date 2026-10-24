@@ -19,7 +19,12 @@ internal class LocalStateMemo<T>(private val compute: (BattleStateView) -> T) {
     operator fun get(state: BattleStateView): T {
         last?.let { if (it.state === state) return it.value }
         val value = compute(state)
-        last = Slot(state, value)
+        val slot = Slot(state, value)
+        last = slot
+        // Do not erase a newer reading installed by a different decision/thread.
+        jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.onClose(this) {
+            if (last === slot) last = null
+        }
         return value
     }
 }

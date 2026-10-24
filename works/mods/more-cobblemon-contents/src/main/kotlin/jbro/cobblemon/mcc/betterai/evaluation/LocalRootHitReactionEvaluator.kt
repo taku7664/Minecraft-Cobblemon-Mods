@@ -27,10 +27,13 @@ internal object LocalRootHitReactionEvaluator {
         if (candidate.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS ||
             !LocalMoveImpactProjector.mayReact(candidate, context, BattleSide.ALLY)) return null
         if (tuning.simpleFixedHpReactions) LocalFixedHpReactionValue.read(candidate, context, tuning)?.let { return it }
-        val cache = LocalProjectedActionCalculationCache()
-        val paths = LocalMoveImpactProjector.project(candidate, context, BattleSide.ALLY, cache)
-        if (paths.all { cache.fingerprints.keyOf(it.state) == cache.fingerprints.keyOf(it.bodyState) }) return null
-        return price(paths, candidate.actionId, context, cache, tuning)
+        return LocalDecisionCalculationScope.with {
+            LocalProjectedActionCalculationCache().use { cache ->
+                val paths = LocalMoveImpactProjector.project(candidate, context, BattleSide.ALLY, cache)
+                if (paths.all { cache.fingerprints.keyOf(it.state) == cache.fingerprints.keyOf(it.bodyState) }) return@use null
+                price(paths, candidate.actionId, context, cache, tuning)
+            }
+        }
     }
 
     /** The joint action owns one sequential reaction state, including a berry consumed by its first move. */
@@ -48,21 +51,24 @@ internal object LocalRootHitReactionEvaluator {
         val targets = actions.map { LocalPublicMoveTargets.resolve(it, context, BattleSide.ALLY).map { mon -> mon.battlePokemonId }.toSet() }
         if (targets[0].intersect(targets[1]).isEmpty() || actions.none {
                 LocalMoveImpactProjector.mayReact(it, context, BattleSide.ALLY, includeGuards = false) }) return Score()
-        val cache = LocalProjectedActionCalculationCache()
-        val first = LocalPublicTurnOrder.actsFirstProbability(context.state, BattleSide.ALLY, actions[0], BattleSide.ALLY, actions[1]) ?: 0.5
-        val paths = listOf(actions to first, actions.reversed() to 1.0 - first).filter { it.second > 0.0 }.flatMap { (order, chance) ->
-            var branches = listOf(LocalMoveImpactProjector.Path(context.state, context.state, chance))
-            for (action in order) {
-                branches = branches.flatMap { parent ->
-                    LocalMoveImpactProjector.project(action, context.copy(state = parent.state, candidates = listOf(action)),
-                        BattleSide.ALLY, cache, parent.bodyState).map { it.copy(probability = it.probability * parent.probability) }
-                }.groupBy { cache.fingerprints.keyOf(it.state) to cache.fingerprints.keyOf(it.bodyState) }.values.map { same ->
-                    same.first().copy(probability = same.sumOf { it.probability }) }
+        val joint = LocalDecisionCalculationScope.with {
+            LocalProjectedActionCalculationCache().use { cache ->
+                val first = LocalPublicTurnOrder.actsFirstProbability(context.state, BattleSide.ALLY, actions[0], BattleSide.ALLY, actions[1]) ?: 0.5
+                val paths = listOf(actions to first, actions.reversed() to 1.0 - first).filter { it.second > 0.0 }.flatMap { (order, chance) ->
+                    var branches = listOf(LocalMoveImpactProjector.Path(context.state, context.state, chance))
+                    for (action in order) {
+                        branches = branches.flatMap { parent ->
+                            LocalMoveImpactProjector.project(action, context.copy(state = parent.state, candidates = listOf(action)),
+                                BattleSide.ALLY, cache, parent.bodyState).map { it.copy(probability = it.probability * parent.probability) }
+                        }.groupBy { cache.fingerprints.keyOf(it.state) to cache.fingerprints.keyOf(it.bodyState) }.values.map { same ->
+                            same.first().copy(probability = same.sumOf { it.probability }) }
+                    }
+                    branches
+                }
+                if (paths.all { cache.fingerprints.keyOf(it.state) == cache.fingerprints.keyOf(it.bodyState) }) Score()
+                    else price(paths, candidate.actionId, context, cache, tuning)
             }
-            branches
         }
-        val joint = if (paths.all { cache.fingerprints.keyOf(it.state) == cache.fingerprints.keyOf(it.bodyState) }) Score()
-            else price(paths, candidate.actionId, context, cache, tuning)
         val independent = actions.map { score(it, context, tuning) ?: Score() }
         return Score(joint.total - independent.sumOf { it.total },
             joint.statStageUtility - independent.sumOf { it.statStageUtility }, joint.itemUtility - independent.sumOf { it.itemUtility })

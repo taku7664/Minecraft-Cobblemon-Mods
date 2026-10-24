@@ -2699,14 +2699,15 @@ internal object PublicSingleTurnProjector {
 
     /**
      * Merging chance branches keys every branch by its state, and a branch that survives one merge is
-     * keyed again at the next: the same state object had its key rebuilt as a string each time. Keys
-     * are remembered per object, per thread; the map is dropped whenever it grows past [FINGERPRINT_MEMO_LIMIT]
-     * so it never holds a search's worth of states.
+     * keyed again at the next. Keep this reuse within the active calculation: a worker must not
+     * retain boards from completed decisions until its thread exits or the memo fills.
      */
-    private val fingerprintMemo = ThreadLocal.withInitial { java.util.IdentityHashMap<BattleStateView, String>() }
+    private val fingerprintMemoOwner = Any()
 
     private fun fingerprint(state: BattleStateView): String {
-        val memo = fingerprintMemo.get()
+        val memo = jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope
+            .table(fingerprintMemoOwner) { java.util.IdentityHashMap<BattleStateView, String>() }
+            ?: return buildFingerprint(state)
         memo[state]?.let { return it }
         if (memo.size >= FINGERPRINT_MEMO_LIMIT) memo.clear()
         return buildFingerprint(state).also { memo[state] = it }

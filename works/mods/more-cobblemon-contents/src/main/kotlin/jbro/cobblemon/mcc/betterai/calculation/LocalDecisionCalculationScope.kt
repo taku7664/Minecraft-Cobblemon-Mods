@@ -11,6 +11,8 @@ internal object LocalDecisionCalculationScope {
 
     internal class Scope {
         val values = LinkedHashMap<List<Any?>, Any>()
+        internal val tables = java.util.IdentityHashMap<Any, MutableMap<*, *>>()
+        internal val releases = java.util.IdentityHashMap<Any, () -> Unit>()
         var hits = 0
         var misses = 0
     }
@@ -22,9 +24,25 @@ internal object LocalDecisionCalculationScope {
         val scope = Scope()
         active.set(scope)
         try { return block(scope) } finally {
+            scope.releases.values.forEach { it() }
+            scope.releases.clear()
+            scope.values.clear()
+            scope.tables.values.forEach { it.clear() }
+            scope.tables.clear()
             if (previous == null) active.remove() else active.set(previous)
         }
     }
+
+    /** Owner-specific caches die with this calculation, including exceptional exits. Outside a
+     * decision there is no useful identity reuse across calls, so callers compute without retaining.
+     */
+    internal fun onClose(owner: Any, release: () -> Unit) { active.get()?.releases?.set(owner, release) }
+
+    internal fun <K, V> table(owner: Any): MutableMap<K, V>? = table(owner) { HashMap() }
+
+    @Suppress("UNCHECKED_CAST")
+    internal fun <K, V> table(owner: Any, create: () -> MutableMap<K, V>): MutableMap<K, V>? =
+        active.get()?.tables?.getOrPut(owner, create) as? MutableMap<K, V>
 
     fun <T : Any> reuse(kind: String, vararg inputs: Any?, calculate: () -> T): T {
         val scope = active.get() ?: return calculate()

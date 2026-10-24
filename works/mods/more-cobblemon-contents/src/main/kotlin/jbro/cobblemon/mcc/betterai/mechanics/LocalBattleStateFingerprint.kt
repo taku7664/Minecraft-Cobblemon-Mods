@@ -62,6 +62,18 @@ internal class LocalBattleStateFingerprint {
         return Key(pieces)
     }
 
+    /** No cache key may keep a projected board alive after its owner has finished. */
+    fun clear() {
+        compactByIdentity.clear()
+        compactActionsByIdentity.clear()
+        compactWithoutHpByIdentity.clear()
+        byIdentity.clear()
+        actionInputsByIdentity.clear()
+        withoutHpByIdentity.clear()
+        pokemonByIdentity.clear()
+        evidenceByEvents.clear()
+    }
+
     private val byIdentity = IdentityHashMap<BattleStateView, String>()
     private val actionInputsByIdentity = IdentityHashMap<BattleStateView, String>()
     private val withoutHpByIdentity = IdentityHashMap<BattleStateView, String>()

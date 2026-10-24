@@ -327,8 +327,8 @@ internal object PublicBattleTacticalCalculator {
     /**
      * What a decision asks for again and again: the same candidate on the same board for the same side (each rule, the
      * exchange table, the lookahead read one move's rolls and facts in turn). The inputs are immutable, so the same
-     * objects - compared by identity, with the decision's tuning - give the same answer; kept a bounded few thousand,
-     * cleared when full (2026-10-20 profile: a third of both were repeats).
+     * objects - compared by identity, with the decision's tuning - give the same answer. The bounded tables
+     * belong to one decision and are cleared on its normal or exceptional exit; outside a scope nothing is retained.
      */
     private object Memo {
         class Key(val candidate: BattleActionCandidate, val context: BattleDecisionContext, val side: BattleSide, val observed: BattleStateView?) {
@@ -341,8 +341,8 @@ internal object PublicBattleTacticalCalculator {
         }
 
         class Table<T : Any> {
-            private val known = java.util.concurrent.ConcurrentHashMap<Key, java.util.Optional<T>>()
             fun get(key: Key, compute: () -> T?): T? {
+                val known = LocalDecisionCalculationScope.table<Key, java.util.Optional<T>>(this) ?: return compute()
                 known[key]?.let { return it.orElse(null) }
                 val value = compute()
                 if (known.size >= LIMIT) known.clear()

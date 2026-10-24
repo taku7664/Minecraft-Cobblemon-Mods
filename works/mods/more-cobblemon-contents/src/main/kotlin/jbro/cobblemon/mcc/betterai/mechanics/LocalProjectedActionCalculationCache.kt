@@ -29,7 +29,7 @@ import jbro.cobblemon.mcc.internal.ai.BattleOpponentMoveInferenceView
 internal class LocalProjectedActionCalculationCache(
     /** Shared with the search's own memo so a state is fingerprinted once per decision, not once per use. */
     val fingerprints: LocalBattleStateFingerprint = LocalBattleStateFingerprint(),
-) {
+) : AutoCloseable {
     private val byState = HashMap<LocalBattleStateFingerprint.Key, MutableMap<ActionKey, BattleDecisionContext>>()
 
     /** Whether the matchup exchanges scored with this cache read recovery moves (LocalDecisionTuning.matchupRecovery). */
@@ -290,6 +290,23 @@ internal class LocalProjectedActionCalculationCache(
         override fun equals(other: Any?): Boolean =
             this === other || other is CatalogKey && other.hash == hash && other.current == current && other.original == original &&
                 other.pools == pools && other.inferences == inferences
+    }
+
+    /** Release references at the last use rather than waiting for the surrounding decision. */
+    override fun close() {
+        byState.clear()
+        leafAttacks.clear()
+        leafMatchups.clear()
+        byStateIdentity.clear()
+        catalogKeys.clear()
+        slotActionsByInputs.clear()
+        matchupMoves.clear()
+        firstHitMoves.clear()
+        hpReadings.clear()
+        matchupEntries.clear()
+        forecastSeeds.clear()
+        actionHashes.clear()
+        fingerprints.clear()
     }
 
     companion object {
