@@ -82,14 +82,32 @@ internal object LocalActingChance {
                 it.battlePokemonId !in ignoring
         }.mapNotNull { foe ->
             val faced = LocalMatchupPosition.face(board, user, foe, calculationCache) ?: return@mapNotNull null
-            val plain = LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, calculationCache)
-            val max = LocalFoeDynamaxThreat.hits(context, board, user, foe, calculationCache)
-            val worstPlain = plain.maxByOrNull { it.score.knockoutChanceWithin(1) }
-            val worstMax = max.maxByOrNull { it.score.knockoutChanceWithin(1) }
             val options = intents?.firstOrNull { it.pokemonId == foe.battlePokemonId }?.options
             val usable = options?.takeIf { options ->
                 options.isNotEmpty() && options.all { it.probability.isFinite() && it.probability >= 0.0 } &&
                     options.sumOf { it.probability } > 0.0
+            }
+            val firstHitOnly = LocalActiveTuning.current().firstHitActingChance && !LocalActiveTuning.current().evolvingMatchups && usable != null
+            val (plain, max) = LocalHpMatchupAudit.actingRead {
+                if (firstHitOnly && usable!!.none { it.kind == IntentKind.ATTACK && it.probability > 0.0 }) {
+                    emptyList<LocalMatchupScoreCalculator.ScoredMove>() to emptyList()
+                } else {
+                    val hits = if (firstHitOnly) LocalMatchupScoreCalculator.firstHitMatchups(faced, foe.battlePokemonId, user.battlePokemonId, calculationCache)
+                        else LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, calculationCache)
+                    hits to LocalFoeDynamaxThreat.hits(context, board, user, foe, calculationCache, firstHitOnly)
+                }
+            }
+            val worstPlain by lazy(LazyThreadSafetyMode.NONE) {
+                LocalHpMatchupAudit.actingRead {
+                    (if (firstHitOnly) LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, calculationCache) else plain)
+                        .maxByOrNull { it.score.knockoutChanceWithin(1) }
+                }
+            }
+            val worstMax by lazy(LazyThreadSafetyMode.NONE) {
+                LocalHpMatchupAudit.actingRead {
+                    (if (firstHitOnly) LocalFoeDynamaxThreat.hits(context, board, user, foe, calculationCache) else max)
+                        .maxByOrNull { it.score.knockoutChanceWithin(1) }
+                }
             }
             if (usable == null) fallbackFoes++ else predictedFoes++
             val mass = usable?.sumOf { it.probability } ?: 1.0

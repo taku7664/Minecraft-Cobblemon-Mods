@@ -77,6 +77,7 @@ internal class LocalProjectedActionCalculationCache(
     private val catalogKeys = java.util.IdentityHashMap<BattlePublicActionCatalogView, CatalogKey>()
     private val slotActionsByInputs = HashMap<SlotActionsKey, List<BattleActionCandidate>>()
     private val matchupMoves = HashMap<MatchupMoveKey, List<ScoredMove>>()
+    private val firstHitMoves = HashMap<MatchupMoveKey, List<ScoredMove>>()
     internal data class HpReading(val calculated: BattleDecisionContext, val rawRolls: List<Double>, val accuracy: Double,
         val sourceHp: Double)
     private data class HpKey(val state: String, val action: Any, val target: UUID, val catalog: CatalogKey)
@@ -146,6 +147,23 @@ internal class LocalProjectedActionCalculationCache(
         return build().also {
             if (matchupMoves.size >= MAXIMUM_MATCHUP_ENTRIES) matchupMoves.clear()
             matchupMoves[key] = it
+        }
+    }
+
+    /** First-use readers share a completed full table, but never publish a short table as a full one. */
+    internal fun firstHitMoves(position: BattleDecisionContext, userId: UUID, targetId: UUID,
+        build: () -> List<ScoredMove>): List<ScoredMove> {
+        val tuning = LocalActiveTuning.current()
+        val key = MatchupMoveKey(fingerprints.of(position.state), userId, targetId,
+            catalogKey(position.publicActionCatalog), Identity(tuning), matchupRecovery)
+        matchupMoves[key]?.let {
+            jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit.firstHitFullCacheHit()
+            return it
+        }
+        firstHitMoves[key]?.let { return it }
+        return build().also {
+            if (firstHitMoves.size >= MAXIMUM_MATCHUP_ENTRIES) firstHitMoves.clear()
+            firstHitMoves[key] = it
         }
     }
 

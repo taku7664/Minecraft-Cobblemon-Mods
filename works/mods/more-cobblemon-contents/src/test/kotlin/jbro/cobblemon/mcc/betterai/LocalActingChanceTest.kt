@@ -14,6 +14,35 @@ import java.util.UUID
 
 class LocalActingChanceTest {
     @Test
+    fun `first hit option preserves acting probability and trace including unresolved intent fallback`() {
+        val tuning = jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT
+        for (f in listOf(fixture(), fixture(accuracy = 73.0), fixture(ownPriority = 1), fixture(foeStatus = "par"),
+            fixture(lightAttack = true), fixture(foeMove = "superpower"), fixture(foeMove = "suckerpunch"))) {
+            for (max in listOf(false, true)) for (kind in listOf("known", "unknown", "status", "missing")) {
+                val intents = when (kind) {
+                    "missing" -> null
+                    "status" -> listOf(f.option(IntentKind.STATUS, 1.0))
+                    "unknown" -> listOf(f.option(IntentKind.ATTACK, 0.7, "unresolved"), f.option(IntentKind.SWITCH, 0.3))
+                    else -> listOf(f.option(IntentKind.ATTACK, 0.7), f.option(IntentKind.PROTECT, 0.3))
+                }?.let { listOf(OpponentIntent(f.foe.battlePokemonId, 0, it)) }
+                val board = f.context.withDynamaxInBattle(max)
+                fun read(enabled: Boolean): Pair<Double, Map<String, Map<String, Double>>> {
+                    LocalDecisionInternals.begin()
+                    try {
+                        val value = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(tuning.copy(firstHitActingChance = enabled)) {
+                            LocalActingChance.of(f.action, board, scores, intents = intents)
+                        }
+                        return value to LocalDecisionInternals.take()
+                    } finally { LocalDecisionInternals.clear() }
+                }
+                val before = read(false); val after = read(true)
+                assertEquals(before.first.toBits(), after.first.toBits(), "$kind/max=$max/${f.foeMove}")
+                assertEquals(before.second, after.second, "$kind/max=$max/${f.foeMove}")
+            }
+        }
+    }
+
+    @Test
     fun `joint turns reuse an identical part while replaying each candidates evidence`() {
         val f = fixture()
         val partner = mon(BattleSide.ALLY, 100).copyState(activeSlot = 1)

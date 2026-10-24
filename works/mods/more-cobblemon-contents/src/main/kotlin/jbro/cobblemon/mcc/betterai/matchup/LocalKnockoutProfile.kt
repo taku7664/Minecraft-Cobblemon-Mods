@@ -91,6 +91,7 @@ internal class LocalKnockoutProfile private constructor(
             if (targetHp <= 0.0 || hit <= 0.0 || rollsByHits.first().isEmpty() || rollsByHits.first().average() <= 0.0) {
                 return of(rollsByHits.first(), accuracy, targetHp, maximumUses)
             }
+            LocalHpMatchupAudit.profileComputed(maximumUses)
             val steps = rollsByHits.map { rolls -> rolls.map { floor(it / targetHp * GRID).toInt().coerceIn(0, GRID) } }
             // standing[k][taken]: still up, having taken that much from k landed uses.
             var standing = Array(maximumUses + 1) { DoubleArray(GRID) }.also { if (firstHitLimit == null) it[0][0] = 1.0 }
@@ -209,6 +210,7 @@ internal class LocalKnockoutProfile private constructor(
             if (hit <= 0.0 || meanRoll <= 0.0) {
                 return LocalKnockoutProfile(List(maximumUses + 1) { 1.0 }, List(maximumUses + 1) { 0.0 }, Double.POSITIVE_INFINITY)
             }
+            LocalHpMatchupAudit.profileComputed(maximumUses)
             val steps = rolls.map { floor(it / targetHp * GRID).toInt().coerceIn(0, GRID) }
             val perRoll = hit / rolls.size
             var standing = DoubleArray(GRID).also { it[0] = 1.0 }

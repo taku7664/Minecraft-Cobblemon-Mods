@@ -34,17 +34,20 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
                 .create(x, 62, 146, 20, text("fixed_hp")) { _, enabled -> update { it.copy(simpleFixedHpReactions = enabled) } }
                 .also { it.setTooltip(Tooltip.create(text("fixed_hp_help"))) })
             addRenderableWidget(CycleButton.onOffBuilder(settings.simplePoisonEvaluation)
-                .create(x, 88, 146, 20, text("poison")) { _, enabled -> update { it.copy(simplePoisonEvaluation = enabled) } }
+                .create(x, 86, 146, 20, text("poison")) { _, enabled -> update { it.copy(simplePoisonEvaluation = enabled) } }
                 .also { it.setTooltip(Tooltip.create(text("poison_help"))) })
             addRenderableWidget(CycleButton.onOffBuilder(settings.simpleHpMatchups)
-                .create(x, 114, 146, 20, text("matchup")) { _, enabled -> update { it.copy(simpleHpMatchups = enabled) } }
+                .create(x, 110, 146, 20, text("matchup")) { _, enabled -> update { it.copy(simpleHpMatchups = enabled) } }
                 .also { it.setTooltip(Tooltip.create(text("matchup_help"))) })
             addRenderableWidget(CycleButton.onOffBuilder(settings.simpleForecastMatchups)
-                .create(x, 140, 146, 20, text("forecast")) { _, enabled -> update { it.copy(simpleForecastMatchups = enabled) } }
+                .create(x, 134, 146, 20, text("forecast")) { _, enabled -> update { it.copy(simpleForecastMatchups = enabled) } }
                 .also { it.setTooltip(Tooltip.create(text("forecast_help").copy().append("\n\n").append(text("scope")))) })
             addRenderableWidget(CycleButton.onOffBuilder(settings.skipUnusedStatusMatchups)
-                .create(x, 166, 146, 20, text("unused_status")) { _, enabled -> update { it.copy(skipUnusedStatusMatchups = enabled) } }
+                .create(x, 158, 146, 20, text("unused_status")) { _, enabled -> update { it.copy(skipUnusedStatusMatchups = enabled) } }
                 .also { it.setTooltip(Tooltip.create(text("unused_status_help"))) })
+            addRenderableWidget(CycleButton.onOffBuilder(settings.firstHitActingChance)
+                .create(x, 182, 146, 20, text("first_hit")) { _, enabled -> update { it.copy(firstHitActingChance = enabled) } }
+                .also { it.setTooltip(Tooltip.create(text("first_hit_help"))) })
         }
         addRenderableWidget(Button.builder(Component.translatable("gui.done")) {
             try { LocalOptimizationConfigStore.save(path, config); onClose() } catch (_: Exception) { failed = true }
@@ -59,7 +62,7 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
         graphics.drawCenteredString(font, title, width / 2, 28, 0xFFFFFF)
         graphics.drawCenteredString(font, text("single"), width / 2 - 77, 48, 0xFFFFFF)
         graphics.drawCenteredString(font, text("double"), width / 2 + 77, 48, 0xFFFFFF)
-        var y = 196
+        var y = 212
         for (key in listOf("scope")) {
             font.split(text(key), (width - 48).coerceAtLeast(100)).take(((height - 60 - y) / 12).coerceAtLeast(0)).forEach {
                 graphics.drawString(font, it, 24, y, 0xCCCCCC); y += 12
