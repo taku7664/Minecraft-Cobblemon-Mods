@@ -23,13 +23,14 @@ class LocalOptimizationConfigTest {
     @Test fun `each option and battle format are independent`() {
         val config=LocalOptimizationConfig(
             single=LocalOptimizationSettings(simplePoisonEvaluation=true,poisonEvaluationTurns=3),
-            double=LocalOptimizationSettings(simpleHpMatchups=true,simpleFixedHpReactions=true,simpleForecastMatchups=true))
+            double=LocalOptimizationSettings(simpleHpMatchups=true,simpleFixedHpReactions=true,simpleForecastMatchups=true,skipUnusedStatusMatchups=true))
         LocalOptimizationConfigStore.save(path,config)
         val loaded=LocalOptimizationConfigStore.loadOrCreate(path)
         assertEquals(config,loaded)
         val single=loaded.applyTo(base,BattleFormat.SINGLE);val double=loaded.applyTo(base,BattleFormat.DOUBLE)
         assertEquals(3,single.poisonEvaluationTurns);assertFalse(single.simpleHpMatchups);assertFalse(single.simpleFixedHpReactions)
         assertFalse(single.simpleForecastMatchups);assertTrue(double.simpleForecastMatchups)
+        assertFalse(single.skipUnusedStatusMatchups);assertTrue(double.skipUnusedStatusMatchups)
         assertNull(double.poisonEvaluationTurns);assertTrue(double.simpleHpMatchups);assertTrue(double.simpleFixedHpReactions)
         LocalOptimizationConfigStore.save(path,LocalOptimizationConfig())
         assertTrue(double.simpleHpMatchups)
@@ -50,7 +51,7 @@ class LocalOptimizationConfigTest {
         assertTrue(saved.contains("futureOption"));assertTrue(saved.contains("other"))
     }
     @Test fun `malformed options and formats are rejected without overwriting`() {
-        for(invalid in listOf("""{"double":{"simpleForecastMatchups":"true"}}""", """{"single":{"simpleHpMatchups":"true"}}""", """{"double":false}""",
+        for(invalid in listOf("""{"double":{"skipUnusedStatusMatchups":"true"}}""", """{"double":{"simpleForecastMatchups":"true"}}""", """{"single":{"simpleHpMatchups":"true"}}""", """{"double":false}""",
             """{"poisonEvaluationTurns":0}""","""{"double":{"poisonEvaluationTurns":2.5}}""")) {
             Files.writeString(path,invalid)
             assertThrows(Exception::class.java) {LocalOptimizationConfigStore.loadOrCreate(path)}

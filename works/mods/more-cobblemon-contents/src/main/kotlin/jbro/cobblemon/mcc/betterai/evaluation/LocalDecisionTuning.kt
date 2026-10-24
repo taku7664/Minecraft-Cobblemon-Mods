@@ -204,6 +204,8 @@ internal data class LocalDecisionTuning(
     val simpleHpMatchups: Boolean = false,
     /** Approximate only long-term sweep/stop forecasts; current-action marginal ranks stay exact. */
     val simpleForecastMatchups: Boolean = false,
+    /** Skip baseline exchanges when no status effect is evaluated; formulas stay unchanged. */
+    val skipUnusedStatusMatchups: Boolean = false,
     /** Poison-only HP/KO horizon; null retains the evolving team-exchange evaluation for ablation. */
     val poisonEvaluationTurns: Int? = null,
     /**

@@ -1,4 +1,6 @@
 {
+  "config.more_cobblemon_contents.betterai.unused_status": "Skip unused status exchanges",
+  "config.more_cobblemon_contents.betterai.unused_status_help": "Skip post-hit and partner exchanges when no status effect is evaluated. Existing score formulas are unchanged.",
   "config.more_cobblemon_contents.betterai.forecast_help": "Estimate future sweeps and stops from damage ratios and expected turns. Current-action rank formulas are unchanged. Scores and choices may change.",
   "config.more_cobblemon_contents.betterai.forecast": "Simple forecasts",
   "config.more_cobblemon_contents.betterai.double": "Doubles",

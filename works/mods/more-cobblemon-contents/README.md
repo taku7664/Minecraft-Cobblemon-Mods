@@ -49,6 +49,7 @@ UI 키트는 본체 JAR에 포함돼 있으므로 MCC용 UI 키트를 별도로 
 - `config/more-cobblemon-contents/hub_tabs.json`: `/mcc`와 각 터미널에 표시할 탭, 허브 명령어 권한.
 - `config/more-cobblemon-contents/wiki.json`: 서버 위키 연동 설정.
 - `config/more-cobblemon-contents/betterai-optimizations.json`: `single`와 `double` 객체에서 각 최적화를 독립적으로 켜고 끕니다. 모든 기본값은 `false`입니다. Mod Menu에서도 싱글·더블을 따로 설정합니다. 다음 새 전투부터 읽으며 진행 중인 전투는 시작할 때의 설정을 유지합니다. 잘못된 파일은 덮어쓰지 않고 새 전투의 최적화를 끕니다. 재시작이나 `/reload`는 필요 없습니다. 구형 최상위 옵션은 별도 모드 설정이 없는 모드에 이전과 같이 적용되며, 저장하면 두 모드로 분리됩니다.
+  - `skipUnusedStatusMatchups`: 평가할 변화기 효과가 없을 때 피격 후·더블 파트너 대면 재계산을 생략합니다. 평가 대상 판정과 점수식은 기존 경로를 공유합니다. 싱글·더블 각각 기본 `false`입니다.
   - `simpleFixedHpReactions`: 독립적인 생구 HP 반응을 간단 계산합니다. 복합 반응·반동사 등은 기존 계산을 유지합니다.
   - `simplePoisonEvaluation`: 독·맹독의 장기 대면 평가를 단기 HP·KO 평가로 바꿉니다. 각 모드의 `poisonEvaluationTurns`는 1~8턴이며 기본값은 2입니다.
   - `simpleHpMatchups`: HP만 바뀐 판에서 HP와 무관한 기존 피해를 재사용하고 새 남은 HP 상한을 적용합니다. 이때 전술 계산·피해 롤 계산을 생략합니다. HP 의존 효과, 스크립트 기술, 연속기 등은 기존 경로를 사용합니다. KO 누적표·교환 승률·랭크 점수식은 유지합니다.

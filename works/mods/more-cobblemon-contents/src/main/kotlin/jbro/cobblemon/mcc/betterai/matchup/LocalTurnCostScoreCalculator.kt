@@ -50,12 +50,33 @@ internal object LocalTurnCostScoreCalculator {
             if (it.battlePokemonId != user.battlePokemonId) it
             else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
         })
-        val afterMiss = exchange(position, worn, user.battlePokemonId, target.battlePokemonId, cache) ?: return emptyList()
         // In doubles the target threatens the partner too, which the move helps without spending its turn.
         val partner = if (state.format != BattleFormat.DOUBLE || target.side == user.side) null else state.pokemon.firstOrNull {
             it.side == user.side && it.battlePokemonId != user.battlePokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }
-        val partnerBefore = partner?.let { exchange(position, state, it.battlePokemonId, target.battlePokemonId, cache) }
+        var prepared = false
+        var afterMiss: Double? = null
+        var partnerBefore: Double? = null
+        fun prepareExchanges(): Boolean {
+            if (!prepared) {
+                prepared = true
+                LocalHpMatchupAudit.statusPrepared()
+                afterMiss = LocalHpMatchupAudit.statusExchange {
+                    exchange(position, worn, user.battlePokemonId, target.battlePokemonId, cache)
+                }
+                if (afterMiss != null) partnerBefore = partner?.let {
+                    LocalHpMatchupAudit.statusExchange {
+                        exchange(position, state, it.battlePokemonId, target.battlePokemonId, cache)
+                    }
+                }
+            }
+            return afterMiss != null
+        }
+        LocalHpMatchupAudit.statusVisit()
+        // Defer only the unused baseline exchanges. The effect eligibility and scoring stay shared.
+        if (!jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().skipUnusedStatusMatchups && !prepareExchanges()) {
+            return emptyList()
+        }
         val side = user.side
         val hypotheses = side == BattleSide.OPPONENT
         return cache.slotActions(state, side, position.publicActionCatalog, hypotheses) {
@@ -77,15 +98,18 @@ internal object LocalTurnCostScoreCalculator {
                 val applied = applyEffects(worn, effects, user.battlePokemonId, target,
                     LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, placedUser, target, state),
                     LocalPublicAbilityMechanics.ignoresTargetAbility(candidate, placedUser, null, state)) ?: return@mapNotNull null
+                if (!prepareExchanges()) return@mapNotNull null
+                val missed = checkNotNull(afterMiss)
+                val partnerBase = partnerBefore
                 // A move that cannot land does no more than a miss.
                 val nullified = LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified
                 val landed = if (nullified) worn else applied
-                val afterLanding = if (landed === worn) afterMiss
+                val afterLanding = if (landed === worn) missed
                     else exchange(position, landed, user.battlePokemonId, target.battlePokemonId, cache) ?: return@mapNotNull null
-                val partnerGain = if (partner == null || partnerBefore == null || landed === worn) 0.0
-                    else (exchange(position, landed, partner.battlePokemonId, target.battlePokemonId, cache) ?: partnerBefore) - partnerBefore
+                val partnerGain = if (partner == null || partnerBase == null || landed === worn) 0.0
+                    else (exchange(position, landed, partner.battlePokemonId, target.battlePokemonId, cache) ?: partnerBase) - partnerBase
                 val accuracy = (details.accuracy / 100.0).coerceIn(0.0, 1.0).takeIf { it > 0.0 } ?: 1.0
-                val expected = survives * (accuracy * afterLanding + (1.0 - accuracy) * afterMiss) - (1.0 - survives) +
+                val expected = survives * (accuracy * afterLanding + (1.0 - accuracy) * missed) - (1.0 - survives) +
                     accuracy * partnerGain
                 StatusMoveMatchupScore(
                     userId = user.battlePokemonId,
@@ -95,7 +119,7 @@ internal object LocalTurnCostScoreCalculator {
                     survivesTurn = survives,
                     before = base.score,
                     afterLanding = afterLanding,
-                    afterMiss = afterMiss,
+                    afterMiss = missed,
                     score = (expected - base.score).coerceIn(-1.0, 1.0),
                     partnerGain = partnerGain,
                 )
