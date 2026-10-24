@@ -3,10 +3,33 @@ package jbro.cobblemon.mcc.betterai
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.PublicBattleTacticalCalculator
+import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 
 class LocalAcrobaticsPowerProjectionTest {
+    @Test
+    fun `unknown opponent item does not grant the itemless power bonus`() {
+        val board = state()
+        val foe = board.pokemon.single { it.side == BattleSide.OPPONENT }
+        val own = board.pokemon.single { it.side == BattleSide.ALLY }
+        for ((item, power) in listOf(null to 55, "cobblemon:sitrus_berry" to 55, "" to 110)) {
+            val actor = foe.copyState(knownHeldItemId = item)
+            assertEquals(setOf(power), requireNotNull(LocalPublicMoveDamageInputs.resolve(acrobatics(), actor, own, board)).powers)
+        }
+    }
+
+    @Test
+    fun `Sitrus Berry keeps power 55 until it is consumed`() {
+        val held = state(allyAbility = "unburden", allyItem = "cobblemon:sitrus_berry")
+        val empty = held.derive(pokemon = held.pokemon.map {
+            if (it.side == BattleSide.ALLY) it.copyState(knownHeldItemId = "") else it
+        })
+        assertEquals(damage(held, fixedPower(55)), damage(held, acrobatics()))
+        assertEquals(damage(empty, fixedPower(110)), damage(empty, acrobatics()))
+    }
+
     @Test
     fun `acrobatics doubles only when the held-item slot is empty`() {
         assertEquals(
