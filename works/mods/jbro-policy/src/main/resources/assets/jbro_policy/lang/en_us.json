@@ -100,6 +100,8 @@
   "message.jbro_policy.spawn_for.rank": "%1$s is below the %2$s League rank and cannot catch it.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: natural Legendary and Mythical spawns",
+  "pack.jbro_policy.end_spawns": "jbro Policy: extra wild spawns in the End",
+  "bucket.cobblenav.legendary": "legendary",
   "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: no IV candy crafting; six XS Exp. Candies",
   "pack.jbro_policy.no_ability_patch": "jbro Policy: no Ability Patch recipe",
 

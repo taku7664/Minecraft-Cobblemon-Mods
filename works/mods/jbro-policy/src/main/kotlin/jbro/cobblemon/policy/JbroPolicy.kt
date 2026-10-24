@@ -82,7 +82,7 @@ object JbroPolicy : ModInitializer {
         val mod = FabricLoader.getInstance().getModContainer(MOD_ID).orElseThrow()
         // Keep the legacy candy pack ID so existing worlds retain their activation setting.
         // Block IV candy recipes and yield six XS candies; other experience candy recipes use Cobblemon defaults.
-        for (pack in listOf("legendary_spawns", "no_stat_candy_l_xl", "no_ability_patch")) {
+        for (pack in listOf("legendary_spawns", "end_spawns", "no_stat_candy_l_xl", "no_ability_patch")) {
             ResourceManagerHelper.registerBuiltinResourcePack(id(pack), mod,
                 Component.translatable("pack.$MOD_ID.$pack"), ResourcePackActivationType.DEFAULT_ENABLED)
         }
