@@ -209,6 +209,7 @@ object BattleDeclarativeMoveEffects {
             requirements = requirements,
             mechanicFlags = buildSet {
                 addAll(flags.filterValues(::flagEnabled).keys)
+                if (stringValue(properties["selfSwitch"]) == "copyvolatile") add("passes_stat_stages")
                 if (usesSharedStallCheck) add(STALLING_MOVE_FLAG)
                 if (advancesSharedStallCounter) add(STALL_COUNTER_ADVANCE_FLAG)
                 canonicalStat(properties["overrideDefensiveStat"])?.let {

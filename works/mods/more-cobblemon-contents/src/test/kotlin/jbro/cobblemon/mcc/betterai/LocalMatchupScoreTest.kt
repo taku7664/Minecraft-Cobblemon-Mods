@@ -21,6 +21,67 @@ import org.junit.jupiter.api.Test
 
 class LocalMatchupScoreTest {
     @Test
+    fun `rank transfer is read from move data rather than assumed for every pivot`() {
+        assertTrue("passes_stat_stages" in BattleShowdownMoveEffects.flags("batonpass"))
+        assertFalse("passes_stat_stages" in BattleShowdownMoveEffects.flags("uturn"))
+        assertFalse("passes_stat_stages" in BattleShowdownMoveEffects.flags("shedtail"))
+    }
+
+    @Test
+    fun `switch rank value prices useful boosts and clearing drops without a price per stage`() {
+        val base = context(150, 100, allyPower = 40.0, foePower = 20.0, secondFoe = true)
+        fun loss(stages: Map<String, Int>): Double {
+            val c = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+                if (it.battlePokemonId == ALLY) it.copyState(statStages = stages) else it }))
+            return jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRankValue.loss(c, c.state.pokemon.first { it.battlePokemonId == ALLY })
+        }
+        assertEquals(0.0, loss(emptyMap()), 1e-9)
+        assertEquals(0.0, loss(mapOf("special_attack" to 4)), 1e-9)
+        assertTrue(loss(mapOf("attack" to 2)) > 0.0)
+        assertTrue(loss(mapOf("attack" to -2)) < 0.0)
+    }
+
+    @Test
+    fun `the current foe rank advantage is not charged again as reserve value`() {
+        val base = context(150, 100, allyPower = 40.0, foePower = 20.0)
+        val c = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+            if (it.battlePokemonId == ALLY) it.copyState(statStages = mapOf("attack" to 4)) else it }))
+        assertEquals(0.0, jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRankValue.loss(c,
+            c.state.pokemon.first { it.battlePokemonId == ALLY }), 1e-9)
+    }
+
+    @Test
+    fun `a pivot keeps a negative exchange instead of flooring the loss away`() {
+        val c = context(150, 100, allyPower = 300.0, benchPower = 40.0, foePower = 65.0, allyExtra = listOf(uturn()))
+        val scores = LocalMatchupScoreCalculator.calculate(c)
+        val j = LocalSwitchRules.judge(listOf(pivotAction(c), switchAction()), c, scores)
+        assertTrue(j.adjustments.getValue("pivot") < 0.0)
+    }
+
+    @Test
+    fun `hard switch and pivot use the same rank loss and record the whole exchange arithmetic`() {
+        val base = context(150, 100, allyPower = 40.0, benchPower = 80.0, foePower = 20.0,
+            secondFoe = true, allyExtra = listOf(uturn()))
+        val c = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+            if (it.battlePokemonId == ALLY) it.copyState(statStages = mapOf("attack" to 2)) else it }))
+        val scores = LocalMatchupScoreCalculator.calculate(c)
+        val internals = jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals
+        internals.begin()
+        try {
+            val j = LocalSwitchRules.judge(listOf(attackAction(), pivotAction(c), switchAction()), c, scores)
+            val readings = internals.take()
+            val hard = readings.getValue("switch:switch")
+            val pivot = readings.getValue("pivot:pivot")
+            assertTrue(hard.getValue("rankLoss") > 0.0)
+            assertEquals(hard.getValue("rankLoss"), pivot.getValue("rankLoss"), 1e-9)
+            assertEquals(hard.getValue("switchGoesOn") - hard.getValue("stayGoesOn") + hard.getValue("kept") -
+                hard.getValue("reentryHpLoss") - hard.getValue("rankLoss") / 100.0, hard.getValue("gain"), 1e-9)
+            assertEquals((pivot.getValue("switchValue") - pivot.getValue("stayValue")) * 100.0 - pivot.getValue("rankLoss"),
+                j.adjustments.getValue("pivot"), 1e-9)
+        } finally { internals.clear() }
+    }
+
+    @Test
     fun `virtual entry reuse retains hazard and ability results and the callers decision fields`() {
         val base = context(150, 100, rocksOnAllySide = true, secondFoe = true)
         val bench = base.state.pokemon.first { it.battlePokemonId == BENCH }

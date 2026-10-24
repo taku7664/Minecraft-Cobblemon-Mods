@@ -28,8 +28,10 @@ import jbro.cobblemon.mcc.internal.ai.BattleStateView
  * So does the one a pivot brings in once the opponent has moved; before that, it takes the hit. Such a
  * replacement (a pivot's, an Eject Button's) is asked for mid-turn, with the one leaving still standing.
  *
- * A pivot (U-turn, Volt Switch, Parting Shot) is a switch that also acts: credited like a clearly better
- * switch into the best Pokemon behind it, whose entry is free with the chance the pivot moves second.
+ * A pivot (U-turn, Volt Switch, Parting Shot) is a switch that also acts: its signed exchange with
+ * the best Pokemon behind it, whose entry is free with the chance the pivot moves second.
+ * Both kinds of switch also lose the outgoing Pokemon's reserve rank value (LocalSwitchRankValue).
+ * The field matchup already compares with its present stages, so that advantage is not charged twice.
  * - `pivot_switch_in_dies` (ruled out): the pivot likely moves first and nobody behind it survives the hit
  *   coming in, unless the user is a sacrifice's keeper (about to be knocked out and worth more than the cheapest
  *   one behind it). A direct switch had this check and a pivot did not: a U-turn brought in a teammate at 30% and
@@ -133,6 +135,11 @@ internal object LocalSwitchRules {
         val sacrifices = linkedSetOf<String>()
         val voluntarySlots = linkedMapOf<String, MutableSet<Int?>>()
         val uncreditedGains = linkedMapOf<String, Double>()
+        val rankCache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+        val rankLosses = HashMap<java.util.UUID, Double>()
+        fun rankLoss(user: BattlePokemonStateView) = rankLosses.getOrPut(user.battlePokemonId) {
+            LocalSwitchRankValue.loss(context, user, rankCache)
+        }
         val bench = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0 }
         // An sweeper that should retreat, by its sweep score; worked out once per Pokemon.
         // Each Pokemon's worth, the knockout price's (LocalKnockoutWorth): what a sacrifice gives away.
@@ -169,7 +176,9 @@ internal object LocalSwitchRules {
                 if (part.kind == BattleActionKind.USE_MOVE && pivots(part)) {
                     val user = active(state, part.actorSlot) ?: continue
                     if (pivotBringsInKnockout(part, user, opponents, state, switchScores)) exclusions[candidate.actionId] = PIVOT_SWITCH_IN_DIES
-                    adjustment += pivot(part, user, opponents, state, switchScores)
+                    val passesRanks = "passes_stat_stages" in
+                        jbro.cobblemon.mcc.internal.ai.BattleShowdownMoveEffects.flags(part.moveId)
+                    adjustment += pivot(part, user, opponents, state, switchScores, if (passesRanks) 0.0 else rankLoss(user))
                     continue
                 }
                 if (part.kind != BattleActionKind.SWITCH) continue
@@ -185,7 +194,7 @@ internal object LocalSwitchRules {
                     replacementValues[part.actionId] = midTurnEntry(incoming, replaced, opponents, state, switchScores) ?: continue
                     continue
                 }
-                val verdict = voluntary(incoming, replaced, opponents, switchScores, ::retreats, worths, bench, foeSwitchChances, ::afterHit, ::fallsAtTurnEnd, standings, part.actionId, context) ?: continue
+                val verdict = voluntary(incoming, replaced, opponents, switchScores, ::retreats, worths, bench, foeSwitchChances, ::afterHit, ::fallsAtTurnEnd, standings, part.actionId, context, rankLoss(replaced)) ?: continue
                 verdict.exclusion?.let { exclusions[candidate.actionId] = it }
                 if (verdict.sacrifice) sacrifices += candidate.actionId
                 voluntarySlots.getOrPut(candidate.actionId) { linkedSetOf() } += part.actorSlot
@@ -242,6 +251,7 @@ internal object LocalSwitchRules {
         standings: Map<java.util.UUID, Double> = emptyMap(),
         actionId: String,
         context: BattleDecisionContext,
+        rankLoss: Double,
     ): Verdict? {
         val byFoe = opponents.mapNotNull { foe -> scores.switchIn(incoming.battlePokemonId, foe.battlePokemonId, replaced.battlePokemonId)?.let { foe to it } }
         val entries = byFoe.map { it.second }
@@ -334,7 +344,7 @@ internal object LocalSwitchRules {
         val standingKept = standings[replaced.battlePokemonId] ?: (leavingWorth ?: 0.0) * living
         val standingLost = standings[incoming.battlePokemonId] ?: (incomingWorth ?: 0.0) * living
         val kept = if (freeAfter == null) 0.0 else falls * standingKept - (1.0 - survival) * standingLost
-        val gain = switchGoesOn - stayGoesOn + kept - reentryHpLoss
+        val gain = switchGoesOn - stayGoesOn + kept - reentryHpLoss - rankLoss / SCORE_SCALE
         jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("switch:$actionId", mapOf(
             "entryFaints" to if (entries.any { it.entryFaints }) 1.0 else 0.0,
             "entryHp" to entries.map { it.hpAfterEntry }.average(),
@@ -345,7 +355,7 @@ internal object LocalSwitchRules {
             "falls" to falls, "fallsFirst" to fallsFirst, "freeAfter" to (freeAfter ?: 0.0),
             "freeAfterIncoming" to (freeAfterIncoming ?: 0.0), "switchGoesOn" to switchGoesOn,
             "stayGoesOn" to stayGoesOn, "standingKept" to standingKept, "standingLost" to standingLost,
-            "kept" to kept, "gain" to gain,
+            "kept" to kept, "rankLoss" to rankLoss, "gain" to gain,
         ))
         if (gain >= SWITCH_MARGIN) adjustment += gain * SCORE_SCALE
         if (retreat > 0.0 && survival >= SURVIVAL_PASS) adjustment += retreat * SCORE_SCALE
@@ -395,13 +405,14 @@ internal object LocalSwitchRules {
         }
     }
 
-    /** A pivot's credit: the best switch behind it, entering free with the chance the pivot moves second. */
+    /** A pivot's signed exchange, including the reserve rank value it clears. */
     private fun pivot(
         move: BattleActionCandidate,
         user: BattlePokemonStateView,
         opponents: List<BattlePokemonStateView>,
         state: BattleStateView,
         scores: MatchupScores,
+        rankLoss: Double,
     ): Double {
         val stayValue = opponents.mapNotNull { scores.pokemon(user.battlePokemonId, it.battlePokemonId)?.score }.averageOrNull() ?: return 0.0
         val bench = state.pokemon.filter { it.side == BattleSide.ALLY && it.activeSlot == null && !it.fainted && it.hpFraction > 0.0 }
@@ -413,8 +424,10 @@ internal object LocalSwitchRules {
                 first * hit + (1.0 - first) * free
             }.averageOrNull()
         }.maxOrNull() ?: return 0.0
-        val gain = best - stayValue
-        return if (gain >= SWITCH_MARGIN) gain * SCORE_SCALE else 0.0
+        val value = (best - stayValue) * SCORE_SCALE - rankLoss
+        jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("pivot:${move.actionId}", mapOf(
+            "switchValue" to best, "stayValue" to stayValue, "rankLoss" to rankLoss, "value" to value))
+        return value
     }
 
     /** A mid-turn replacement: free against an opponent that has moved this turn, under its hit otherwise. */
