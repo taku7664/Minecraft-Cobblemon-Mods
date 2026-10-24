@@ -1348,6 +1348,30 @@ class LocalMatchupScoreTest {
         }
     }
 
+    @Test
+    fun `simple status continuation bypasses all pair recalculation and respects blocked effects`() {
+        for (format in BattleFormat.entries) {
+            val wisp = BattlePublicMoveOptionView("willowisp", BattleMoveCandidateView("fire", BattleMoveDamageCategory.STATUS,
+                0.0, 85.0, 0, 10, effects = BattleShowdownMoveEffects.resolve("willowisp")), BattlePublicMoveKnowledge.EXACT_OWN)
+            val board = context(100, 120, allyPower = 65.0, foePower = 65.0, allyExtra = listOf(wisp),
+                format = format, benchActive = format == BattleFormat.DOUBLE, secondFoe = true, secondFoeActive = format == BattleFormat.DOUBLE)
+            val table = LocalMatchupScoreCalculator.calculate(board)
+            val audit = jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit
+            val user = board.state.pokemon.first { it.battlePokemonId == ALLY }; val foe = board.state.pokemon.first { it.battlePokemonId == FOE }
+            audit.begin()
+            val values = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT.copy(simpleStatusMatchups = true)) {
+                jbro.cobblemon.mcc.betterai.matchup.LocalTurnCostScoreCalculator.statusMoves(board, user, foe, table,
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache())
+            }
+            val work = audit.take()
+            assertEquals(1, values.size); assertTrue(values.single().score.isFinite())
+            assertEquals(0, work.statusExchanges); assertEquals(0, work.statusTacticalCalls); assertEquals(0, work.statusRollCalculations)
+            assertTrue(work.simpleStatusExchanges >= 2)
+            // Target-specific status eligibility can visit both doubles targets, but never calculates attack rolls.
+            assertEquals(0, work.rollCalculations)
+        }
+    }
+
     private fun healingIntent(chance: Double) = listOf(jbro.cobblemon.mcc.betterai.matchup.OpponentIntent(FOE, 0,
         listOf(jbro.cobblemon.mcc.betterai.matchup.IntentOption(jbro.cobblemon.mcc.betterai.matchup.IntentKind.ATTACK,
             "psychicnoise", ALLY, null, 0.0, chance))))

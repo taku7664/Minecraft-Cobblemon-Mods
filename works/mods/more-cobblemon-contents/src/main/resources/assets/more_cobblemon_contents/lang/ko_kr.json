@@ -169,5 +169,9 @@
   "screen.more_cobblemon_contents.dashboard.format.double_normal": "더블 · 일반",
   "modmenu.nameTranslation.more_cobblemon_contents": "More Cobblemon Contents Core",
   "modmenu.descriptionTranslation.more_cobblemon_contents": "Cobblemon 전투 콘텐츠의 공통 기반 모드입니다. 관리 전투, 내장 전술 AI, BP·상점·기록, 배틀 허브와 홀로그램 터미널을 제공하며 콘텐츠는 별도 애드온으로 추가합니다.",
-  "screen.more_cobblemon_contents.versus.tournament": "챔피언컵"
+  "screen.more_cobblemon_contents.versus.tournament": "챔피언컵",
+  "config.more_cobblemon_contents.betterai.simple_status": "상태기 대면 단순화",
+  "config.more_cobblemon_contents.betterai.simple_status_help": "기존 대표 공격을 고정하고 배율·평균 피해·필요 타격 수로 후속 대면을 계산합니다. 기술 재선택과 장기 KO 분포를 생략하므로 점수와 선택이 바뀔 수 있습니다.",
+  "config.more_cobblemon_contents.betterai.simple_acting": "행동 확률 단순화",
+  "config.more_cobblemon_contents.betterai.simple_acting_help": "기존 피해 구간을 상대 슬롯별 낮은 피해·높은 피해 두 대표 구간으로 합칩니다. 정밀 공격 재계산과 선택 조합 전개를 생략하며 두 공격 합산 KO는 유지합니다. 점수와 선택이 바뀔 수 있습니다."
 }

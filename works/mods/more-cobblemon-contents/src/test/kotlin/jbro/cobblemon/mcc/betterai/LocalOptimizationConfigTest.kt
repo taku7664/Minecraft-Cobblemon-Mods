@@ -23,7 +23,7 @@ class LocalOptimizationConfigTest {
     @Test fun `each option and battle format are independent`() {
         val config=LocalOptimizationConfig(
             single=LocalOptimizationSettings(simplePoisonEvaluation=true,poisonEvaluationTurns=3),
-            double=LocalOptimizationSettings(simpleHpMatchups=true,simpleFixedHpReactions=true,simpleForecastMatchups=true,skipUnusedStatusMatchups=true,firstHitActingChance=true))
+            double=LocalOptimizationSettings(simpleHpMatchups=true,simpleFixedHpReactions=true,simpleForecastMatchups=true,skipUnusedStatusMatchups=true,firstHitActingChance=true,simpleStatusMatchups=true,simpleActingChance=true))
         LocalOptimizationConfigStore.save(path,config)
         val loaded=LocalOptimizationConfigStore.loadOrCreate(path)
         assertEquals(config,loaded)
@@ -32,6 +32,8 @@ class LocalOptimizationConfigTest {
         assertFalse(single.simpleForecastMatchups);assertTrue(double.simpleForecastMatchups)
         assertFalse(single.skipUnusedStatusMatchups);assertTrue(double.skipUnusedStatusMatchups)
         assertFalse(single.firstHitActingChance);assertTrue(double.firstHitActingChance)
+        assertFalse(single.simpleStatusMatchups);assertTrue(double.simpleStatusMatchups)
+        assertFalse(single.simpleActingChance);assertTrue(double.simpleActingChance)
         assertNull(double.poisonEvaluationTurns);assertTrue(double.simpleHpMatchups);assertTrue(double.simpleFixedHpReactions)
         LocalOptimizationConfigStore.save(path,LocalOptimizationConfig())
         assertTrue(double.simpleHpMatchups)
@@ -52,7 +54,7 @@ class LocalOptimizationConfigTest {
         assertTrue(saved.contains("futureOption"));assertTrue(saved.contains("other"))
     }
     @Test fun `malformed options and formats are rejected without overwriting`() {
-        for(invalid in listOf("""{"double":{"firstHitActingChance":"true"}}""", """{"double":{"skipUnusedStatusMatchups":"true"}}""", """{"double":{"simpleForecastMatchups":"true"}}""", """{"single":{"simpleHpMatchups":"true"}}""", """{"double":false}""",
+        for(invalid in listOf("""{"double":{"simpleStatusMatchups":"true"}}""", """{"single":{"simpleActingChance":1}}""", """{"double":{"firstHitActingChance":"true"}}""", """{"double":{"skipUnusedStatusMatchups":"true"}}""", """{"double":{"simpleForecastMatchups":"true"}}""", """{"single":{"simpleHpMatchups":"true"}}""", """{"double":false}""",
             """{"poisonEvaluationTurns":0}""","""{"double":{"poisonEvaluationTurns":2.5}}""")) {
             Files.writeString(path,invalid)
             assertThrows(Exception::class.java) {LocalOptimizationConfigStore.loadOrCreate(path)}

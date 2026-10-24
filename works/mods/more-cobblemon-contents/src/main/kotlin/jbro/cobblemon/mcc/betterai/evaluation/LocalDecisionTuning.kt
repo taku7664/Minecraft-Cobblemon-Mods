@@ -208,6 +208,10 @@ internal data class LocalDecisionTuning(
     val skipUnusedStatusMatchups: Boolean = false,
     /** Resolved incoming attacks need only their first-use profile. */
     val firstHitActingChance: Boolean = false,
+    /** Replace status continuation matchups with fixed-attack mean-damage races. */
+    val simpleStatusMatchups: Boolean = false,
+    /** Replace repeated attack readings and intent products with per-slot damage intervals. */
+    val simpleActingChance: Boolean = false,
     /** Poison-only HP/KO horizon; null retains the evolving team-exchange evaluation for ablation. */
     val poisonEvaluationTurns: Int? = null,
     /**

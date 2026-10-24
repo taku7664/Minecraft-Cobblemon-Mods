@@ -29,7 +29,7 @@ internal object LocalActingChance {
     fun of(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
-        @Suppress("UNUSED_PARAMETER") scores: MatchupScores,
+        scores: MatchupScores,
         actorSlot: Int? = candidate.actorSlot,
         /** An attack's aimed foes may already be covered by its KO credit. */
         ignoring: Set<java.util.UUID> = emptySet(),
@@ -43,13 +43,14 @@ internal object LocalActingChance {
         val trace = "${candidate.actionId}:${part.actorSlot}" + if (ignoring.isEmpty()) "" else
             ":ignoring=" + ignoring.sortedBy { it.toString() }.joinToString(",")
         if (LocalActiveTuning.current().evolvingMatchups) {
-            return calculate(context, board, part, ignoring, intents, calculationCache, trace)
+            return calculate(context, board, part, ignoring, intents, calculationCache, trace, scores)
         }
         val reading = LocalDecisionCalculationScope.reuse("actingChance", Identity(context),
+            scores.takeIf { LocalActiveTuning.current().simpleActingChance }?.let(::Identity),
             calculationCache.fingerprints.of(state), calculationCache.actionInputKey(part),
             ignoring.toSet(), intents?.let(::Identity)) {
             LocalDecisionInternals.capture {
-                calculate(context, board, part, ignoring, intents, calculationCache, CACHED_TRACE)
+                calculate(context, board, part, ignoring, intents, calculationCache, CACHED_TRACE, scores)
             }
         }
         reading.entries.forEach { (key, value) ->
@@ -68,7 +69,11 @@ internal object LocalActingChance {
         intents: List<OpponentIntent>?,
         calculationCache: LocalProjectedActionCalculationCache,
         trace: String,
+        scores: MatchupScores,
     ): Double {
+        if (LocalActiveTuning.current().simpleActingChance) return LocalHpMatchupAudit.actingRead {
+            LocalSimpleActingChance.of(context, board, part, ignoring, intents, scores, trace)
+        }
         val state = board.state
         val user = state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot && !it.fainted && it.hpFraction > 0.0
@@ -187,6 +192,7 @@ internal object LocalActingChance {
             if (index < choices.size) return choices[index].sumOf { branch ->
                 branch.probability * total(index + 1, selected + branch)
             }
+            LocalHpMatchupAudit.actingChoiceProduct()
             val plain = selected.mapNotNull { it.hit }
             val worst = selected.indices.mapNotNull { changed ->
                 selected[changed].dynamaxHit?.let { max ->

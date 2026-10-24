@@ -169,5 +169,9 @@
   "screen.more_cobblemon_contents.dashboard.format.double_normal": "Double · Normal",
   "modmenu.nameTranslation.more_cobblemon_contents": "More Cobblemon Contents Core",
   "modmenu.descriptionTranslation.more_cobblemon_contents": "The shared foundation for Cobblemon battle facilities: managed battles, tactical AI, Battle Points, a reward shop, records, the battle hub and hologram terminals. Add content with MCC addons.",
-  "screen.more_cobblemon_contents.versus.tournament": "Champion Cup"
+  "screen.more_cobblemon_contents.versus.tournament": "Champion Cup",
+  "config.more_cobblemon_contents.betterai.simple_status": "Simple status matchups",
+  "config.more_cobblemon_contents.betterai.simple_status_help": "Hold each existing representative attack and use scaled mean damage and hit counts. Skips attack reselection and long KO distributions; scores and choices may change.",
+  "config.more_cobblemon_contents.betterai.simple_acting": "Simple acting chance",
+  "config.more_cobblemon_contents.betterai.simple_acting_help": "Keep two representative damage intervals per opposing slot. Skips repeated attack calculations and intent products while retaining joint-hit KO. Scores and choices may change."
 }

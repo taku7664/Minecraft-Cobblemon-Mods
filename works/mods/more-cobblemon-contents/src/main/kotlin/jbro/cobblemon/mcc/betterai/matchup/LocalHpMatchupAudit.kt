@@ -10,6 +10,7 @@ internal object LocalHpMatchupAudit {
         var firstHitBuilds: Int = 0, var firstHitFullCacheHits: Int = 0, var firstHitFallbacks: Int = 0,
         var ownStageReads: Int = 0, var fullProfileComputations: Int = 0, var oneHitProfileComputations: Int = 0,
         var actingTacticalCalls: Int = 0, var actingRollCalculations: Int = 0,
+        var simpleStatusExchanges: Int = 0, var actingChoiceProducts: Int = 0, var simpleActingModels: Int = 0, var simpleActingPairs: Int = 0,
         @Transient var futureDepth: Int = 0, @Transient var seedDepth: Int = 0)
     private val active = ThreadLocal<Counts?>()
     fun begin() { active.set(Counts()) }
@@ -27,11 +28,18 @@ internal object LocalHpMatchupAudit {
         try { return block() } finally { counts.seedDepth-- }
     }
     fun simpleExchange() { active.get()?.let { it.simpleExchanges++ } }
+    fun simpleStatusExchange() { active.get()?.let { it.simpleStatusExchanges++ } }
+    fun actingChoiceProduct() { active.get()?.let { it.actingChoiceProducts++ } }
+    fun simpleActingPair() { active.get()?.let { it.simpleActingPairs++ } }
+    fun simpleActingModel() { active.get()?.let { it.simpleActingModels++ } }
     fun statusVisit() { active.get()?.let { it.statusVisits++ } }
     fun statusPrepared() { active.get()?.let { it.statusPreparations++ } }
     fun <T> statusExchange(block: () -> T): T {
+        active.get()?.let { it.statusExchanges++ }
+        return statusRead(block)
+    }
+    fun <T> statusRead(block: () -> T): T {
         val counts = active.get() ?: return block()
-        counts.statusExchanges++
         val tactical = counts.tacticalCalls
         val rolls = counts.rollCalculations
         try { return block() } finally {
