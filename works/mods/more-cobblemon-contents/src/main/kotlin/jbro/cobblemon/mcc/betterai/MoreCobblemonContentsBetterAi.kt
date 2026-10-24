@@ -107,7 +107,7 @@ object MoreCobblemonContentsBetterAi {
                 capabilities = setOf(BrainCapability.SINGLE, BrainCapability.DOUBLE),
                 // No search in play: the live host could not afford it (see LocalTacticalBrain.searchless).
                 factory = BattleBrainFactory { LocalTacticalBrain(searchless = true,
-                    tuning = optimizationConfig().applyTo(jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT)) },
+                    optimizationConfig = optimizationConfig()) },
                 role = BattleBrainProviderRole.LOCAL,
                 selectionPolicy = BattleBrainSelectionPolicy.ALWAYS,
             ),

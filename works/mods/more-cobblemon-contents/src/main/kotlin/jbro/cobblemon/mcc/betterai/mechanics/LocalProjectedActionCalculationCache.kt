@@ -77,6 +77,23 @@ internal class LocalProjectedActionCalculationCache(
     private val catalogKeys = java.util.IdentityHashMap<BattlePublicActionCatalogView, CatalogKey>()
     private val slotActionsByInputs = HashMap<SlotActionsKey, List<BattleActionCandidate>>()
     private val matchupMoves = HashMap<MatchupMoveKey, List<ScoredMove>>()
+    internal data class HpReading(val calculated: BattleDecisionContext, val rawRolls: List<Double>, val accuracy: Double,
+        val sourceHp: Double)
+    private data class HpKey(val state: String, val action: Any, val target: UUID, val catalog: CatalogKey)
+    private val hpReadings = HashMap<HpKey, HpReading>()
+
+    /** Only living HP values are erased from this key. Eligibility checks guard HP-dependent damage; every other input stays exact. */
+    private fun hpKey(position: BattleDecisionContext, action: BattleActionCandidate, target: UUID): HpKey {
+        val state = fingerprints.ofWithoutHp(position.state)
+        return HpKey(state, actionInputKey(action), target, catalogKey(position.publicActionCatalog))
+    }
+    internal fun hpReading(position: BattleDecisionContext, action: BattleActionCandidate, target: UUID): HpReading? =
+        hpReadings[hpKey(position, action, target)]
+
+    internal fun rememberHpReading(position: BattleDecisionContext, action: BattleActionCandidate, target: UUID, reading: HpReading) {
+        if (hpReadings.size >= MAXIMUM_MATCHUP_ENTRIES) hpReadings.clear()
+        hpReadings[hpKey(position, action, target)] = reading
+    }
     private class MatchupEntry(val result: Pair<BattleStateView, BattlePublicActionCatalogView>?)
     private val matchupEntries = HashMap<MatchupEntryKey, MatchupEntry>()
 

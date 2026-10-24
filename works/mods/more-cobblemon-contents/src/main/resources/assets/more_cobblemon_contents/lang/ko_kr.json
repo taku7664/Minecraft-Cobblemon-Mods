@@ -1,6 +1,10 @@
 {
+  "config.more_cobblemon_contents.betterai.double": "더블",
+  "config.more_cobblemon_contents.betterai.single": "싱글",
+  "config.more_cobblemon_contents.betterai.matchup": "HP 대면 재사용",
+  "config.more_cobblemon_contents.betterai.matchup_help": "HP만 바뀐 판은 기존 피해에 새 HP 상한을 적용합니다. HP 의존 효과는 기존 계산을 사용합니다. 싱글·더블을 독립적으로 설정합니다.",
   "config.more_cobblemon_contents.betterai.title": "Better AI 계산 최적화",
-  "config.more_cobblemon_contents.betterai.fixed_hp": "독립 HP 반응 간단 계산",
+  "config.more_cobblemon_contents.betterai.fixed_hp": "생구 HP 간단 계산",
   "config.more_cobblemon_contents.betterai.poison": "독·맹독 단기 평가",
   "config.more_cobblemon_contents.betterai.fixed_hp_help": "다른 반응이 없는 생구의 HP 비용을 간단히 계산합니다. 복합 반응과 반동사는 기존 계산을 사용합니다.",
   "config.more_cobblemon_contents.betterai.poison_help": "독의 장기 대면 평가를 기본 2턴의 HP·KO 평가로 바꿉니다. 판단값과 선택이 달라질 수 있습니다.",

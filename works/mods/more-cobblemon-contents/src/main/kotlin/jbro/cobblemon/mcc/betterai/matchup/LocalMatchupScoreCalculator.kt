@@ -418,6 +418,15 @@ internal object LocalMatchupScoreCalculator {
         val user = state.pokemon.firstOrNull { it.battlePokemonId == userId && it.activeSlot != null } ?: return emptyList()
         val target = state.pokemon.firstOrNull { it.battlePokemonId == targetId && it.activeSlot != null } ?: return emptyList()
         val side = user.side
+        val hpMode = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().let { it.simpleHpMatchups && !it.evolvingMatchups }
+        fun hpSafe(pokemon: BattlePokemonStateView, attacker: Boolean): Boolean {
+            val abilities = pokemon.knownAbilityId?.let(::listOf) ?:
+                jbro.cobblemon.mcc.betterai.state.LocalEntryAbilityProjector.publicPossibleAbilities(state, pokemon).toList()
+            return abilities.isNotEmpty() && abilities.all {
+                !jbro.cobblemon.mcc.internal.ai.BattleShowdownHeldEffects.readsCurrentHp(it, pokemon.knownHeldItemId.orEmpty(), attacker)
+            }
+        }
+        val hpIndependent = hpMode && hpSafe(user, true) && hpSafe(target, false)
         // The opponent's unrevealed slots count at the strength this tier believes in; the AI's own moves are exact.
         val hypotheses = side == BattleSide.OPPONENT
         return cache.slotActions(state, side, position.publicActionCatalog, hypotheses) {
@@ -440,8 +449,20 @@ internal object LocalMatchupScoreCalculator {
                         PublicBattleTacticalCalculator.calculate(position.copy(state = acting, candidates = listOf(action)), side)
                     }
                 }
+                val hpReuse = hpIndependent && original.moveDetails?.targetPattern == jbro.cobblemon.mcc.internal.ai.BattleMoveTargetPattern.SELECTED_OPPONENT &&
+                    (original.moveDetails?.power ?: 0.0) > 0.0 && original.moveDetails?.effects?.scriptedBehavior != true &&
+                    original.moveDetails?.effects?.mechanicFlags.orEmpty().none { it == "dynamic_base_power" } &&
+                    jbro.cobblemon.mcc.betterai.mechanics.LocalDeclaredMultiHit.maximumCount(original) <= 1 &&
+                    original.moveDetails?.effects?.effects.orEmpty().none { effect ->
+                        effect.target == BattleMoveEffectTarget.USER && effect.kind in setOf(BattleMoveEffectKind.STAT_STAGE, BattleMoveEffectKind.SELF_DESTRUCT)
+                    } && target.knownVolatileEffectIds.isEmpty()
+                val reused = if (hpReuse) cache.hpReading(position, original, targetId) else null
                 var action = original
-                var calculated = calculate(action)
+                var calculated = if (reused == null) calculate(action) else position.copy(
+                    state = reused.calculated.state.copyState(pokemon = reused.calculated.state.pokemon.map {
+                        val current = state.pokemon.firstOrNull { now -> now.battlePokemonId == it.battlePokemonId }
+                        if (current == null) it else it.copyState(hpFraction = current.hpFraction)
+                    }), candidates = reused.calculated.candidates)
                 var candidate = calculated.candidates.single()
                 val targets = LocalPublicMoveTargets.resolve(candidate, calculated, side)
                 if (targets.firstOrNull()?.battlePokemonId != targetId) {
@@ -453,12 +474,24 @@ internal object LocalMatchupScoreCalculator {
                     calculated = calculate(action)
                     candidate = calculated.candidates.single()
                 }
-                val rolls = if (LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified) {
+                val rawRolls = reused?.rawRolls ?: if (LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified) {
                     List(ROLLS) { 0.0 }
+                } else if (hpReuse) {
+                    PublicBattleTacticalCalculator.uncappedConservativeDamageRollFractions(candidate, calculated, side)
                 } else {
                     PublicBattleTacticalCalculator.conservativeDamageRollFractions(candidate, calculated, side)
                 } ?: return@mapNotNull null
-                val accuracy = LocalPublicAccuracy.probability(candidate, calculated, side).coerceIn(0.0, 1.0)
+                val rolls = if (hpReuse) rawRolls.map { minOf(it, target.hpFraction) } else rawRolls
+                val accuracy = reused?.accuracy ?: LocalPublicAccuracy.probability(candidate, calculated, side).coerceIn(0.0, 1.0)
+                if (hpReuse) {
+                    if (reused == null) cache.rememberHpReading(position, original, targetId,
+                        LocalProjectedActionCalculationCache.HpReading(calculated, rawRolls, accuracy, target.hpFraction))
+                    else LocalHpMatchupAudit.reused()
+                    jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("hpReuse:$userId:$targetId:${original.moveId}", mapOf(
+                        "reused" to if (reused != null) 1.0 else 0.0,
+                        "sourceHp" to (reused?.sourceHp ?: target.hpFraction), "targetHp" to target.hpFraction,
+                        "rawMean" to rawRolls.average(), "cappedMean" to rolls.average(), "accuracy" to accuracy))
+                }
                 // A Max Move is scored under the move it came from: the battle's candidates keep that id (the game's adapter
                 // hands a Dynamax move over as the base move with the Max Move's details), and every reader matches by it.
                 val moveId = jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.baseMoveId(original) ?: PublicIds.canonical(candidate.moveId ?: action.actionId)

@@ -8,6 +8,8 @@ package jbro.cobblemon.mcc.betterai.evaluation
 internal object LocalActiveTuning {
     private val active = ThreadLocal<LocalDecisionTuning?>()
 
+    fun currentOrNull(): LocalDecisionTuning? = active.get()
+
     fun current(): LocalDecisionTuning = active.get() ?: LocalDecisionTuning.CURRENT
 
     fun <T> with(tuning: LocalDecisionTuning, block: () -> T): T {

@@ -200,6 +200,8 @@ internal data class LocalDecisionTuning(
     val evolvingMatchups: Boolean = false,
     /** Price an isolated, nonlethal Life Orb tick without projecting damage-roll states. */
     val simpleFixedHpReactions: Boolean = false,
+    /** Opt-in HP-only reuse of uncapped damage instead of repeated tactical calculation. */
+    val simpleHpMatchups: Boolean = false,
     /** Poison-only HP/KO horizon; null retains the evolving team-exchange evaluation for ablation. */
     val poisonEvaluationTurns: Int? = null,
     /**

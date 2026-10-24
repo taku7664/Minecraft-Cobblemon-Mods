@@ -6,6 +6,7 @@ import jbro.cobblemon.mcc.betterai.config.*
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.components.Button
+import net.minecraft.client.gui.components.Tooltip
 import net.minecraft.client.gui.components.CycleButton
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
@@ -23,10 +24,22 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
     }
     override fun init() {
         val left = width / 2 - 150
-        addRenderableWidget(CycleButton.onOffBuilder(config.simpleFixedHpReactions)
-            .create(left, 62, 300, 20, text("fixed_hp")) { _, enabled -> config = config.copy(simpleFixedHpReactions = enabled) })
-        addRenderableWidget(CycleButton.onOffBuilder(config.simplePoisonEvaluation)
-            .create(left, 88, 300, 20, text("poison")) { _, enabled -> config = config.copy(simplePoisonEvaluation = enabled) })
+        for (doubles in listOf(false, true)) {
+            val x = left + if (doubles) 154 else 0
+            val settings = if (doubles) config.double else config.single
+            fun update(change: (LocalOptimizationSettings) -> LocalOptimizationSettings) {
+                config = if (doubles) config.copy(double = change(config.double)) else config.copy(single = change(config.single))
+            }
+            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleFixedHpReactions)
+                .create(x, 62, 146, 20, text("fixed_hp")) { _, enabled -> update { it.copy(simpleFixedHpReactions = enabled) } }
+                .also { it.setTooltip(Tooltip.create(text("fixed_hp_help"))) })
+            addRenderableWidget(CycleButton.onOffBuilder(settings.simplePoisonEvaluation)
+                .create(x, 88, 146, 20, text("poison")) { _, enabled -> update { it.copy(simplePoisonEvaluation = enabled) } }
+                .also { it.setTooltip(Tooltip.create(text("poison_help"))) })
+            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleHpMatchups)
+                .create(x, 114, 146, 20, text("matchup")) { _, enabled -> update { it.copy(simpleHpMatchups = enabled) } }
+                .also { it.setTooltip(Tooltip.create(text("matchup_help"))) })
+        }
         addRenderableWidget(Button.builder(Component.translatable("gui.done")) {
             try { LocalOptimizationConfigStore.save(path, config); onClose() } catch (_: Exception) { failed = true }
         }.bounds(left, height - 36, 146, 20).build())
@@ -38,8 +51,10 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
         renderBackground(graphics, mouseX, mouseY, partialTick)
         super.render(graphics, mouseX, mouseY, partialTick)
         graphics.drawCenteredString(font, title, width / 2, 28, 0xFFFFFF)
-        var y = 122
-        for (key in listOf("fixed_hp_help", "poison_help", "scope")) {
+        graphics.drawCenteredString(font, text("single"), width / 2 - 77, 48, 0xFFFFFF)
+        graphics.drawCenteredString(font, text("double"), width / 2 + 77, 48, 0xFFFFFF)
+        var y = 148
+        for (key in listOf("scope")) {
             font.split(text(key), (width - 48).coerceAtLeast(100)).forEach {
                 graphics.drawString(font, it, 24, y, 0xCCCCCC); y += 12
             }

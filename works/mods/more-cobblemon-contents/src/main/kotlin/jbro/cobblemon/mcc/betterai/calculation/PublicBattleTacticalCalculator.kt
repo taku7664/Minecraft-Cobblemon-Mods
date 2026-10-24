@@ -44,6 +44,7 @@ internal object PublicBattleTacticalCalculator {
          */
         observedBoard: Boolean = false,
     ): BattleDecisionContext {
+        jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit.tacticalCall()
         if (context.candidates.all(::fullyCalculated)) return context
         val observed = context.state.takeIf { observedBoard }
         return context.copy(
@@ -71,17 +72,23 @@ internal object PublicBattleTacticalCalculator {
         rollsWorkedOut(candidate, context, actingSide)
     }
 
+    /** Ordinary damage before the target's remaining-HP cap, for HP-only matchup reuse. */
+    fun uncappedConservativeDamageRollFractions(candidate: BattleActionCandidate, context: BattleDecisionContext,
+        actingSide: BattleSide): List<Double>? = rollsWorkedOut(candidate, context, actingSide, capAtHp = false)
+
     private fun rollsWorkedOut(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
+        capAtHp: Boolean = true,
     ): List<Double>? {
+        jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit.rollCalculation()
         val moveContext = LocalMechanicActivationProjector.forMegaCandidate(context, actingSide, candidate)
-        val base = conservativeDamageRollFractionsAfterActivation(candidate, moveContext, actingSide)
+        val base = conservativeDamageRollFractionsAfterActivation(candidate, moveContext, actingSide, capAtHp)
         val boards = abilityBoards(asUsed(resolveDynamicMove(candidate, moveContext, actingSide), moveContext, actingSide),
             moveContext, actingSide) ?: return base
         base ?: return null
-        val each = boards.lent.map { conservativeDamageRollFractionsAfterActivation(candidate, it, actingSide) ?: return base } +
+        val each = boards.lent.map { conservativeDamageRollFractionsAfterActivation(candidate, it, actingSide, capAtHp) ?: return base } +
             List(boards.unchanged) { base }
         if (each.all { it == each.first() }) return each.first()
         // The rolls of every board pooled, cut back to as many evenly spaced ones as one board gives.
@@ -146,6 +153,7 @@ internal object PublicBattleTacticalCalculator {
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,
         actingSide: BattleSide,
+        capAtHp: Boolean = true,
     ): List<Double>? {
         val resolvedCandidate = asUsed(resolveDynamicMove(candidate, context, actingSide), context, actingSide)
         val details = resolvedCandidate.moveDetails ?: return null
@@ -185,7 +193,7 @@ internal object PublicBattleTacticalCalculator {
             val decoy = target.knownVolatileEffectIds.any { PublicIds.canonical(it) == "substitute" } &&
                 "sound" !in details.effects?.mechanicFlags.orEmpty() && LocalPublicAbilityState.effectiveKnownAbility(context.state, actor) != "infiltrator"
             // The aggregate must include hits after a decoy breaks; the hit sequence applies the actual HP cap.
-            if (decoy && hitCount > 1) raw.coerceAtLeast(0.0) else raw
+            if (!capAtHp || decoy && hitCount > 1) raw.coerceAtLeast(0.0) else raw
                 .coerceAtMost(if (decoy) {
                     maxOf(target.hpFraction, LocalPersistentMoveState.substituteRange(target)?.endInclusive ?: 0.25)
                 } else target.hpFraction)

@@ -48,11 +48,13 @@ UI 키트는 본체 JAR에 포함돼 있으므로 MCC용 UI 키트를 별도로 
 
 - `config/more-cobblemon-contents/hub_tabs.json`: `/mcc`와 각 터미널에 표시할 탭, 허브 명령어 권한.
 - `config/more-cobblemon-contents/wiki.json`: 서버 위키 연동 설정.
-- `config/more-cobblemon-contents/betterai-optimizations.json`: 아래 두 최적화는 기본값이 모두 `false`이며, 켠 항목만 다음 새 전투부터 적용합니다. 진행 중인 전투는 시작할 때 읽은 설정을 유지합니다. 잘못된 파일은 덮어쓰지 않고 해당 새 전투에서 두 항목을 끕니다. 이 설정은 재시작이나 `/reload` 없이 새 전투를 시작할 때 다시 읽습니다.
-  - `simpleFixedHpReactions`: 독립적인 생구 HP 반응을 간단 계산합니다. 복합 반응·반동사 등은 기존 계산을 유지합니다. 미세한 점수 차이로 추첨 선택이 달라질 수 있습니다.
-  - `simplePoisonEvaluation`: 독·맹독의 장기 대면 평가를 단기 HP·KO 평가로 바꿉니다. 점수·선택이 달라질 수 있습니다. 기본 평가 기간은 `poisonEvaluationTurns: 2`이며 JSON에서 1~8턴을 지정할 수 있습니다. 도구 소모·상태에 따른 능력치 변화 등은 기존 계산을 유지합니다.
+- `config/more-cobblemon-contents/betterai-optimizations.json`: `single`와 `double` 객체에서 각 최적화를 독립적으로 켜고 끕니다. 모든 기본값은 `false`입니다. Mod Menu에서도 싱글·더블을 따로 설정합니다. 다음 새 전투부터 읽으며 진행 중인 전투는 시작할 때의 설정을 유지합니다. 잘못된 파일은 덮어쓰지 않고 새 전투의 최적화를 끕니다. 재시작이나 `/reload`는 필요 없습니다. 구형 최상위 옵션은 별도 모드 설정이 없는 모드에 이전과 같이 적용되며, 저장하면 두 모드로 분리됩니다.
+  - `simpleFixedHpReactions`: 독립적인 생구 HP 반응을 간단 계산합니다. 복합 반응·반동사 등은 기존 계산을 유지합니다.
+  - `simplePoisonEvaluation`: 독·맹독의 장기 대면 평가를 단기 HP·KO 평가로 바꿉니다. 각 모드의 `poisonEvaluationTurns`는 1~8턴이며 기본값은 2입니다.
+  - `simpleHpMatchups`: HP만 바뀐 판에서 HP와 무관한 기존 피해를 재사용하고 새 남은 HP 상한을 적용합니다. 이때 전술 계산·피해 롤 계산을 생략합니다. HP 의존 효과, 스크립트 기술, 연속기 등은 기존 경로를 사용합니다. KO 누적표·교환 승률·랭크 점수식은 유지합니다.
 
-두 항목은 실험 옵션입니다. 속도와 판단값의 전후 비교는 [계산 최적화 검토](docs/BETTERAI_OPTIMIZATION_REVIEW.md)에 기록합니다.
+예를 들어 `{"single":{},"double":{"simpleHpMatchups":true}}`는 더블에서만 HP 대면 재사용을 켭니다. 점수와 선택이 달라질 수 있는 실험 옵션이며, 비교 범위와 결과는 [계산 최적화 검토](docs/BETTERAI_OPTIMIZATION_REVIEW.md)를 따릅니다.
+
 - `config/more-cobblemon-contents/bp-shop.json`: BP 상점 전체를 관리하는 단일 JSON입니다. 최초 로드 때 기본 파일을 생성하고 이후에는 이 파일만 읽습니다.
   - `entries`: 판매 품목 목록. 품목을 추가·삭제하거나 `price_bp`를 바꾸고 `/reload`하면 적용됩니다. 삭제한 품목은 재시작해도 돌아오지 않으며, `[]`는 빈 상점입니다.
   - `categories`, `shopkeeper`, `limits`: 분류 순서·상점 외형·구매 제한도 같은 파일에서 관리합니다. 품목이 없는 분류는 표시하지 않습니다.

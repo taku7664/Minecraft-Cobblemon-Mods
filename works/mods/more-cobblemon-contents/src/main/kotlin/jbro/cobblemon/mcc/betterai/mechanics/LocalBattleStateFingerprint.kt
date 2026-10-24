@@ -25,8 +25,29 @@ import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
 internal class LocalBattleStateFingerprint {
     private val byIdentity = IdentityHashMap<BattleStateView, String>()
     private val actionInputsByIdentity = IdentityHashMap<BattleStateView, String>()
+    private val withoutHpByIdentity = IdentityHashMap<BattleStateView, String>()
 
     fun of(state: BattleStateView): String = byIdentity[state] ?: build(state)
+
+    /** Same full state key with only living HP erased, built from existing text without copying a battle board. */
+    fun ofWithoutHp(state: BattleStateView): String = withoutHpByIdentity[state] ?: run {
+        val full = of(state)
+        var offset = full.indexOf('|') + 1
+        var from = 0
+        val key = buildString(full.length) {
+            for (pokemon in state.pokemon.sortedBy { it.battlePokemonId }) {
+                val part = pokemonByIdentity.getValue(pokemon)
+                if (!pokemon.fainted && pokemon.hpFraction > 0.0) {
+                    append(full, from, offset + part.hpStart).append('1')
+                    from = offset + part.hpEnd
+                }
+                offset += part.text.length
+            }
+            append(full, from, full.length)
+        }
+        withoutHpByIdentity[state] = key
+        key
+    }
 
     /**
      * [of] with each active Pokemon's HP reduced to what a side's action list reads from it: standing or
@@ -88,17 +109,20 @@ internal class LocalBattleStateFingerprint {
 
     // Public Pokemon views are immutable; unchanged members are shared by projected boards.
     // Keep their exact text and local HP offsets once, without weakening structural equality.
-    private class PokemonText(val text: String, val bands: IntArray)
+    private class PokemonText(val text: String, val bands: IntArray, val hpStart: Int, val hpEnd: Int)
     private val pokemonByIdentity = IdentityHashMap<BattlePokemonStateView, PokemonText>()
 
     private fun pokemonText(pokemon: BattlePokemonStateView): PokemonText {
         val bands = ArrayList<Int>(3)
+        var hpStart = 0
+        var hpEnd = 0
         val text = buildString {
             append(pokemon.battlePokemonId).append(':')
             append(pokemon.side.ordinal).append(':')
             append(pokemon.activeSlot ?: -1).append(':')
-            val hpStart = length
+            hpStart = length
             append(pokemon.hpFraction)
+            hpEnd = length
             if (pokemon.activeSlot != null) {
                 bands.add(hpStart)
                 bands.add(length)
@@ -134,7 +158,7 @@ internal class LocalBattleStateFingerprint {
             }
             append(';')
         }
-        return PokemonText(text, bands.toIntArray())
+        return PokemonText(text, bands.toIntArray(), hpStart, hpEnd)
     }
 
     /**

@@ -10,16 +10,27 @@ import java.util.UUID
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 
 /** Independent opt-ins. Missing files/keys never enable an approximation. */
-internal data class LocalOptimizationConfig(
+internal data class LocalOptimizationSettings(
     val simpleFixedHpReactions: Boolean = false,
     val simplePoisonEvaluation: Boolean = false,
     val poisonEvaluationTurns: Int = 2,
+    val simpleHpMatchups: Boolean = false,
 ) {
     init { require(poisonEvaluationTurns in 1..8) }
     fun applyTo(tuning: LocalDecisionTuning): LocalDecisionTuning = tuning.copy(
         simpleFixedHpReactions = simpleFixedHpReactions,
+        simpleHpMatchups = simpleHpMatchups,
         poisonEvaluationTurns = poisonEvaluationTurns.takeIf { simplePoisonEvaluation },
     )
+}
+
+/** A battle keeps its format's settings snapshot; changing the other format has no effect. */
+internal data class LocalOptimizationConfig(
+    val single: LocalOptimizationSettings = LocalOptimizationSettings(),
+    val double: LocalOptimizationSettings = LocalOptimizationSettings(),
+) {
+    fun applyTo(tuning: LocalDecisionTuning, format: jbro.cobblemon.mcc.internal.ai.BattleFormat): LocalDecisionTuning =
+        (if (format == jbro.cobblemon.mcc.internal.ai.BattleFormat.SINGLE) single else double).applyTo(tuning)
 }
 
 internal object LocalOptimizationConfigStore {
@@ -29,23 +40,42 @@ internal object LocalOptimizationConfigStore {
     fun loadOrCreate(path: Path): LocalOptimizationConfig {
         if (!Files.exists(path)) save(path, LocalOptimizationConfig())
         val root = read(path)
-        fun flag(key: String): Boolean {
-            val value = root.get(key) ?: return false
-            require(value.isJsonPrimitive && value.asJsonPrimitive.isBoolean) { "$key must be a boolean" }
-            return value.asBoolean
+        fun settings(root: JsonObject): LocalOptimizationSettings {
+            fun flag(key: String): Boolean {
+                val value = root.get(key) ?: return false
+                require(value.isJsonPrimitive && value.asJsonPrimitive.isBoolean) { "$key must be a boolean" }
+                return value.asBoolean
+            }
+            val turns = root.get("poisonEvaluationTurns")?.let {
+                require(it.isJsonPrimitive && it.asJsonPrimitive.isNumber && it.asBigDecimal.stripTrailingZeros().scale() <= 0)
+                it.asBigDecimal.intValueExact()
+            } ?: 2
+            return LocalOptimizationSettings(flag("simpleFixedHpReactions"), flag("simplePoisonEvaluation"), turns, flag("simpleHpMatchups"))
         }
-        val turns = root.get("poisonEvaluationTurns")?.let {
-            require(it.isJsonPrimitive && it.asJsonPrimitive.isNumber && it.asBigDecimal.stripTrailingZeros().scale() <= 0)
-            it.asBigDecimal.intValueExact()
-        } ?: 2
-        return LocalOptimizationConfig(flag("simpleFixedHpReactions"), flag("simplePoisonEvaluation"), turns)
+        // Existing flat files retain their previous meaning for both formats until explicitly separated.
+        val legacy = settings(root)
+        fun section(key: String): LocalOptimizationSettings = root.get(key)?.let {
+            require(it.isJsonObject) { "$key must be an object" }
+            settings(it.asJsonObject)
+        } ?: legacy
+        return LocalOptimizationConfig(section("single"), section("double"))
     }
 
     fun save(path: Path, config: LocalOptimizationConfig) {
         val root = if (Files.exists(path)) read(path) else JsonObject()
-        root.addProperty("simpleFixedHpReactions", config.simpleFixedHpReactions)
-        root.addProperty("simplePoisonEvaluation", config.simplePoisonEvaluation)
-        root.addProperty("poisonEvaluationTurns", config.poisonEvaluationTurns)
+        fun saveSection(key: String, settings: LocalOptimizationSettings) {
+            val section = root.get(key)?.let {
+                require(it.isJsonObject) { "$key must be an object" }; it.asJsonObject
+            } ?: JsonObject()
+            section.addProperty("simpleFixedHpReactions", settings.simpleFixedHpReactions)
+            section.addProperty("simplePoisonEvaluation", settings.simplePoisonEvaluation)
+            section.addProperty("poisonEvaluationTurns", settings.poisonEvaluationTurns)
+            section.addProperty("simpleHpMatchups", settings.simpleHpMatchups)
+            root.add(key, section)
+        }
+        saveSection("single", config.single)
+        saveSection("double", config.double)
+        for (key in listOf("simpleFixedHpReactions", "simplePoisonEvaluation", "poisonEvaluationTurns", "simpleHpMatchups")) root.remove(key)
         Files.createDirectories(requireNotNull(path.parent))
         val temporary = path.resolveSibling("${path.fileName}.${UUID.randomUUID()}.tmp")
         try {

@@ -22,6 +22,24 @@ object BattleShowdownHeldEffects {
     private val items: Map<String, Map<String, String>> by lazy(LazyThreadSafetyMode.PUBLICATION) { load(ITEMS_FILE, ITEMS_MARKER) }
     private val abilities: Map<String, Map<String, String>> by lazy(LazyThreadSafetyMode.PUBLICATION) { load(ABILITIES_FILE, ABILITIES_MARKER) }
 
+    /** HP reads in damage hooks require the full path; residual/healing hooks do not change raw move damage. */
+    fun readsCurrentHp(abilityId: String?, itemId: String?, asAttacker: Boolean = false): Boolean {
+        val hook = if (asAttacker) ATTACKER_DAMAGE_HOOK else DEFENDER_DAMAGE_HOOK
+        fun reads(table: Map<String, Map<String, String>>, id: String?, memo: java.util.concurrent.ConcurrentHashMap<String, Boolean>): Boolean {
+            if (id == null) return true
+            if (id.isBlank()) return false
+            val key = (if (asAttacker) "a:" else "d:") + canonical(id)
+            return memo.getOrPut(key) {
+                val entry = table[canonical(id)]
+                entry == null || entry.any { (name, body) -> hook.matches(name) && CURRENT_HP.containsMatchIn(body) }
+            }
+        }
+        return reads(abilities, abilityId, abilityHpReads) || reads(items, itemId, itemHpReads)
+    }
+    private val abilityHpReads = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+    private val itemHpReads = java.util.concurrent.ConcurrentHashMap<String, Boolean>()
+    private val CURRENT_HP = Regex("""\.hp\b""")
+
     /** The item locks its holder into its first move (`isChoice`). */
     fun isChoice(itemId: String?): Boolean = itemId?.let { items[canonical(it)] }?.get("isChoice")?.trim() == "true"
 

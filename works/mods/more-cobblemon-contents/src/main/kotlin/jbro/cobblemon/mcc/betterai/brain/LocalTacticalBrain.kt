@@ -125,7 +125,7 @@ private fun nativeFailureMessage(
 
 internal class LocalTacticalBrain(
     private val actionSelector: LocalActionSelector = LocalWeightedActionSelector(),
-    private val tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
+    tuning: LocalDecisionTuning = LocalDecisionTuning.CURRENT,
     private val lookaheadBudget: (BattleTrainerTier) -> LocalLookaheadBudget = LocalLookaheadBudgetPolicy::forTier,
     private val nativeInitialDecision: NativeInitialDecisionSource =
         NativeInitialDecisionSource { context, profile, localTuning, budget, sessionState, rules ->
@@ -145,7 +145,14 @@ internal class LocalTacticalBrain(
     /** Receives every candidate's value at each step of a searchless decision (diagnostics only; null in the game). */
     private val stageTrace: ((LocalDecisionStages) -> Unit)? = null,
     private val decisionObserver: LocalDecisionObserver? = null,
+    optimizationConfig: jbro.cobblemon.mcc.betterai.config.LocalOptimizationConfig? = null,
 ) : BattleBrain {
+    private val configuredTuning = tuning
+    private val formatTunings = optimizationConfig?.let { config ->
+        BattleFormat.entries.associateWith { config.applyTo(configuredTuning, it) }
+    }
+    private val tuning: LocalDecisionTuning get() = LocalActiveTuning.currentOrNull() ?: configuredTuning
+
     override fun openSession(context: BattleBrainOpenContext): BattleBrainSession =
         Session(
             UUID.randomUUID(),
@@ -158,7 +165,7 @@ internal class LocalTacticalBrain(
     override fun decide(
         session: BattleBrainSession,
         context: BattleDecisionContext,
-    ): CompletionStage<BattleDecision> = LocalActiveTuning.with(tuning) {
+    ): CompletionStage<BattleDecision> = LocalActiveTuning.with(formatTunings?.get(context.state.format) ?: configuredTuning) {
         // No worth until this decision reads one, so a decision that returns early leaves none behind for the trace.
         jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth.set(null)
         LocalDecisionInternals.begin()
