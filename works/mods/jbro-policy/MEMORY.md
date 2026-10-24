@@ -5,6 +5,16 @@
 
 ---
 
+## [2026-10-24 17:40] 1.4.0 릴리스 준비 — 개발 동기화·모드팩·패치노트 (PPakemon·운영·VPS·드라이브는 20시 점검)
+
+- **사용자 결정:** 20:00~21:00 점검 공지(📢공지-소식, 메시지 1563465936013496381, VPS 설정의 봇 토큰. 개발 서버 설정의 토큰은 401로 만료). 20시 자동 예약은 걸지 않는다.
+- **빌드:** `origin/main` `05a0f9d93`을 `F:/AI/build/release-1.4.0`에서 18개 assemble 성공(`jar --validate` 포함). 테스트는 돌리지 않았다. `PACK_VERSION` 1.4.0, jbro-policy 0.1.8 그대로.
+- **개발:** 서버 to-item·타워·PvP·퓨전, 클라 to-item·팩토리·타워·PvP·퓨전 교체(해시 일치, 백업 `develop-product/deployment-backups/20261024-172256-release`). **서버 `more-cobblemon-contents-battle-factory-0.1.0.jar`는 Better AI 대전 서버(PID 44772·43224, 13:08 시작)가 클래스패스로 잡고 있어 못 바꿨다.** 그 프로세스가 끝난 뒤 `install-dev.ps1`을 다시 돌린다.
+- **모드팩:** PPakemon 프로필을 `F:/AI/build/release-1.4.0/ppakemon-profile`에 복사해 패치(21건, 재계획 0)한 뒤 `Downloads/PPakemon 1.4.0.mrpack`(248,414,162바이트, 인덱스 70, overrides mods 21, config 0, 우리 모드 해시 빌드본과 같음). 실제 PPakemon 프로필은 1.3.0 그대로(20시 전 운영 접속 유지). 10-19 보류본은 `Downloads/old/`로 옮겼다. 복사본용 패처 백업(C, 425MB)은 지웠다.
+- **패치노트:** `build/patchnotes-1.4.0/`(디스코드 1,013자·1,134자), VERSION 블록 갱신. 10-19 초안의 "평화로움 반격" 줄은 반격이 꺼져 있어 뺐다.
+- **드라이브:** 커넥터 계정(selab.ai)에 PPakemon 파일이 없어 업로드는 사용자가 한다.
+- **20시 남은 일:** PPakemon 패치, 로컬 운영 서버, `sync-release.ps1`·VERSION.txt, VPS(종료 동의 필요), 개발 서버 팩토리 JAR.
+
 ## [2026-10-24 17:13] BP·상점 자동 복구 개발 배포
 
 - **요청·배치:** 빡대리의 개발배포 지시로 main 09bafa71d에서 검증한 jbro-policy-0.1.8.jar와 MCC core를 정식 체크아웃 C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product의 server/mods 및 client/mods에 교체했다. client는 Modrinth cobblemon-dev 프로필로 연결된 기존 junction이다. 현재 main 3b3c8679c와 빌드 기준의 차이는 두 모듈 MEMORY.md뿐임을 확인하여 재빌드하지 않았다.
