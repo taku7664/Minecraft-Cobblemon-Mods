@@ -83,7 +83,7 @@ internal object LocalRootItemEffectEvaluator {
                         LocalPublicItemEffectProjector.project(action, context.copy(state = branch.state, candidates = listOf(action)), shared)
                             .map { next -> next.copy(probability = branch.probability * next.probability,
                                 damagingStageOwnerIds = branch.damagingStageOwnerIds + next.damagingStageOwnerIds) }
-                    }.groupBy { cache.fingerprints.of(it.state) to it.damagingStageOwnerIds }.values.map { same ->
+                    }.groupBy { cache.fingerprints.keyOf(it.state) to it.damagingStageOwnerIds }.values.map { same ->
                         same.first().copy(probability = same.sumOf { it.probability })
                     }
                 }

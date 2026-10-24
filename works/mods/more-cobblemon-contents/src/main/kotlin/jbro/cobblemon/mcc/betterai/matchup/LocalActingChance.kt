@@ -47,7 +47,7 @@ internal object LocalActingChance {
         }
         val reading = LocalDecisionCalculationScope.reuse("actingChance", Identity(context),
             scores.takeIf { LocalActiveTuning.current().simpleActingChance }?.let(::Identity),
-            calculationCache.fingerprints.of(state), calculationCache.actionInputKey(part),
+            calculationCache.fingerprints.keyOf(state), calculationCache.actionInputKey(part),
             ignoring.toSet(), intents?.let(::Identity)) {
             LocalDecisionInternals.capture {
                 calculate(context, board, part, ignoring, intents, calculationCache, CACHED_TRACE, scores)

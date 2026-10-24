@@ -102,7 +102,7 @@ internal object LocalMoveImpactProjector {
                 }
             }
             // Damage rolls and stochastic callbacks that lead to the same public state share the continuation.
-            paths = paths.groupBy { Triple(cache.fingerprints.of(it.state), cache.fingerprints.of(it.bodyState), it.connected) }.values.map { same ->
+            paths = paths.groupBy { Triple(cache.fingerprints.keyOf(it.state), cache.fingerprints.keyOf(it.bodyState), it.connected) }.values.map { same ->
                 same.first().copy(probability = same.sumOf { it.probability })
             }
         }

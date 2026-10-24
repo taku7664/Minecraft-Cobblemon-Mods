@@ -67,7 +67,7 @@ internal object LocalLeafMatchups {
         cache: LocalProjectedActionCalculationCache,
     ): Pair<Double, Double>? {
         val key = PairKey(
-            cache.fingerprints.of(state), ally.battlePokemonId, opponent.battlePokemonId,
+            cache.fingerprints.keyOf(state), ally.battlePokemonId, opponent.battlePokemonId,
             context.publicActionCatalog, cache.matchupRecovery,
         )
         cache.leafMatchups[key]?.let { return it.value }
@@ -86,7 +86,7 @@ internal object LocalLeafMatchups {
     }
 
     private data class PairKey(
-        val state: String, val ally: UUID, val opponent: UUID,
+        val state: jbro.cobblemon.mcc.betterai.mechanics.LocalBattleStateFingerprint.Key, val ally: UUID, val opponent: UUID,
         val catalog: BattlePublicActionCatalogView, val recovery: Boolean,
     )
 }

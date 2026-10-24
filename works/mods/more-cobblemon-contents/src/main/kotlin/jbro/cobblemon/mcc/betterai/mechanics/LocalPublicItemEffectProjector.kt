@@ -50,7 +50,7 @@ internal object LocalPublicItemEffectProjector {
                         LocalDeclaredMultiHit.representativeCount(action, currentActor, path.state))
                     Path(after, path.probability * count / rolls.size, path.damagingStageOwnerIds + stageOwner)
                 }
-            }.groupBy { fingerprints.of(it.state) to it.damagingStageOwnerIds }.values.map { same ->
+            }.groupBy { fingerprints.keyOf(it.state) to it.damagingStageOwnerIds }.values.map { same ->
                 same.first().copy(probability = same.sumOf { it.probability })
             }
         }

@@ -29,7 +29,7 @@ internal object LocalRootHitReactionEvaluator {
         if (tuning.simpleFixedHpReactions) LocalFixedHpReactionValue.read(candidate, context, tuning)?.let { return it }
         val cache = LocalProjectedActionCalculationCache()
         val paths = LocalMoveImpactProjector.project(candidate, context, BattleSide.ALLY, cache)
-        if (paths.all { cache.fingerprints.of(it.state) == cache.fingerprints.of(it.bodyState) }) return null
+        if (paths.all { cache.fingerprints.keyOf(it.state) == cache.fingerprints.keyOf(it.bodyState) }) return null
         return price(paths, candidate.actionId, context, cache, tuning)
     }
 
@@ -56,12 +56,12 @@ internal object LocalRootHitReactionEvaluator {
                 branches = branches.flatMap { parent ->
                     LocalMoveImpactProjector.project(action, context.copy(state = parent.state, candidates = listOf(action)),
                         BattleSide.ALLY, cache, parent.bodyState).map { it.copy(probability = it.probability * parent.probability) }
-                }.groupBy { cache.fingerprints.of(it.state) to cache.fingerprints.of(it.bodyState) }.values.map { same ->
+                }.groupBy { cache.fingerprints.keyOf(it.state) to cache.fingerprints.keyOf(it.bodyState) }.values.map { same ->
                     same.first().copy(probability = same.sumOf { it.probability }) }
             }
             branches
         }
-        val joint = if (paths.all { cache.fingerprints.of(it.state) == cache.fingerprints.of(it.bodyState) }) Score()
+        val joint = if (paths.all { cache.fingerprints.keyOf(it.state) == cache.fingerprints.keyOf(it.bodyState) }) Score()
             else price(paths, candidate.actionId, context, cache, tuning)
         val independent = actions.map { score(it, context, tuning) ?: Score() }
         return Score(joint.total - independent.sumOf { it.total },
@@ -75,10 +75,10 @@ internal object LocalRootHitReactionEvaluator {
         var stages = 0.0
         var items = 0.0
         var status = 0.0
-        val stageValues = hashMapOf<Pair<String, Set<java.util.UUID>>, Double>()
-        val itemValues = hashMapOf<String, Double>()
-        val conditionValues = hashMapOf<String, Double>()
-        val originalKey = cache.fingerprints.of(context.state)
+        val stageValues = hashMapOf<Pair<jbro.cobblemon.mcc.betterai.mechanics.LocalBattleStateFingerprint.Key, Set<java.util.UUID>>, Double>()
+        val itemValues = hashMapOf<jbro.cobblemon.mcc.betterai.mechanics.LocalBattleStateFingerprint.Key, Double>()
+        val conditionValues = hashMapOf<jbro.cobblemon.mcc.betterai.mechanics.LocalBattleStateFingerprint.Key, Double>()
+        val originalKey = cache.fingerprints.keyOf(context.state)
         for (path in paths) {
             val body = path.bodyState.pokemon.associateBy { it.battlePokemonId }
             val after = path.state.pokemon.associateBy { it.battlePokemonId }
@@ -126,7 +126,7 @@ internal object LocalRootHitReactionEvaluator {
                 (it.fainted || it.hpFraction <= 0.0) && context.state.pokemon.firstOrNull { old ->
                     old.battlePokemonId == it.battlePokemonId }?.let { old -> !old.fainted && old.hpFraction > 0.0 } == true
             }.map { it.battlePokemonId }.toSet()
-            val stageValue = stageValues.getOrPut(cache.fingerprints.of(raised) to knockedOutFoes) { if (knockedOutFoes.isEmpty()) {
+            val stageValue = stageValues.getOrPut(cache.fingerprints.keyOf(raised) to knockedOutFoes) { if (knockedOutFoes.isEmpty()) {
                 LocalStatStageMarginalEvaluator.evaluate(context.state, raised, context, cache, tuning).score
             } else {
                 // KO abilities are useful against the remaining opponents, not the one already beaten.
@@ -144,15 +144,15 @@ internal object LocalRootHitReactionEvaluator {
             } }
             stages += path.probability * stageValue
             val itemState = changed(stage = false, item = true, condition = false)
-            items += path.probability * itemValues.getOrPut(cache.fingerprints.of(itemState)) {
+            items += path.probability * itemValues.getOrPut(cache.fingerprints.keyOf(itemState)) {
                 LocalItemTransitionEvaluator.evaluate(context.state, itemState, context, cache, tuning).total }
             val statusState = changed(stage = false, item = false, condition = true)
-            if (cache.fingerprints.of(statusState) != originalKey) {
+            if (cache.fingerprints.keyOf(statusState) != originalKey) {
                 fun pressure(state: BattleStateView) = LocalLookaheadStateEvaluator.attackPressure(state, BattleSide.ALLY,
                     context, cache, tuning = tuning, capDamageToRemainingHp = true) -
                     LocalLookaheadStateEvaluator.attackPressure(state, BattleSide.OPPONENT,
                         context, cache, tuning = tuning, capDamageToRemainingHp = true)
-                status += path.probability * conditionValues.getOrPut(cache.fingerprints.of(statusState)) {
+                status += path.probability * conditionValues.getOrPut(cache.fingerprints.keyOf(statusState)) {
                     (pressure(statusState) - pressure(context.state) +
                     LocalStatStageMarginalEvaluator.speedTransitionBoardDelta(context.state, statusState, tuning, context, cache)) * tuning.boardToScore }
             }

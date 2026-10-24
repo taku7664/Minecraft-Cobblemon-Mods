@@ -23,6 +23,45 @@ import jbro.cobblemon.mcc.internal.ai.BattleTimedEffectView
  * the lifetime of the decision that created it.
  */
 internal class LocalBattleStateFingerprint {
+    /** Exact structural pieces: long observation text is shared instead of copied into every board key.
+     * Hashes only select a bucket; equality still compares every piece, including collision cases.
+     */
+    internal class Key internal constructor(private val pieces: List<String>) {
+        private val hash = pieces.hashCode()
+        override fun hashCode(): Int = hash
+        override fun equals(other: Any?): Boolean = this === other ||
+            other is Key && hash == other.hash && pieces == other.pieces
+        override fun toString(): String = pieces.joinToString("")
+    }
+
+    private val compactByIdentity = IdentityHashMap<BattleStateView, Key>()
+    private val compactActionsByIdentity = IdentityHashMap<BattleStateView, Key>()
+    private val compactWithoutHpByIdentity = IdentityHashMap<BattleStateView, Key>()
+
+    fun keyOf(state: BattleStateView): Key = compactByIdentity[state] ?: compact(state, 0).also { compactByIdentity[state] = it }
+    fun keyWithoutHp(state: BattleStateView): Key = compactWithoutHpByIdentity[state] ?:
+        compact(state, 1).also { compactWithoutHpByIdentity[state] = it }
+    fun keyOfActionInputs(state: BattleStateView): Key = compactActionsByIdentity[state] ?:
+        compact(state, 2).also { compactActionsByIdentity[state] = it }
+
+    private fun compact(state: BattleStateView, mode: Int): Key {
+        val pieces = ArrayList<String>(state.pokemon.size + 3)
+        pieces.add("${state.battleId}:${state.format}:${state.turn}|")
+        for (pokemon in state.pokemon.sortedBy { it.battlePokemonId }) {
+            val part = pokemonByIdentity.getOrPut(pokemon) { pokemonText(pokemon) }
+            pieces.add(when {
+                mode == 1 && !pokemon.fainted && pokemon.hpFraction > 0.0 ->
+                    part.text.substring(0, part.hpStart) + "1" + part.text.substring(part.hpEnd)
+                mode == 2 && pokemon.activeSlot != null ->
+                    part.text.substring(0, part.hpStart) + hpBand(pokemon.hpFraction) + part.text.substring(part.hpEnd)
+                else -> part.text
+            })
+        }
+        pieces.add(buildString { appendField(state) })
+        pieces.add(evidence(state))
+        return Key(pieces)
+    }
+
     private val byIdentity = IdentityHashMap<BattleStateView, String>()
     private val actionInputsByIdentity = IdentityHashMap<BattleStateView, String>()
     private val withoutHpByIdentity = IdentityHashMap<BattleStateView, String>()
@@ -91,6 +130,13 @@ internal class LocalBattleStateFingerprint {
                 bands.add(key.bands[i + 2])
             }
         }
+        appendField(state)
+        // Protect chains, last hits and public ability hypotheses can change mechanics without
+        // changing the visible HP, ranks or field. Keep that evidence in the calculation key.
+        append(evidence(state))
+    }
+
+    private fun StringBuilder.appendField(state: BattleStateView) {
         BattleSide.entries.forEach { side ->
             append("remaining:").append(side.ordinal).append('=')
                 .append(state.remainingPokemonBySide.getValue(side)).append(';')
@@ -102,9 +148,6 @@ internal class LocalBattleStateFingerprint {
         appendTimedEffect("terrain", state.field.terrain)
         state.field.roomEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("room", it) }
         state.field.globalEffects.sortedBy { it.effectId }.forEach { appendTimedEffect("global", it) }
-        // Protect chains, last hits and public ability hypotheses can change mechanics without
-        // changing the visible HP, ranks or field. Keep that evidence in the calculation key.
-        append(evidence(state))
     }
 
     // Public Pokemon views are immutable; unchanged members are shared by projected boards.
@@ -169,7 +212,9 @@ internal class LocalBattleStateFingerprint {
 
     private fun evidence(state: BattleStateView): String {
         evidenceByEvents[state.observedEvents]?.let { (inferences, text) -> if (inferences === state.inferences) return text }
-        val text = buildString {
+        val text = jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.reuse("stateEvidence",
+            jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.Identity(state.observedEvents),
+            jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.Identity(state.inferences)) { buildString {
             state.observedEvents.forEach { event ->
                 append("event:").append(event.sequence).append(':').append(event.turn).append(':').append(event.kind).append(':')
                 append(event.actorPokemonId).append(':').append(event.actorSlot).append(':')
@@ -184,7 +229,7 @@ internal class LocalBattleStateFingerprint {
                 append(inference.basis.sorted()).append(':').append(inference.evidenceEventSequences).append(':')
                 append(inference.relatedPokemonId).append(':').append(inference.abilityAvailability).append(';')
             }
-        }
+        } }
         evidenceByEvents[state.observedEvents] = state.inferences to text
         return text
     }

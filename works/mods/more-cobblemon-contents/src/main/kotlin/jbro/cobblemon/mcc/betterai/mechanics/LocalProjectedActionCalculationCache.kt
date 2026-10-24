@@ -30,7 +30,7 @@ internal class LocalProjectedActionCalculationCache(
     /** Shared with the search's own memo so a state is fingerprinted once per decision, not once per use. */
     val fingerprints: LocalBattleStateFingerprint = LocalBattleStateFingerprint(),
 ) {
-    private val byState = HashMap<String, MutableMap<ActionKey, BattleDecisionContext>>()
+    private val byState = HashMap<LocalBattleStateFingerprint.Key, MutableMap<ActionKey, BattleDecisionContext>>()
 
     /** Whether the matchup exchanges scored with this cache read recovery moves (LocalDecisionTuning.matchupRecovery). */
     internal var matchupRecovery: Boolean = false
@@ -80,12 +80,12 @@ internal class LocalProjectedActionCalculationCache(
     private val firstHitMoves = HashMap<MatchupMoveKey, List<ScoredMove>>()
     internal data class HpReading(val calculated: BattleDecisionContext, val rawRolls: List<Double>, val accuracy: Double,
         val sourceHp: Double)
-    private data class HpKey(val state: String, val action: Any, val target: UUID, val catalog: CatalogKey)
+    private data class HpKey(val state: LocalBattleStateFingerprint.Key, val action: Any, val target: UUID, val catalog: CatalogKey)
     private val hpReadings = HashMap<HpKey, HpReading>()
 
     /** Only living HP values are erased from this key. Eligibility checks guard HP-dependent damage; every other input stays exact. */
     private fun hpKey(position: BattleDecisionContext, action: BattleActionCandidate, target: UUID): HpKey {
-        val state = fingerprints.ofWithoutHp(position.state)
+        val state = fingerprints.keyWithoutHp(position.state)
         return HpKey(state, actionInputKey(action), target, catalogKey(position.publicActionCatalog))
     }
     internal fun hpReading(position: BattleDecisionContext, action: BattleActionCandidate, target: UUID): HpReading? =
@@ -106,7 +106,7 @@ internal class LocalProjectedActionCalculationCache(
     /** Entry hazards/abilities are projected once for each identical virtual entry. */
     internal fun matchupEntry(source: BattleDecisionContext, pokemonId: UUID, slot: Int?,
         build: () -> BattleDecisionContext?): BattleDecisionContext? {
-        val key = MatchupEntryKey(fingerprints.of(source.state), pokemonId, slot,
+        val key = MatchupEntryKey(fingerprints.keyOf(source.state), pokemonId, slot,
             catalogKey(source.publicActionCatalog),
             Identity(
                 LocalActiveTuning.current()))
@@ -122,7 +122,7 @@ internal class LocalProjectedActionCalculationCache(
     }
 
     private data class MatchupEntryKey(
-        val state: String, val pokemon: UUID, val slot: Int?, val catalog: CatalogKey,
+        val state: LocalBattleStateFingerprint.Key, val pokemon: UUID, val slot: Int?, val catalog: CatalogKey,
         val tuning: Identity,
     )
 
@@ -139,7 +139,7 @@ internal class LocalProjectedActionCalculationCache(
         val tuning = LocalActiveTuning.current()
         // Evolving projections also depend on the remaining deadline and the recursion guard.
         if (tuning.evolvingMatchups) return build()
-        val key = MatchupMoveKey(fingerprints.of(position.state), userId, targetId,
+        val key = MatchupMoveKey(fingerprints.keyOf(position.state), userId, targetId,
             catalogKey(position.publicActionCatalog),
             Identity(tuning), matchupRecovery)
         matchupMoves[key]?.let { matchupMoveListHits++; return it }
@@ -154,7 +154,7 @@ internal class LocalProjectedActionCalculationCache(
     internal fun firstHitMoves(position: BattleDecisionContext, userId: UUID, targetId: UUID,
         build: () -> List<ScoredMove>): List<ScoredMove> {
         val tuning = LocalActiveTuning.current()
-        val key = MatchupMoveKey(fingerprints.of(position.state), userId, targetId,
+        val key = MatchupMoveKey(fingerprints.keyOf(position.state), userId, targetId,
             catalogKey(position.publicActionCatalog), Identity(tuning), matchupRecovery)
         matchupMoves[key]?.let {
             jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit.firstHitFullCacheHit()
@@ -170,7 +170,7 @@ internal class LocalProjectedActionCalculationCache(
     private val forecastSeeds = HashMap<MatchupMoveKey, Any>()
     @Suppress("UNCHECKED_CAST")
     internal fun <T : Any> forecastSeed(position: BattleDecisionContext, user: UUID, target: UUID, build: () -> T): T {
-        val key = MatchupMoveKey(fingerprints.of(position.state), user, target, catalogKey(position.publicActionCatalog),
+        val key = MatchupMoveKey(fingerprints.keyOf(position.state), user, target, catalogKey(position.publicActionCatalog),
             Identity(LocalActiveTuning.current()), matchupRecovery)
         return (forecastSeeds[key] as? T) ?: build().also {
             if (forecastSeeds.size >= MAXIMUM_MATCHUP_ENTRIES) forecastSeeds.clear()
@@ -179,7 +179,7 @@ internal class LocalProjectedActionCalculationCache(
     }
 
     private data class MatchupMoveKey(
-        val state: String, val user: UUID, val target: UUID, val catalog: CatalogKey,
+        val state: LocalBattleStateFingerprint.Key, val user: UUID, val target: UUID, val catalog: CatalogKey,
         val tuning: Identity,
         val recovery: Boolean,
     )
@@ -199,7 +199,7 @@ internal class LocalProjectedActionCalculationCache(
         includeMoveHypotheses: Boolean,
         build: () -> List<BattleActionCandidate>,
     ): List<BattleActionCandidate> = slotActionsByInputs.getOrPut(
-        SlotActionsKey(fingerprints.ofActionInputs(state), side, catalogKey(catalog), includeMoveHypotheses),
+        SlotActionsKey(fingerprints.keyOfActionInputs(state), side, catalogKey(catalog), includeMoveHypotheses),
     ) {
         slotActionListsBuilt++
         build()
@@ -222,7 +222,7 @@ internal class LocalProjectedActionCalculationCache(
         val key = ActionKey(action, side, catalogKey,
             (actionHashes.getOrPut(action) { actionHash(action) } * 31 + side.hashCode()) * 31 + catalogKey.hashCode())
         if (countIdentityKeying && byStateIdentity.getOrPut(state) { HashSet() }.add(key)) calculationsUnderIdentityKeying++
-        val stateEntries = byState.getOrPut(fingerprints.of(state)) { HashMap() }
+        val stateEntries = byState.getOrPut(fingerprints.keyOf(state)) { HashMap() }
         return stateEntries.getOrPut(key) {
             calculationsPerformed++
             calculation()
@@ -276,7 +276,7 @@ internal class LocalProjectedActionCalculationCache(
         action.componentActions.map { component -> actionHashes.getOrPut(component) { actionHash(component) } },
     ).hashCode()
     private data class SlotActionsKey(
-        val state: String,
+        val state: LocalBattleStateFingerprint.Key,
         val side: BattleSide,
         val catalog: CatalogKey,
         val includeMoveHypotheses: Boolean,

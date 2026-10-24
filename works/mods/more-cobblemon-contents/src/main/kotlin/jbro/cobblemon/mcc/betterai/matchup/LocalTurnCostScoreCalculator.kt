@@ -180,20 +180,20 @@ internal object LocalTurnCostScoreCalculator {
         }
         // All move outcomes are calculated once. A later repeat/tendency reading changes only their weights.
         val exchanges = HashMap<Triple<Double, Map<String, Int>, Set<String>>, PokemonMatchupScore?>()
-        val reactedExchanges = HashMap<String, PokemonMatchupScore?>()
+        val reactedExchanges = HashMap<jbro.cobblemon.mcc.betterai.mechanics.LocalBattleStateFingerprint.Key, PokemonMatchupScore?>()
         fun reactionEntry(moveId: String, action: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate): SwitchInOutcome? {
             val impact = jbro.cobblemon.mcc.betterai.mechanics.LocalMoveImpactProjector
             val paths = impact.project(action, position, actor.side, cache)
             // A declared hook that never fires does not replace the existing ordinary hit formula.
             // Truant still advances the attacker's phase in both control and actual states.
             if (!jbro.cobblemon.mcc.betterai.mechanics.LocalTruant.active(state, actor) && paths.all {
-                    cache.fingerprints.of(it.state) == cache.fingerprints.of(it.bodyState) }) return null
+                    cache.fingerprints.keyOf(it.state) == cache.fingerprints.keyOf(it.bodyState) }) return null
             var representative: PokemonMatchupScore? = null
             val branches = paths.map { path ->
                 val arrived = path.state.pokemon.first { it.battlePokemonId == incoming.battlePokemonId }
                 val body = path.bodyState.pokemon.first { it.battlePokemonId == incoming.battlePokemonId }
                 val survives = !arrived.fainted && arrived.hpFraction > 0.0
-                val after = if (!survives) null else reactedExchanges.getOrPut(cache.fingerprints.of(path.state)) {
+                val after = if (!survives) null else reactedExchanges.getOrPut(cache.fingerprints.keyOf(path.state)) {
                     LocalMatchupScoreCalculator.pairMatchup(position.copy(state = path.state), incoming.battlePokemonId,
                         opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
                 }

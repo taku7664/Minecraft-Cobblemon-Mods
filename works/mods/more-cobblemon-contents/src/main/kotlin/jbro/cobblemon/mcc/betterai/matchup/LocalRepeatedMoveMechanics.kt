@@ -115,7 +115,7 @@ internal object LocalRepeatedMoveMechanics {
             }
             flinchByUse?.add(flinchProbability.coerceIn(0.0, 1.0))
             // Equal mechanical states share a profile branch, preserving their entire probability mass.
-            branches = next.groupBy { cache.fingerprints.of(it.state) to it.history }.values.map {
+            branches = next.groupBy { cache.fingerprints.keyOf(it.state) to it.history }.values.map {
                 it.first().copy(probability = it.sumOf(Branch::probability))
             }
             val alive = branches.sumOf(Branch::probability).coerceIn(0.0, 1.0)
