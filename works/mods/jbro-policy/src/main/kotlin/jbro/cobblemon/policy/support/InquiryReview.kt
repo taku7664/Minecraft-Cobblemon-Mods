@@ -7,10 +7,9 @@ import com.google.gson.JsonParser
 import java.nio.file.Files
 import java.nio.file.Path
 import java.util.UUID
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
-import java.util.function.Supplier
-import com.mojang.brigadier.exceptions.CommandSyntaxException
 import jbro.cobblemon.policy.JbroPolicy
 import jbro.cobblemon.policy.api.OperatorWhisper
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -24,7 +23,7 @@ import net.minecraft.server.MinecraftServer
  * @property minutesBefore how far before the inquiry the log is read.
  * @property minutesAfter how far after it.
  * @property home where agy keeps its conversations; blank is `~/.gemini/antigravity-cli`.
- * @property autoResolve whether Pichu settles inquiries the records make certain, within the BP limits below.
+ * @property autoResolve whether supported read-only questions can close automatically. BP limit keys are legacy and do not enable payments.
  */
 data class InquiryReviewSettings(
     val enabled: Boolean = false,
@@ -39,6 +38,12 @@ data class InquiryReviewSettings(
     val autoMaxBpPerInquiry: Long = 300,
     val autoMaxBpPerDay: Long = 600,
 ) {
+    init {
+        require(minutesBefore in 0..1440 && minutesAfter in 0..60) { "Inquiry log window is out of bounds" }
+        require(maxLogCharacters in 4096..500_000) { "Inquiry log character limit is out of bounds" }
+        require(timeoutSeconds in 1..300) { "Inquiry timeout is out of bounds" }
+    }
+
     /**
      * The CLI to run. A bare name is looked up on the PATH and then where agy installs itself
      * (`%LOCALAPPDATA%\agy\bin`), since a server started from a shell without the user's PATH cannot find it.
@@ -74,8 +79,8 @@ data class InquiryReviewSettings(
                 root.get("timeoutSeconds")?.asLong ?: defaults.timeoutSeconds,
                 root.get("home")?.asString?.trim() ?: defaults.home,
                 root.get("autoResolve")?.asBoolean ?: defaults.autoResolve,
-                root.get("autoMaxBpPerInquiry")?.asLong ?: defaults.autoMaxBpPerInquiry,
-                root.get("autoMaxBpPerDay")?.asLong ?: defaults.autoMaxBpPerDay,
+                defaults.autoMaxBpPerInquiry,
+                defaults.autoMaxBpPerDay,
             )
         }
 
@@ -118,6 +123,7 @@ internal object InquiryReview {
     private val gson = GsonBuilder().setPrettyPrinting().create()
     private val worker = Executors.newSingleThreadExecutor { task -> Thread(task, "jbro-policy-inquiry-review").apply { isDaemon = true } }
 
+    private val closed = ConcurrentHashMap.newKeySet<String>()
     private var settings = InquiryReviewSettings()
     private var discord = DiscordSettings()
     private var rest: DiscordRest? = null
@@ -125,6 +131,7 @@ internal object InquiryReview {
     private var withContents = false
     private lateinit var records: Path
     private lateinit var logs: Path
+    private lateinit var gameDir: Path
     @Volatile private var server: MinecraftServer? = null
 
     val active: Boolean get() = reviewer != null
@@ -146,8 +153,13 @@ internal object InquiryReview {
         /** What the review suggested, for the "조치·명령어 보기" button; null in records from before it. */
         val suggestedActions: List<String>? = null,
         val suggestedCommands: List<InquiryVerdict.SuggestedCommand>? = null,
+        val followUps: List<String>? = null,
     ) {
-        fun inquiry() = Inquiry(nickname, accountName, UUID.fromString(playerId), reason, Inquiries.Via.valueOf(via), at, id)
+        fun acceptsFollowUp(owner: UUID, text: String): Boolean =
+            playerId == owner.toString() && text.isNotBlank() &&
+                text.codePointCount(0, text.length) <= Inquiries.MAX_REASON_LENGTH && followUps.orEmpty().size < 3
+
+        fun inquiry() = Inquiry(nickname, accountName, UUID.fromString(playerId), reason + followUps.orEmpty().joinToString("", prefix = "") { "\n추가 설명: $it" }, Inquiries.Via.valueOf(via), at, id)
     }
 
     /** Whether [customId] names one of the inquiry reviews' buttons. */
@@ -160,6 +172,7 @@ internal object InquiryReview {
             JbroPolicy.LOGGER.warn("Inquiry reviews need botToken, inquiryChannelId and adminChannelId in config/jbro-policy-discord.json; they stay off")
             return
         }
+        this.gameDir = gameDir
         this.settings = settings
         this.discord = discord
         rest = DiscordRest(discord.botToken)
@@ -183,26 +196,52 @@ internal object InquiryReview {
         if (!active) return
         val record = Record(inquiry.id, inquiry.nickname, inquiry.accountName, inquiry.playerId.toString(), inquiry.reason,
             inquiry.via.name, inquiry.at, cardMessageId, cardChannelId = cardChannelId)
-        save(record)
-        worker.execute { review(record) }
+        if (save(record)) worker.execute { review(record) }
+    }
+
+    /** Queued with reviews: only the owner may add up to three bounded follow-ups to an open inquiry. */
+    fun followUp(playerId: UUID, id: String, text: String): CompletableFuture<Boolean> {
+        if (!active || !ID.matches(id) || text.isBlank() || text.codePointCount(0, text.length) > Inquiries.MAX_REASON_LENGTH) {
+            return CompletableFuture.completedFuture(false)
+        }
+        return CompletableFuture.supplyAsync({
+            val record = load(records.resolve("$id.json"))
+            if (record == null || !record.acceptsFollowUp(playerId, text)) false
+            else {
+                val updated = record.copy(followUps = record.followUps.orEmpty() + text, reviewed = false)
+                if (!save(updated)) return@supplyAsync false
+                post(record.cardChannelId ?: discord.inquiryChannelId,
+                    DiscordRest.message("문의 $id 추가 설명: $text"))
+                review(updated)
+                true
+            }
+        }, worker)
     }
 
     private fun review(record: Record) {
+        if (record.id in closed) return
         val reviewer = reviewer ?: return
         val inquiry = record.inquiry()
         val at = InquiryLogWindow.local(inquiry.at)
         val from = at.minusMinutes(settings.minutesBefore)
         val to = at.plusMinutes(settings.minutesAfter)
-        var window: InquiryLogWindow.Window? = null
+        var reference = ""
         val data = playerData(inquiry)
         val outcome = runCatching {
             val collected = InquiryLogWindow.collect(InquiryLogWindow.read(logs, from, to), from, to, at,
                 listOf(inquiry.accountName, inquiry.nickname, inquiry.playerId.toString()), settings.maxLogCharacters)
-            window = collected
-            reviewer.review(InquiryReviewer.prompt(inquiry, collected, settings.minutesBefore, settings.minutesAfter, data?.take(PLAYER_DATA_CHARACTERS)))
+            val currentServer = server ?: error("Server unavailable")
+            val wiki = runCatching { PichuWiki.reference(PichuWiki.directory(gameDir), inquiry.reason) }.getOrDefault("")
+            val installed = runCatching { InquiryServerContext.reference(currentServer, gameDir, inquiry.reason) }
+                .getOrElse { "서버 설치 자료를 조회하지 못했어요." }
+            reference = listOf(wiki, installed).filter { it.isNotBlank() }.joinToString("\n")
+            val livePlayer = runCatching { InquiryServerContext.player(currentServer, inquiry.playerId, inquiry.reason) }
+                .getOrElse { "플레이어 현재 자료 조회 실패. 파티·PC·인벤토리는 미확인이에요." }
+            reviewer.review(InquiryReviewer.prompt(inquiry, collected, settings.minutesBefore, settings.minutesAfter,
+                data?.take(PLAYER_DATA_CHARACTERS), reference, livePlayer))
         }
         // The server stopped mid-review: it runs again on the next start.
-        if (server == null) return
+        if (server == null || record.id in closed) return
         val answer = outcome.getOrElse { failure ->
             JbroPolicy.LOGGER.warn("Could not review inquiry {} from {}", record.id, record.accountName, failure)
             post(discord.adminChannelId, DiscordRest.message(embed = failedEmbed(inquiry, failure.message.orEmpty())).withButton(record.id))
@@ -210,12 +249,15 @@ internal object InquiryReview {
             return
         }
         val verdict = answer.verdict
-        save(record.copy(conversationId = answer.conversationId, reviewed = true,
-            suggestedActions = verdict.suggestedActions, suggestedCommands = verdict.suggestedCommands))
-        val unpaid = window?.let { InquiryAutoResolve.unpaidWins(it.text, record.accountName, data, from, to) }
-        val handling = settle(record, verdict, unpaid)
+        if (!save(record.copy(conversationId = answer.conversationId, reviewed = true,
+            suggestedActions = verdict.suggestedActions, suggestedCommands = verdict.suggestedCommands))) return
+        val handling = settle(verdict, reference)
         JbroPolicy.LOGGER.info("Reviewed inquiry {} from {}: {}, {}", record.id, record.accountName, verdict.verdict, handling.note)
-        val answerText = InquiryReviewer.reply(verdict.playerSummary, handling.handedOver, handling.ran.isNotEmpty())
+        if (record.conversationId != null && record.conversationId != answer.conversationId) {
+            runCatching { reviewer.forget(record.conversationId) }
+        }
+        val answerText = InquiryReviewer.reply(verdict.playerSummary, handling.handedOver, handling.ran.isNotEmpty()) +
+            if (handling.handedOver) " 추가 설명은 /문의추가 ${record.id} <내용>으로 보내 주세요." else ""
         server?.execute { OperatorWhisper.send(server ?: return@execute, inquiry.playerId, answerText, inquiry.reason) }
         post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, answerText))
         val card = DiscordRest.message(embed = reviewEmbed(inquiry, verdict, handling, answerText))
@@ -234,44 +276,11 @@ internal object InquiryReview {
     /** How much of the player data the prompt carries; the server's own checks read all of it. */
     private const val PLAYER_DATA_CHARACTERS = 20_000
 
-    private val ledger by lazy { InquiryAutoResolve.Ledger(records.resolve("auto-bp.json")) }
-
-    private fun settle(record: Record, verdict: InquiryVerdict, unpaidWins: Int?): Handling {
+    private fun settle(verdict: InquiryVerdict, reference: String): Handling {
         if (!settings.autoResolve) return Handling(true, emptyList(), "자동 처리가 꺼져 있어요")
-        val limits = InquiryAutoResolve.Limits(settings.autoMaxBpPerInquiry, settings.autoMaxBpPerDay)
-        return when (val plan = InquiryAutoResolve.plan(verdict, record.accountName, record.id, ledger.paidToday(record.playerId), limits, unpaidWins)) {
+        return when (val plan = InquiryAutoResolve.plan(verdict, reference)) {
             is InquiryAutoResolve.Plan.HandOver -> Handling(true, emptyList(), plan.why)
-            InquiryAutoResolve.Plan.Explain -> Handling(false, emptyList(), "설명으로 마무리했어요")
-            is InquiryAutoResolve.Plan.Run -> {
-                val ran = runAsServer(plan.commands)
-                if (ran.isNotEmpty()) ledger.add(record.playerId, plan.amounts.take(ran.size).sum())
-                if (ran.size == plan.commands.size) Handling(false, ran, "자동 처리했어요")
-                else Handling(true, ran, "명령을 실행하지 못했어요. 플레이어가 접속해 있지 않을 수 있어요")
-            }
-        }
-    }
-
-    /** Runs [commands] in order as the server console, stopping at the first that fails; the ones that ran. */
-    private fun runAsServer(commands: List<String>): List<String> {
-        val server = server ?: return emptyList()
-        return try {
-            server.submit(Supplier {
-                val ran = mutableListOf<String>()
-                for (command in commands) {
-                    val ok = try {
-                        server.commands.dispatcher.execute(command, server.createCommandSourceStack()) > 0
-                    } catch (failure: CommandSyntaxException) {
-                        JbroPolicy.LOGGER.warn("Pichu could not run '{}': {}", command, failure.message)
-                        false
-                    }
-                    if (!ok) break
-                    ran += command
-                }
-                ran.toList()
-            }).get(10, TimeUnit.SECONDS)
-        } catch (failure: Exception) {
-            JbroPolicy.LOGGER.warn("Pichu could not run its commands", failure)
-            emptyList()
+            InquiryAutoResolve.Plan.Explain -> Handling(false, emptyList(), "서버 자료에 근거한 답변으로 마무리했어요")
         }
     }
 
@@ -336,8 +345,10 @@ internal object InquiryReview {
     }
 
     /** Forgets inquiry [id]: its record and the conversation its review left in agy. */
+    @Synchronized
     fun resolve(id: String) {
         if (!ID.matches(id) || !::records.isInitialized) return
+        closed.add(id)
         val file = records.resolve("$id.json")
         val record = load(file)
         record?.conversationId?.let { conversation ->
@@ -412,7 +423,7 @@ internal object InquiryReview {
                 append(if (handling.handedOver) "🙋 관리자 확인 필요 · " else "✅ ").append(handling.note)
                 if (handling.ran.isNotEmpty()) append("\n").append(handling.ran.joinToString("\n") { "`/$it`" })
             }, inline = false))
-            add(field("근거 로그", if (verdict.evidence.isEmpty()) "-" else codeBlock(verdict.evidence), inline = false))
+            add(field("근거 자료", if (verdict.evidence.isEmpty()) "-" else codeBlock(verdict.evidence), inline = false))
             add(field("권장 조치", verdict.suggestedActions.joinToString("\n") { "• $it" }, inline = false))
             add(field("플레이어에게 보낸 답", answer, inline = false))
             add(field("UUID", inquiry.playerId.toString()))
@@ -450,12 +461,21 @@ internal object InquiryReview {
         addProperty("inline", inline)
     }
 
-    private fun save(record: Record) {
-        try {
+    @Synchronized
+    private fun save(record: Record): Boolean {
+        if (record.id in closed) return false
+        return try {
             Files.createDirectories(records)
-            Files.writeString(records.resolve("${record.id}.json"), gson.toJson(record))
+            val file = records.resolve("${record.id}.json")
+            val temporary = Files.createTempFile(records, record.id + "-", ".tmp")
+            try {
+                Files.writeString(temporary, gson.toJson(record))
+                Files.move(temporary, file, java.nio.file.StandardCopyOption.ATOMIC_MOVE, java.nio.file.StandardCopyOption.REPLACE_EXISTING)
+            } finally { Files.deleteIfExists(temporary) }
+            true
         } catch (failure: java.io.IOException) {
             JbroPolicy.LOGGER.warn("Could not save inquiry {}", record.id, failure)
+            false
         }
     }
 
@@ -468,6 +488,6 @@ internal object InquiryReview {
 
     private fun openRecords(): List<Record> {
         if (!Files.isDirectory(records)) return emptyList()
-        return Files.list(records).use { files -> files.toList() }.filter { it.toString().endsWith(".json") }.mapNotNull(::load)
+        return Files.list(records).use { files -> files.toList() }.filter { ID.matches(it.fileName.toString().removeSuffix(".json")) && it.toString().endsWith(".json") }.mapNotNull(::load)
     }
 }

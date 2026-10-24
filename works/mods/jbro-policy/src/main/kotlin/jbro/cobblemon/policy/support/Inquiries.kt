@@ -68,6 +68,22 @@ object Inquiries {
             JbroPolicy.LOGGER.info("Inquiries are off until config/jbro-policy-discord.json names an inquiry channel or webhook")
         }
         CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
+            for (name in listOf("문의추가", "inquiryfollowup")) {
+                dispatcher.register(Commands.literal(name)
+                    .then(Commands.argument("id", StringArgumentType.word())
+                        .then(Commands.argument("reason", StringArgumentType.greedyString()).executes { context ->
+                            val player = context.source.playerOrException
+                            val id = StringArgumentType.getString(context, "id")
+                            val text = clean(StringArgumentType.getString(context, "reason"))
+                            InquiryReview.followUp(player.uuid, id, text).whenComplete { accepted, failure ->
+                                player.server.execute {
+                                    PlayerLog.send(player, Component.translatable(KEY +
+                                        if (failure == null && accepted == true) "followup_sent" else "followup_failed"))
+                                }
+                            }
+                            1
+                        })))
+            }
             for (name in listOf("문의", "inquiry")) {
                 dispatcher.register(Commands.literal(name)
                     .then(Commands.argument("reason", StringArgumentType.greedyString()).executes { context ->
