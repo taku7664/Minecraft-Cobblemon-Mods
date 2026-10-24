@@ -162,10 +162,11 @@ internal object LocalSetupGate {
         val moveId = PublicIds.canonical(candidate.moveId ?: return null)
         val stages = LocalMatchupScoreCalculator.setupMoves(context, user)[moveId] ?: return null
         val cost = LocalMatchupScoreCalculator.setupHpCosts(context, user)[moveId] ?: 0.0
-        // User-chosen 0.1 reserve for unmodelled item/spread error, separate from calculated KO risk.
+        // User-approved low-HP caution curve for unmodelled item/spread error, separate from calculated KO risk.
         val hpRatio = user.hpFraction.coerceIn(0.0, 1.0)
         val missingHp = 1.0 - hpRatio
-        val hpSafety = 1.0 - 0.1 * missingHp * missingHp
+        val missingHpSquared = missingHp * missingHp
+        val hpSafety = 1.0 - missingHpSquared * missingHpSquared
         if (cost > 0.0 && user.hpFraction <= cost) return Reading(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, hpRatio, hpSafety)
         val foes = context.state.pokemon.filter { it.side != user.side && !it.fainted && it.hpFraction > 0.0 }
         if (foes.isEmpty()) return null

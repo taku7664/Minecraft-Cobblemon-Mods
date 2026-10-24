@@ -24,7 +24,7 @@ class LocalMatchupScoreTest {
     fun `low HP discounts positive setup gain smoothly without changing its HP cost`() {
         val base = context(allySpeed = 150, foeSpeed = 100, allyPower = 40.0, foePower = 0.01,
             allySetup = mapOf("atk" to 2), secondFoe = true)
-        for ((hp, safety) in listOf(1.0 to 1.0, 0.5 to 0.975, 0.25 to 0.94375, 0.1 to 0.919)) {
+        for ((hp, safety) in listOf(1.0 to 1.0, 0.75 to 0.99609375, 0.5 to 0.9375, 0.25 to 0.68359375, 0.1 to 0.3439, 0.01 to 0.03940399)) {
             val board = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
                 if (it.battlePokemonId == ALLY) it.copyState(hpFraction = hp) else it }))
             val internals = jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals
@@ -53,14 +53,14 @@ class LocalMatchupScoreTest {
         val reading = LocalSetupGate.score(action, board, LocalMatchupScoreCalculator.calculate(board), 200.0)!!
         val gain = (reading.pressure + reading.speed) * reading.survival * reading.holds
         assertEquals(50.0, reading.hpCost, 1e-9)
-        assertEquals(0.99375, reading.hpSafety, 1e-12)
+        assertEquals(0.99609375, reading.hpSafety, 1e-12)
         assertEquals(((if (gain > 0.0) gain * reading.hpSafety else gain) - 50.0) * reading.effectChance, reading.value, 1e-9)
         val insufficient = board.copy(state = board.state.derive(pokemon = board.state.pokemon.map {
             if (it.battlePokemonId == ALLY) it.copyState(hpFraction = 0.25) else it }))
         val failed = LocalSetupGate.score(action, insufficient, LocalMatchupScoreCalculator.calculate(insufficient), 200.0)!!
         assertEquals(0.0, failed.value, 1e-12)
         assertEquals(0.25, failed.hpRatio, 1e-12)
-        assertEquals(0.94375, failed.hpSafety, 1e-12)
+        assertEquals(0.68359375, failed.hpSafety, 1e-12)
     }
 
 
