@@ -1,5 +1,12 @@
 # 작업 기록
 
+## [2026-10-24 16:39] 개발·로컬 운영 서버 및 클라이언트 위키 배포
+
+- **대상·소스:** 사용자 추가 요청에 따라 canonical 저장소의 develop-product/server·develop-product/client, 로컬 MinecraftPPakemonServer, Modrinth PPakemon 프로필의 config/more-cobblemon-contents/wiki에 스폰 수정 파일 1,025개씩 반영했다. main 병합 c6ec483864f47b4011c8676d029aa229decc2180의 검증된 정적 묶음을 재사용했고, 배포 시점 canonical main 1957d740과 위키 정적 소스가 동일함을 확인했다.
+- **설치·보존:** 서버 두 곳은 startup-assets/server-wiki.zip과 startup-hooks.json의 wiki_files.sha256도 갱신했다. 묶음 SHA-256은 c0441a715a7d1e8e46e1dbb967ed87b30a01781db27bb5159b18696205be3072이다. 스폰 수정 외의 기존 위키 파일과 개인 설정은 보존했다. 로컬 운영 저장소는 변경 경로가 해당 위키·묶음·해시 설정 1,027개뿐임을 확인한 뒤 기존 운영 main 6ddd9716fc9537878949384897ed1b990a84598a으로 fast-forward했으며 작업 트리와 origin/main 일치를 확인했다. 같은 운영 커밋을 재사용했으므로 중복 배포 커밋은 만들지 않았다.
+- **검증·동시 작업:** 네 사본 각각 1,025파일의 SHA-256과 두 서버의 묶음·해시 설정 일치를 확인했다. 보호 대상은 개발 서버 316개·개발 클라이언트 307개·운영 서버 169개·운영 클라이언트 295개가 동일했다. 배포 중 개발 서버 mods/more-cobblemon-contents-0.1.0.jar의 별도 변경을 감지해 첫 보존 검사가 중단됐다. 이번 배포 코드는 해당 JAR을 쓰지 않으며 변경된 JAR을 보존한 채 클라이언트 위키 반영과 검증을 마쳤다. 백업·검증 결과는 F:/AI/scratch/wiki-spawn-fix-20261024/local-deployment-20261024-163532 및 local-deployment-result.json에 보관한다.
+- **실행 범위:** 서버·클라이언트 종료/재시작, JAR 설치, Gradle 빌드, 실게임 확인은 수행하지 않았다. 배포 당시 로컬 25565·25566·8100·8101의 수신 소켓이 없어 로컬 HTTP 응답 확인은 하지 않았다. 앞서 배포한 VPS 위키에는 이번에 추가 쓰기 작업을 하지 않았다. VPS의 tmux Java PID 182495·pane_dead=0과 25565 연결이 유지됨을 읽기 전용으로 다시 확인했다.
+
 ## [2026-10-24 11:03] VPS 위키 무중단 교체·운영 저장소 등록 완료
 
 - **소스:** main 병합 c6ec483864f47b4011c8676d029aa229decc2180을 origin/main에 푸시하고 동기화를 확인했다. 이 커밋의 Git blob에서 정적 파일 묶음을 만들어 작업 중 파일·다른 클라이언트 사본이 섞이지 않도록 했다.
