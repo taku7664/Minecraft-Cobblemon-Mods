@@ -50,7 +50,7 @@ internal object LocalStopScoreCalculator {
         fun exchange(state: BattleStateView = boosted.state, field: MatchupSpeedField = MatchupSpeedField.CURRENT): PokemonMatchupScore? {
             val faced = boosted.copy(state = state)
             val read = if (field == MatchupSpeedField.CURRENT) faced else LocalMatchupScoreCalculator.withTrickRoomToggled(faced)
-            return LocalMatchupScoreCalculator.pairMatchup(read, subjectId, sweeperId, field, cache)
+            return LocalMatchupScoreCalculator.forecastMatchup(position, read, subjectId, sweeperId, field, cache)
         }
         fun win(state: BattleStateView = boosted.state, field: MatchupSpeedField = MatchupSpeedField.CURRENT): Double =
             exchange(state, field)?.winProbability ?: 0.0
@@ -128,7 +128,9 @@ internal object LocalStopScoreCalculator {
         }
         // The attack the sweeper uses in the exchange, read for whether it ignores the target's ability.
         val sweeperAttack = againstBoosted.opponentMove?.moveId?.let { id ->
-            LocalMatchupScoreCalculator.moveMatchups(boosted, sweeperId, subjectId, cache).firstOrNull { it.score.moveId == id }?.action
+            if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().simpleForecastMatchups)
+                LocalForecastMatchups.action(position, sweeperId, subjectId, id, cache)
+            else LocalMatchupScoreCalculator.moveMatchups(boosted, sweeperId, subjectId, cache).firstOrNull { it.score.moveId == id }?.action
         }
         val breaksIt = sweeperAttack != null &&
             LocalPublicAbilityMechanics.ignoresTargetAbility(sweeperAttack, boostedSweeper, boostedSubject, boosted.state)
@@ -137,7 +139,9 @@ internal object LocalStopScoreCalculator {
             val value = unaware * win(ignored)
             if (unaware >= 1.0 || value >= LocalSetupGate.STOPPER_PASS) tools += StopTool(StopToolKind.IGNORES_BOOSTS, null, value)
         }
-        LocalMatchupScoreCalculator.moveMatchups(boosted, subjectId, sweeperId, cache)
+        (if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().simpleForecastMatchups)
+            LocalHpMatchupAudit.future { LocalForecastMatchups.forecastMoves(position, boosted, subjectId, sweeperId, cache) }
+        else LocalMatchupScoreCalculator.moveMatchups(boosted, subjectId, sweeperId, cache))
             .filter { (it.action.moveDetails?.priority ?: 0) > 0 }
             .maxByOrNull { it.score.knockoutChanceWithin(1) }
             ?.let { tools += StopTool(StopToolKind.PRIORITY_FINISH, it.score.moveId, it.score.knockoutChanceWithin(1)) }

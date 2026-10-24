@@ -39,6 +39,9 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
             addRenderableWidget(CycleButton.onOffBuilder(settings.simpleHpMatchups)
                 .create(x, 114, 146, 20, text("matchup")) { _, enabled -> update { it.copy(simpleHpMatchups = enabled) } }
                 .also { it.setTooltip(Tooltip.create(text("matchup_help"))) })
+            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleForecastMatchups)
+                .create(x, 140, 146, 20, text("forecast")) { _, enabled -> update { it.copy(simpleForecastMatchups = enabled) } }
+                .also { it.setTooltip(Tooltip.create(text("forecast_help").copy().append("\n\n").append(text("scope")))) })
         }
         addRenderableWidget(Button.builder(Component.translatable("gui.done")) {
             try { LocalOptimizationConfigStore.save(path, config); onClose() } catch (_: Exception) { failed = true }
@@ -53,9 +56,9 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
         graphics.drawCenteredString(font, title, width / 2, 28, 0xFFFFFF)
         graphics.drawCenteredString(font, text("single"), width / 2 - 77, 48, 0xFFFFFF)
         graphics.drawCenteredString(font, text("double"), width / 2 + 77, 48, 0xFFFFFF)
-        var y = 148
+        var y = 170
         for (key in listOf("scope")) {
-            font.split(text(key), (width - 48).coerceAtLeast(100)).forEach {
+            font.split(text(key), (width - 48).coerceAtLeast(100)).take(((height - 60 - y) / 12).coerceAtLeast(0)).forEach {
                 graphics.drawString(font, it, 24, y, 0xCCCCCC); y += 12
             }
             y += 8

@@ -1,4 +1,6 @@
 {
+  "config.more_cobblemon_contents.betterai.forecast_help": "Estimate future sweeps and stops from damage ratios and expected turns. Current-action rank formulas are unchanged. Scores and choices may change.",
+  "config.more_cobblemon_contents.betterai.forecast": "Simple forecasts",
   "config.more_cobblemon_contents.betterai.double": "Doubles",
   "config.more_cobblemon_contents.betterai.single": "Singles",
   "config.more_cobblemon_contents.betterai.matchup": "HP matchup reuse",

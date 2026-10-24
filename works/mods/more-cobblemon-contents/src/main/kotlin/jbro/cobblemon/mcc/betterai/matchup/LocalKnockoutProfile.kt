@@ -39,6 +39,10 @@ internal class LocalKnockoutProfile private constructor(
     )
 
     companion object {
+        /** Already approximated future-only profiles; ordinary callers retain of/byHits unchanged. */
+        internal fun forecast(survival: List<Double>, damage: List<Double>, expected: Double): LocalKnockoutProfile =
+            LocalKnockoutProfile(survival, damage, expected)
+
         const val MAXIMUM_CELLS = 1000
         private const val GRID = MAXIMUM_CELLS
 

@@ -15,11 +15,13 @@ internal data class LocalOptimizationSettings(
     val simplePoisonEvaluation: Boolean = false,
     val poisonEvaluationTurns: Int = 2,
     val simpleHpMatchups: Boolean = false,
+    val simpleForecastMatchups: Boolean = false,
 ) {
     init { require(poisonEvaluationTurns in 1..8) }
     fun applyTo(tuning: LocalDecisionTuning): LocalDecisionTuning = tuning.copy(
         simpleFixedHpReactions = simpleFixedHpReactions,
         simpleHpMatchups = simpleHpMatchups,
+        simpleForecastMatchups = simpleForecastMatchups,
         poisonEvaluationTurns = poisonEvaluationTurns.takeIf { simplePoisonEvaluation },
     )
 }
@@ -50,7 +52,7 @@ internal object LocalOptimizationConfigStore {
                 require(it.isJsonPrimitive && it.asJsonPrimitive.isNumber && it.asBigDecimal.stripTrailingZeros().scale() <= 0)
                 it.asBigDecimal.intValueExact()
             } ?: 2
-            return LocalOptimizationSettings(flag("simpleFixedHpReactions"), flag("simplePoisonEvaluation"), turns, flag("simpleHpMatchups"))
+            return LocalOptimizationSettings(flag("simpleFixedHpReactions"), flag("simplePoisonEvaluation"), turns, flag("simpleHpMatchups"), flag("simpleForecastMatchups"))
         }
         // Existing flat files retain their previous meaning for both formats until explicitly separated.
         val legacy = settings(root)
@@ -71,11 +73,12 @@ internal object LocalOptimizationConfigStore {
             section.addProperty("simplePoisonEvaluation", settings.simplePoisonEvaluation)
             section.addProperty("poisonEvaluationTurns", settings.poisonEvaluationTurns)
             section.addProperty("simpleHpMatchups", settings.simpleHpMatchups)
+            section.addProperty("simpleForecastMatchups", settings.simpleForecastMatchups)
             root.add(key, section)
         }
         saveSection("single", config.single)
         saveSection("double", config.double)
-        for (key in listOf("simpleFixedHpReactions", "simplePoisonEvaluation", "poisonEvaluationTurns", "simpleHpMatchups")) root.remove(key)
+        for (key in listOf("simpleFixedHpReactions", "simplePoisonEvaluation", "poisonEvaluationTurns", "simpleHpMatchups", "simpleForecastMatchups")) root.remove(key)
         Files.createDirectories(requireNotNull(path.parent))
         val temporary = path.resolveSibling("${path.fileName}.${UUID.randomUUID()}.tmp")
         try {

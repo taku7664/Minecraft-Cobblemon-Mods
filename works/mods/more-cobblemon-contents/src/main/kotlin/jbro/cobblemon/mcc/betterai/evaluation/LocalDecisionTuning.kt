@@ -202,6 +202,8 @@ internal data class LocalDecisionTuning(
     val simpleFixedHpReactions: Boolean = false,
     /** Opt-in HP-only reuse of uncapped damage instead of repeated tactical calculation. */
     val simpleHpMatchups: Boolean = false,
+    /** Approximate only long-term sweep/stop forecasts; current-action marginal ranks stay exact. */
+    val simpleForecastMatchups: Boolean = false,
     /** Poison-only HP/KO horizon; null retains the evolving team-exchange evaluation for ablation. */
     val poisonEvaluationTurns: Int? = null,
     /**

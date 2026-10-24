@@ -174,7 +174,7 @@ internal object LocalMatchupScoreCalculator {
                     if (it.battlePokemonId != subject.battlePokemonId) it
                     else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
                 })
-                val win = pairMatchup(position.copy(state = worn), subject.battlePokemonId, foe.battlePokemonId,
+                val win = forecastMatchup(position, position.copy(state = worn), subject.battlePokemonId, foe.battlePokemonId,
                     MatchupSpeedField.CURRENT, cache)?.winProbability ?: return@mapNotNull null
                 Triple(foe.battlePokemonId, survives, survives * win)
             }
@@ -229,7 +229,7 @@ internal object LocalMatchupScoreCalculator {
                     if (it.battlePokemonId != subject.battlePokemonId) it
                     else it.copyState(hpFraction = (it.hpFraction - taken).coerceAtLeast(MINIMUM_STANDING_HP))
                 })
-                val win = pairMatchup(position.copy(state = worn), subject.battlePokemonId, foe.battlePokemonId,
+                val win = forecastMatchup(position, position.copy(state = worn), subject.battlePokemonId, foe.battlePokemonId,
                     MatchupSpeedField.CURRENT, cache)?.winProbability ?: return@mapNotNull null
                 foe.battlePokemonId to survives * win
             }.toMap()
@@ -294,6 +294,14 @@ internal object LocalMatchupScoreCalculator {
         val byOpponent: Map<UUID, Double>,
         val survivalByOpponent: Map<UUID, Double>,
     )
+
+    /** Only long-term sweep/window/stop callers use this gate; root stage marginals use pairMatchup directly. */
+    internal fun forecastMatchup(base: BattleDecisionContext, future: BattleDecisionContext, subject: UUID, foe: UUID,
+        field: MatchupSpeedField, cache: LocalProjectedActionCalculationCache): PokemonMatchupScore? = LocalHpMatchupAudit.future {
+        if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().simpleForecastMatchups)
+            LocalForecastMatchups.exchange(base, future, subject, foe, field, cache)
+        else pairMatchup(future, subject, foe, field, cache)
+    }
 
     /** The pair re-scored from scratch in [position]: both sides' moves, then the exchange. */
     internal fun pairMatchup(
@@ -805,7 +813,7 @@ internal object LocalMatchupScoreCalculator {
      * The share of its maximum HP [pokemon]'s best self-heal restores, from its known moves (and, for an opponent,
      * the slots this tier believes in). Rest is left out: it puts the user to sleep for the turns it would attack.
      */
-    private fun healFraction(position: BattleDecisionContext, pokemon: BattlePokemonStateView): Double {
+    internal fun healFraction(position: BattleDecisionContext, pokemon: BattlePokemonStateView): Double {
         val catalog = position.publicActionCatalog
         val known = catalog.forPokemon(pokemon.battlePokemonId).filter { it.details.currentPp > 0 }.map { it.details }
         val inferred = if (pokemon.side != BattleSide.OPPONENT) emptyList() else
@@ -998,9 +1006,9 @@ internal object LocalMatchupScoreCalculator {
      * Moves that fail when their user is hit before it moves. An exchange has both sides attacking every
      * turn, so they never land in one; their damage still counts in the move scores.
      */
-    private val FAILS_WHEN_HIT_FIRST = setOf("focuspunch", "shelltrap")
+    internal val FAILS_WHEN_HIT_FIRST = setOf("focuspunch", "shelltrap")
     /** Leading moves per side played against each other in [bestExchange]. */
-    private const val EXCHANGE_MOVES = 4
+    internal const val EXCHANGE_MOVES = 4
     private const val MINIMUM_STANDING_HP = 0.01
     private const val ROLLS = 16
     private const val TRICK_ROOM = "trickroom"

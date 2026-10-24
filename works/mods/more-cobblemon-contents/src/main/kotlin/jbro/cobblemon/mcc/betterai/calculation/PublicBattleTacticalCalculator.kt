@@ -72,6 +72,8 @@ internal object PublicBattleTacticalCalculator {
         rollsWorkedOut(candidate, context, actingSide)
     }
 
+    internal fun forecastAction(action: BattleActionCandidate): BattleActionCandidate = action.copyWith(facts = null)
+
     /** Ordinary damage before the target's remaining-HP cap, for HP-only matchup reuse. */
     fun uncappedConservativeDamageRollFractions(candidate: BattleActionCandidate, context: BattleDecisionContext,
         actingSide: BattleSide): List<Double>? = rollsWorkedOut(candidate, context, actingSide, capAtHp = false)
@@ -243,7 +245,7 @@ internal object PublicBattleTacticalCalculator {
         return projection.maximumHypothesisRolls.map { damage -> damage.toDouble() / maxHp.minimum * hitCount }
     }
 
-    private fun declaredDamageRollFractions(
+    internal fun declaredDamageRollFractions(
         candidate: BattleActionCandidate,
         actor: BattlePokemonStateView?,
         target: BattlePokemonStateView?,
@@ -845,7 +847,7 @@ internal object PublicBattleTacticalCalculator {
         )
     }
 
-    private fun publicOffensiveStat(
+    internal fun publicOffensiveStat(
         value: BattleIntegerRange,
         moveId: String?,
         details: BattleMoveCandidateView,
@@ -885,7 +887,7 @@ internal object PublicBattleTacticalCalculator {
         ?.coerceIn(-6, 6)
         ?: 0
 
-    private fun applyStage(range: BattleIntegerRange, stage: Int): BattleIntegerRange = BattleIntegerRange(
+    internal fun applyStage(range: BattleIntegerRange, stage: Int): BattleIntegerRange = BattleIntegerRange(
         minimum = applyStage(range.minimum, stage),
         maximum = applyStage(range.maximum, stage),
     )

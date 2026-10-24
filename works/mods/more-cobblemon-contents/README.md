@@ -52,8 +52,9 @@ UI 키트는 본체 JAR에 포함돼 있으므로 MCC용 UI 키트를 별도로 
   - `simpleFixedHpReactions`: 독립적인 생구 HP 반응을 간단 계산합니다. 복합 반응·반동사 등은 기존 계산을 유지합니다.
   - `simplePoisonEvaluation`: 독·맹독의 장기 대면 평가를 단기 HP·KO 평가로 바꿉니다. 각 모드의 `poisonEvaluationTurns`는 1~8턴이며 기본값은 2입니다.
   - `simpleHpMatchups`: HP만 바뀐 판에서 HP와 무관한 기존 피해를 재사용하고 새 남은 HP 상한을 적용합니다. 이때 전술 계산·피해 롤 계산을 생략합니다. HP 의존 효과, 스크립트 기술, 연속기 등은 기존 경로를 사용합니다. KO 누적표·교환 승률·랭크 점수식은 유지합니다.
+  - `simpleForecastMatchups`: 미래 스윕·스윕 저지의 대면을 간단 계산합니다. 처음 준비한 피해 롤에 실제 위력·공격·방어·보정 배율의 비율을 적용하고, 평균 피해와 필요 타격 수로 장기 교환을 추정합니다. 미래 판마다 기술 후보·정밀 피해·KO 누적표를 다시 만들지 않습니다. 현재 행동의 랭크 평가와 직접 대면 계산은 기존 정밀 경로를 유지합니다. 근사 때문에 미래 점수와 최종 선택은 달라질 수 있습니다.
 
-예를 들어 `{"single":{},"double":{"simpleHpMatchups":true}}`는 더블에서만 HP 대면 재사용을 켭니다. 점수와 선택이 달라질 수 있는 실험 옵션이며, 비교 범위와 결과는 [계산 최적화 검토](docs/BETTERAI_OPTIMIZATION_REVIEW.md)를 따릅니다.
+예를 들어 `{"single":{},"double":{"simpleForecastMatchups":true}}`는 더블에서만 미래 대면 간단 계산을 켭니다. 점수와 선택이 달라질 수 있는 실험 옵션이며, 비교 범위와 결과는 [계산 최적화 검토](docs/BETTERAI_OPTIMIZATION_REVIEW.md)를 따릅니다.
 
 - `config/more-cobblemon-contents/bp-shop.json`: BP 상점 전체를 관리하는 단일 JSON입니다. 최초 로드 때 기본 파일을 생성하고 이후에는 이 파일만 읽습니다.
   - `entries`: 판매 품목 목록. 품목을 추가·삭제하거나 `price_bp`를 바꾸고 `/reload`하면 적용됩니다. 삭제한 품목은 재시작해도 돌아오지 않으며, `[]`는 빈 상점입니다.

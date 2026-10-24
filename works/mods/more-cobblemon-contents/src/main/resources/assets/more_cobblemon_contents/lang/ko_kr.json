@@ -1,4 +1,6 @@
 {
+  "config.more_cobblemon_contents.betterai.forecast_help": "미래 스윕·저지의 반복 피해 계산을 배율과 필요 턴으로 근사합니다. 현재 행동의 랭크 평가식은 유지합니다. 판단값과 선택이 달라질 수 있습니다.",
+  "config.more_cobblemon_contents.betterai.forecast": "미래 대면 간단 계산",
   "config.more_cobblemon_contents.betterai.double": "더블",
   "config.more_cobblemon_contents.betterai.single": "싱글",
   "config.more_cobblemon_contents.betterai.matchup": "HP 대면 재사용",

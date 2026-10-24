@@ -149,6 +149,17 @@ internal class LocalProjectedActionCalculationCache(
         }
     }
 
+    private val forecastSeeds = HashMap<MatchupMoveKey, Any>()
+    @Suppress("UNCHECKED_CAST")
+    internal fun <T : Any> forecastSeed(position: BattleDecisionContext, user: UUID, target: UUID, build: () -> T): T {
+        val key = MatchupMoveKey(fingerprints.of(position.state), user, target, catalogKey(position.publicActionCatalog),
+            Identity(LocalActiveTuning.current()), matchupRecovery)
+        return (forecastSeeds[key] as? T) ?: build().also {
+            if (forecastSeeds.size >= MAXIMUM_MATCHUP_ENTRIES) forecastSeeds.clear()
+            forecastSeeds[key] = it
+        }
+    }
+
     private data class MatchupMoveKey(
         val state: String, val user: UUID, val target: UUID, val catalog: CatalogKey,
         val tuning: Identity,
