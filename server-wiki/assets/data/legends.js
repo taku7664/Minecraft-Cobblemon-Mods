@@ -706,13 +706,11 @@ window.WIKI_LEGENDS = [
    }
   ],
   "except": [],
-  "exclusions": [
-   "경작지 중 하나 위"
-  ],
+  "exclusions": [],
   "conditions": [
    {
     "kind": "spawn",
-    "text": "자연 바닥 블록 중 하나 위"
+    "text": "물에서"
    }
   ],
   "entry": [
@@ -1251,13 +1249,11 @@ window.WIKI_LEGENDS = [
    }
   ],
   "except": [],
-  "exclusions": [
-   "경작지 중 하나 위"
-  ],
+  "exclusions": [],
   "conditions": [
    {
     "kind": "spawn",
-    "text": "자연 바닥 블록 중 하나 위"
+    "text": "물에서"
    }
   ],
   "entry": [],
@@ -1545,13 +1541,11 @@ window.WIKI_LEGENDS = [
    }
   ],
   "except": [],
-  "exclusions": [
-   "경작지 중 하나 위"
-  ],
+  "exclusions": [],
   "conditions": [
    {
     "kind": "spawn",
-    "text": "자연 바닥 블록 중 하나 위"
+    "text": "물에서"
    }
   ],
   "entry": [],
@@ -1596,13 +1590,11 @@ window.WIKI_LEGENDS = [
    }
   ],
   "except": [],
-  "exclusions": [
-   "경작지 중 하나 위"
-  ],
+  "exclusions": [],
   "conditions": [
    {
     "kind": "spawn",
-    "text": "자연 바닥 블록 중 하나 위"
+    "text": "물에서"
    }
   ],
   "entry": [],
@@ -1647,13 +1639,11 @@ window.WIKI_LEGENDS = [
    }
   ],
   "except": [],
-  "exclusions": [
-   "경작지 중 하나 위"
-  ],
+  "exclusions": [],
   "conditions": [
    {
     "kind": "spawn",
-    "text": "자연 바닥 블록 중 하나 위"
+    "text": "물에서"
    }
   ],
   "entry": [],
@@ -2059,9 +2049,7 @@ window.WIKI_LEGENDS = [
    }
   ],
   "except": [],
-  "exclusions": [
-   "경작지 중 하나 위"
-  ],
+  "exclusions": [],
   "conditions": [
    {
     "kind": "spawn",
@@ -2073,7 +2061,7 @@ window.WIKI_LEGENDS = [
    },
    {
     "kind": "spawn",
-    "text": "자연 바닥 블록 중 하나 위"
+    "text": "물에서"
    }
   ],
   "entry": [
@@ -2111,9 +2099,7 @@ window.WIKI_LEGENDS = [
    }
   ],
   "except": [],
-  "exclusions": [
-   "경작지 중 하나 위"
-  ],
+  "exclusions": [],
   "conditions": [
    {
     "kind": "spawn",
@@ -2129,7 +2115,7 @@ window.WIKI_LEGENDS = [
    },
    {
     "kind": "spawn",
-    "text": "자연 바닥 블록 중 하나 위"
+    "text": "물에서"
    }
   ],
   "entry": [],
@@ -5148,7 +5134,7 @@ window.WIKI_LEGENDS = [
   "rank": "하이퍼볼",
   "rarity": "희귀",
   "weight": 0.3,
-  "position": "물 위",
+  "position": "용암 위",
   "dimensions": [
    "네더"
   ],
@@ -5163,13 +5149,11 @@ window.WIKI_LEGENDS = [
    }
   ],
   "except": [],
-  "exclusions": [
-   "경작지 중 하나 위"
-  ],
+  "exclusions": [],
   "conditions": [
    {
     "kind": "spawn",
-    "text": "자연 바닥 블록 중 하나 위"
+    "text": "용암에서"
    }
   ],
   "entry": [],
@@ -5462,13 +5446,11 @@ window.WIKI_LEGENDS = [
    }
   ],
   "except": [],
-  "exclusions": [
-   "경작지 중 하나 위"
-  ],
+  "exclusions": [],
   "conditions": [
    {
     "kind": "spawn",
-    "text": "자연 바닥 블록 중 하나 위"
+    "text": "물에서"
    }
   ],
   "entry": [

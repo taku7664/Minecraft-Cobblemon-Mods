@@ -1,6 +1,7 @@
 package jbro.cobblemon.policy
 
 import com.google.gson.JsonParser
+import jbro.cobblemon.policy.legend.LegendSpawnBucket
 import jbro.cobblemon.policy.welcome.WelcomeKit
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
@@ -19,8 +20,20 @@ class PolicyDataTest {
             assertTrue(id.startsWith("jbro-legendary-")) { id }
             assertFalse(spawn.has("context")) { "$id still uses the pre-1.8 context key" }
             assertTrue(spawn.get("spawnablePositionType").asString in setOf("grounded", "surface", "submerged")) { id }
-            assertEquals("ultra-rare", spawn.get("bucket").asString)
+            assertEquals(LegendSpawnBucket.NAME, spawn.get("bucket").asString)
         }
+    }
+
+    @Test
+    fun `End spawns stay in the End and give its ultra-rare roll candidates besides legends`() {
+        val spawns = json("/resourcepacks/end_spawns/data/jbro_policy/spawn_pool_world/end_wild_spawns.json").getAsJsonArray("spawns").map { it.asJsonObject }
+        for (spawn in spawns) {
+            val id = spawn.get("id").asString
+            assertEquals(listOf("#cobblemon:is_end"), spawn.getAsJsonObject("condition").getAsJsonArray("biomes").map { it.asString }) { id }
+            assertTrue(spawn.get("bucket").asString in setOf("common", "uncommon", "rare", "ultra-rare")) { id }
+        }
+        assertTrue(spawns.any { it.get("bucket").asString == "ultra-rare" })
+        for (lang in listOf("ko_kr", "en_us")) assertTrue(json("/assets/jbro_policy/lang/$lang.json").has("pack.jbro_policy.end_spawns"))
     }
 
     @Test

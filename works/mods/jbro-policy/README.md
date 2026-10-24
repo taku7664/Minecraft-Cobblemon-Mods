@@ -69,6 +69,8 @@ OP(권한 2 이상)가 아닌 플레이어에게 적용합니다.
 
 전설·환상·전설급 패러독스 103종의 스폰 조건, 필요 등급, 엔트리 조건, 등장 대사는 [docs/LEGENDARY_SPAWNS.md](docs/LEGENDARY_SPAWNS.md)에 있습니다.
 
+모든 전설 스폰은 허용 차원을 명시합니다. 추위·하늘 같은 공통 바이옴 태그가 엔드까지 포함해도 프리져 등 오버월드 전용 종은 엔드에 나오지 않습니다. 물속·수면 스폰은 물·용암 전용 프리셋을 사용합니다. 전체 검수 범위와 종별 차원은 [docs/LEGENDARY_SPAWN_AUDIT.md](docs/LEGENDARY_SPAWN_AUDIT.md)에 있습니다.
+
 - **내 전설:** 전설은 불러낸 플레이어만 배틀하거나 잡을 수 있습니다.
 - **종마다 한 마리:** 야생에서 직접 잡은 기록만 남고, 교환이나 포켓몬 아이템으로 받은 포켓몬은 기록되지 않습니다. 이미 잡은 전설은 그 플레이어 주변에 스폰되지 않고 포켓내비 스폰표에서도 빠집니다.
 - **엔트리 조건:** 32종은 파티에 특정 포켓몬이 있어야 스폰됩니다. 예를 들어 뮤츠는 파티에 뮤가 있어야 나옵니다. 포켓내비 스폰표에도 같은 조건이 적용됩니다.
@@ -236,7 +238,8 @@ AI는 전용 `jbro-inquiry-review` 프로필에서 전달된 자료만 읽으며
 
 아래 팩은 기본으로 켜지며, 월드마다 `/datapack disable`로 끌 수 있습니다.
 
-- **`jbro_policy:legendary_spawns`:** 전설·환상·전설급 패러독스 103종이 `ultra-rare` 버킷으로 자연 스폰됩니다. 코라이돈·미라이돈과 전설 패러독스 6종은 `cobblemon-dimensions`의 고대·미래 차원에만 나옵니다. 울트라비스트와 전설이 아닌 패러독스는 빠져 있고(나오면 `RareSpawnNotice`가 서버에 알림), Myths & Legends가 설치되어 있으면 꺼집니다. 예전 서버의 Cobblemon 1.7.3용 스폰표를 1.8 형식(`spawnablePositionType`)으로 옮겼습니다.
+- **`jbro_policy:legendary_spawns`:** 전설·환상·전설급 패러독스 103종이 전용 `legendary` 버킷으로 자연 스폰됩니다. Cobblemon은 버킷 가중치를 데이터팩이 아니라 자기 JAR에서 읽기 때문에, `LegendSpawnBucket`이 설정을 읽을 때마다 월드 버킷에 `legendary`(0.002, 전체 약 100 중)를 넣습니다. 그래서 전설 후보가 있는 자리면 바이옴과 상관없이 스폰 시도 약 5만 번에 1번 전설이 나옵니다. 내보낸 설정(`exportSpawnConfig`)에 `legendary` 값이 있으면 그 값을 씁니다. 코라이돈·미라이돈과 전설 패러독스 6종은 `cobblemon-dimensions`의 고대·미래 차원에만 나옵니다. 울트라비스트와 전설이 아닌 패러독스는 빠져 있고(나오면 `RareSpawnNotice`가 서버에 알림), Myths & Legends가 설치되어 있으면 꺼집니다. 예전 서버의 Cobblemon 1.7.3용 스폰표를 1.8 형식(`spawnablePositionType`)으로 옮겼습니다.
+- **`jbro_policy:end_spawns`:** 엔드(`#cobblemon:is_end`)에 Cobblemon 기본 엔드 스폰 말고도 25종을 더합니다. common은 삐삐·루나톤·솔록·동미러·네이티·몽나·해골몽·어둠대신·깜까미, uncommon은 치렁·다크펫·동탁군·네이티오·미라몽·몽얌나·픽시, rare는 음뱃·음번·폴리곤, ultra-rare는 모노두·드라꼰 계열입니다. 레벨은 각 종의 Cobblemon 원본 값을 따릅니다. 원래 엔드는 common이 안농 무리뿐이고 ultra-rare 후보가 전설뿐이었습니다.
 - **`jbro_policy:no_stat_candy_l_xl`:** 경험사탕 제작과 분할을 허용합니다. 모닥불 냄비에서 스컬크 1개와 벌집 조각 1개로 경험사탕 XS 6개를 만듭니다. Create가 설치된 경우 경험치 조각과 벌집 조각을 쓰는 XS 레시피도 6개를 만듭니다. 경험사탕 S·M·L·XL 합성과 조합대 분할은 Cobblemon 기본 레시피를 사용합니다. 개체값 사탕 6종(체력·공격·방어·특수공격·특수방어·스피드)은 경험사탕 L·XL을 재료로 쓰는 냄비 조합법 12개를 모두 차단합니다. 상점 구매 등 다른 획득 경로와 이미 보유한 사탕의 사용은 유지합니다. 기존 월드의 팩 활성화 설정을 유지하기 위해 팩 ID는 보존했습니다.
   - 실행 중인 서버에 JAR 교체 없이 적용하려면 이 팩의 `pack.mcmeta`와 `data/`를 월드 데이터팩 `world/datapacks/jbro-policy-xs-candy-six.zip`으로 배치하고 `/reload`로 인식시킵니다. 자동 활성화되지 않으면 `/datapack enable "file/jbro-policy-xs-candy-six.zip" last`로 활성화합니다. 같은 레시피 ID를 가장 높은 우선순위에서 덮어쓰므로 서버 재시작 없이 반영됩니다. 활성화 후 내용만 갱신할 때는 `/reload`를 사용합니다.
 

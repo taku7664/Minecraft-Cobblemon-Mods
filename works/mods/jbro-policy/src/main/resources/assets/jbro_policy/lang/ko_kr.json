@@ -100,6 +100,8 @@
   "message.jbro_policy.spawn_for.rank": "%1$s은(는) 리그 등급이 %2$s보다 낮아서 포획할 수 없습니다.",
 
   "pack.jbro_policy.legendary_spawns": "jbro Policy: 전설·환상 포켓몬 자연 스폰",
+  "pack.jbro_policy.end_spawns": "jbro Policy: 엔드 야생 스폰 보충",
+  "bucket.cobblenav.legendary": "전설",
   "pack.jbro_policy.no_stat_candy_l_xl": "jbro Policy: 개체값 사탕 제작 차단·경험사탕 XS 6개",
   "pack.jbro_policy.no_ability_patch": "jbro Policy: 특성패치 제작 레시피 차단",
 

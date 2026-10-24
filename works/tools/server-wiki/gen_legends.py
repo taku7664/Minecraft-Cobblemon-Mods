@@ -15,7 +15,8 @@ CATALOG = POLICY / "kotlin/jbro/cobblemon/policy/legend/LegendCatalog.kt"
 POLICY_LANG = POLICY / "resources/assets/jbro_policy/lang/ko_kr.json"
 # Legends that live in cobblemon-dimensions' dimensions name its biomes; their Korean names come from that mod.
 DIMENSIONS_LANG = REPO / "mods/cobblemon-dimensions/src/main/resources/assets/cobblemon_dimensions/lang/ko_kr.json"
-MOD_DIMENSIONS = {"cobblemon_dimensions:ancient": "고대 차원", "cobblemon_dimensions:future": "미래 차원",
+MOD_DIMENSIONS = {"minecraft:overworld": "오버월드", "minecraft:the_nether": "네더", "minecraft:the_end": "엔드",
+                  "cobblemon_dimensions:ancient": "고대 차원", "cobblemon_dimensions:future": "미래 차원",
                   "cobblemon_dimensions:ultra_space": "울트라스페이스"}
 OUT = REPO.parent / "server-wiki" / "assets" / "data" / "legends.js"
 DEFAULT_JAR = REPO.parent / "develop-product/client/mods/Cobblemon-fabric-1.8.1+1.21.1.jar"
@@ -37,6 +38,21 @@ from gen_pokedex import lenient_lang  # noqa: E402
 END = {"minecraft:the_end", "minecraft:end_barrens", "minecraft:end_highlands", "minecraft:end_midlands",
        "minecraft:small_end_islands", "#cobblemon:is_end"}
 NETHER_HINT = ("nether", "basalt", "crimson", "warped", "soul_sand")
+
+
+def spawn_dimensions(condition):
+    explicit = condition.get("dimensions", [])
+    if explicit:
+        return [MOD_DIMENSIONS[d] for d in explicit]
+    biomes = condition.get("biomes", [])
+    dimensions = []
+    if any(b not in END and not any(h in b for h in NETHER_HINT) for b in biomes):
+        dimensions.append("오버월드")
+    if any(any(h in b for h in NETHER_HINT) for b in biomes):
+        dimensions.append("네더")
+    if any(b in END for b in biomes):
+        dimensions.append("엔드")
+    return dimensions
 
 
 def minecraft_lang(explicit):
@@ -126,13 +142,7 @@ def main():
         exclusions=[' · '.join(labels.condition(c)) for c in
                     (labels.filter_condition(c) for c in expanded['anticonditions']) if c]
         biomes = cond.get("biomes", [])
-        dimensions = [MOD_DIMENSIONS[d] for d in cond.get("dimensions", [])]
-        if not dimensions and any(b not in END and not any(h in b for h in NETHER_HINT) for b in biomes):
-            dimensions.append("오버월드")
-        if any(any(h in b for h in NETHER_HINT) for b in biomes):
-            dimensions.append("네더")
-        if any(b in END for b in biomes):
-            dimensions.append("엔드")
+        dimensions = spawn_dimensions(cond)
         conditions=[{'kind':'spawn','text':text} for text in labels.condition(cond,places=False)]
         data = species[species_id]
         if aspect:
@@ -151,7 +161,7 @@ def main():
             "rank": RANK[rank],
             "rarity": RARITY[round(spawn["weight"], 2)],
             "weight": spawn["weight"],
-            "position": POSITION[spawn["spawnablePositionType"]],
+            "position": "용암 위" if cond.get("fluid") == "#minecraft:lava" else POSITION[spawn["spawnablePositionType"]],
             "dimensions": dimensions,
             "biomes": [biome(b) for b in biomes],
             "except": [],
