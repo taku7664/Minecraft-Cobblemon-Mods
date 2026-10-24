@@ -1,6 +1,7 @@
 package kr.parkjh.pokefusion
 
 import net.minecraft.ChatFormatting
+import jbro.cobblemon.toitem.api.PokemonItemData
 import net.minecraft.core.Registry
 import net.minecraft.core.component.DataComponents
 import net.minecraft.core.registries.BuiltInRegistries
@@ -256,6 +257,7 @@ class PokeFusionMenu(
         when (val result = PokeFusionService.createResult(player, baseInput, materialInputs)) {
             is PokeFusionService.Result.Failure -> showFailure(result.reason)
             is PokeFusionService.Result.Success -> {
+                val materialIds = materialInputs.map { PokemonItemData.pokemonTag(it)?.getUUID("UUID") }
                 try {
                     // 결과 본체는 커서로 전달하고, 재료의 지닌 물건만 기존 반환 큐에 넣는다.
                     check(PendingOutputService.completeFusion(player, result.materialHeldItems))
@@ -273,6 +275,10 @@ class PokeFusionMenu(
                 baseInput = ItemStack.EMPTY
                 materialSlots.fill(ItemStack.EMPTY)
                 carried = result.item
+                val resultData = PokemonItemData.pokemonTag(result.item)
+                LOGGER.info(
+                    "[pokemon-transfer] player={} playerUuid={} pokemon={} species={} from=fusion to=cursor outcome=success consumedMaterials={}",
+                    player.scoreboardName, player.uuid, resultData?.getUUID("UUID"), resultData?.getString("Species"), materialIds)
                 deliverPendingOutputs()
                 if (PendingOutputService.count(player) == 0) {
                     player.displayClientMessage(

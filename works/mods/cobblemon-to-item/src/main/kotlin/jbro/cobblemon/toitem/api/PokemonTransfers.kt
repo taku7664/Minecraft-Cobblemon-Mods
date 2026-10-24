@@ -99,6 +99,8 @@ object PokemonTransfers {
                     }
                 },
             )
+            logTransfer(player, pokemon, "party[${slot + 1}]",
+                if (toCursor) "cursor" else destination?.let { "inventory[$it]" } ?: "ground", success)
             if (!success) reject(player, "failed") else true
         }
     }
@@ -125,7 +127,7 @@ object PokemonTransfers {
                 val replacement = PokemonItemData.create(previous, player.registryAccess())
                 val replacementData = PokemonItemData.pokemonTag(replacement) ?: return@guarded reject(player, "invalid_item")
                 check(Pokemon.loadFromNBT(player.registryAccess(), replacementData).uuid == previous.uuid)
-                MoveTransaction.execute(
+                val success = MoveTransaction.execute(
                     remove = { party.get(requestedSlot) === previous && party.remove(previous) },
                     deliver = {
                         check(player.containerMenu === menu) { "Open menu changed during exchange" }
@@ -143,6 +145,9 @@ object PokemonTransfers {
                         menu.carried = original
                     },
                 )
+                logTransfer(player, incoming, "cursor", "party[${requestedSlot + 1}]", success)
+                logTransfer(player, previous, "party[${requestedSlot + 1}]", "cursor", success)
+                success
             }
         }
         return restore(player, stack, requestedSlot, allowPc = false,
@@ -183,7 +188,7 @@ object PokemonTransfers {
             val pcPosition = if (slot == null) pc.getFirstAvailablePosition() ?: return@guarded reject(player, "pc_full") else null
             // Server-thread transaction: any insertion/consumption exception removes the new placement and
             // restores the exact source item. Destination availability was checked before entering this block.
-            MoveTransaction.execute(
+            val success = MoveTransaction.execute(
                 remove = { consume(); true },
                 deliver = {
                     if (slot != null) party.set(PartyPosition(slot), pokemon) else pc.set(pcPosition!!, pokemon)
@@ -195,6 +200,10 @@ object PokemonTransfers {
                     restoreSource()
                 },
             )
+            logTransfer(player, pokemon,
+                if (allowPc) "held_item" else if (requestedSlot != null) "cursor" else "inventory",
+                if (slot != null) "party[${slot + 1}]" else "pc[$pcPosition]", success)
+            success
         }
     }
 
@@ -210,7 +219,16 @@ object PokemonTransfers {
     }
 
     private fun reject(player: ServerPlayer, reason: String): Boolean {
+        CobblemonToItem.LOGGER.info("[pokemon-transfer] player={} playerUuid={} outcome=rejected reason={}",
+            player.scoreboardName, player.uuid, reason)
         player.displayClientMessage(Component.translatable("cobblemon_to_item.message.$reason").withStyle(ChatFormatting.RED), true)
         return false
+    }
+
+    private fun logTransfer(player: ServerPlayer, pokemon: Pokemon, from: String, to: String, success: Boolean) {
+        CobblemonToItem.LOGGER.info(
+            "[pokemon-transfer] player={} playerUuid={} pokemon={} species={} from={} to={} outcome={} dimension={} pos={}",
+            player.scoreboardName, player.uuid, pokemon.uuid, pokemon.species.resourceIdentifier,
+            from, to, if (success) "success" else "failed", player.level().dimension().location(), player.blockPosition())
     }
 }
