@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-24 19:40] 가라르 리그 공개(`active: true`), 개발 서버 전용 데이터팩 제거 (단위·개발 배포 확인, 실게임 미확인)
+
+- **빡대리님 결정:** 1.4.0에서 가라르를 연다. `galar.json` `active: true`(`5dbda2c3`). `GalarContentTest`의 미공개 검사는 `active=false` 복사본으로 바꿔, 꺼진 지방이 요청·캡에서 빠지는 동작은 계속 검사한다. README 문구도 고쳤다.
+- **확인:** `-Ptests=GalarContentTest|LeagueTeamDataTest|LeagueWorldRulesTest|LeagueCatalogParserTest` 24/24(Claude 직접). JAR 안 `active: true`.
+- **개발:** 리그 JAR 개발 서버·클라 교체(`8ecca26d…`). `world/datapacks/ppakemon-dev-galar`는 더 필요 없어 `develop-product/deployment-backups/20261024-dev-galar-datapack/`로 뺐다(남겨 두면 다음 `galar.json` 변경을 가린다). 서버는 꺼져 있었고 켜지 않았다.
+
 ## [2026-10-24 10:20] 마리·금랑·단델·유채 대사 톤 수정 (단위·개발 배포 확인, 실게임 미확인)
 
 - **빡대리님 지적:** 마리 대사가 마리 성격이 아니다(열혈 느낌표 말투). 마리는 담담하고 말수 적게, 제안안 그대로 승인. 이어서 "그 외 안 맞는 애들도 찾아서 수정".

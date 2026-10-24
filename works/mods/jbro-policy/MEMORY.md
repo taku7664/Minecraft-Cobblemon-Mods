@@ -1,5 +1,14 @@
 # jbro-policy MEMORY
 
+## [2026-10-24 19:40] 1.4.0 모드팩 다시 만듦 — Better AI 커밋 포함, 가라르 공개 (PPakemon·운영·VPS·드라이브는 아직)
+
+- **빡대리님 결정:** 17:40 팩 뒤에 main에 들어온 Better AI 커밋(`528467f8`·`ae2b9476`, 새 단순화 옵션 2개는 기본 꺼짐, 모드 메뉴 토글 두 칸 교체)도 1.4.0에 넣는다. 가라르 리그를 1.4.0에서 연다("가라르 켜야 한다").
+- **빌드:** MCC를 `ae2b9476`에서(`F:/AI/build/release-1.4.0-mcc`, 관련 테스트 100/100, `jar --validate`, 내장 cobblemon-ui가 릴리스 것과 같음), 리그를 `galar.json` `active: true` 커밋 `5dbda2c3`에서(`F:/AI/build/release-1.4.0-league`, 24/24) 따로 빌드했다. `05a0f9d9` 이후 바뀐 모듈은 이 둘뿐이다. `F:/AI/build/release-1.4.0`의 `modules`·`client-stage`·`ppakemon-profile`에 넣었고(옛 JAR은 `replaced-*-05a0f9d9/`), 해시 MCC `da91fa17…`, 리그 `8ecca26d…`. `build.ps1`은 실행 때 다른 모듈 JAR을 지우므로 한 모듈 재빌드는 별도 BuildRoot에서 했다.
+- **개발:** 서버·클라 MCC·리그 교체(해시 일치). 개발 서버 전용 가라르 데이터팩 `ppakemon-dev-galar`는 소스가 켜졌으니 `develop-product/deployment-backups/20261024-dev-galar-datapack/`로 뺐다.
+- **모드팩:** `Downloads/PPakemon 1.4.0.mrpack` 248,446,632바이트(인덱스 70, overrides mods 21 = 프로필 복사본과 해시 같음, config 0, 가라르 켜짐). 17:40 팩은 `Downloads/old/PPakemon 1.4.0 (1740 MCC 05a0f9d9).mrpack`. 빡대리님이 드라이브에 올린 17:40 팩(링크 `1WWeqLqG…`)은 옛것이라 새 파일로 바꿔 올려야 한다(링크 바뀜).
+- **패치노트:** `build/patchnotes-1.4.0/`의 세 파일과 VERSION 블록에 가라르 오픈을 넣었다(디스코드 1번 1,257자).
+- **20시 남은 일:** PPakemon 패치는 `client-stage` 기준(새 MCC·리그 포함), 로컬 운영·`sync-release.ps1`·VERSION.txt·VPS. 운영 서버도 새 리그 JAR이어야 가라르가 열린다.
+
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 구현, 빌드, JAR 배치, 서버 기동, 실게임 검증은 서로 다른 상태로 적는다.
 
