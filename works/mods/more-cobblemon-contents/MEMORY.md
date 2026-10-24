@@ -7,6 +7,12 @@
 
 
 
+## [2026-10-25 00:35] VPS 더블 최적화8개 ON, 싱글 OFF 유지
+
+- **사용자 지시/대상:** VPS 서버의 더블 배틀 최적화 옵션을 켜라는 지시로 /srv/MinecraftPPakemonServer/config/more-cobblemon-contents/betterai-optimizations.json 한 파일만 변경했다. single은8옵션false, double은 simpleFixedHpReactions/simplePoisonEvaluation/simpleHpMatchups/simpleForecastMatchups/skipUnusedStatusMatchups/firstHitActingChance/simpleStatusMatchups/simpleActingChance 전부true, poisonEvaluationTurns=2 유지다. 구형 최상위값을 형식별single/double로 이전해 싱글 의미를 보존했다.
+- **지원/반영 확인:** 설치JAR SHA256 fbb0590cd2fe7a5dc3b9ce4a0e490e14de2e1d828217c5e800bb96eb604b9dd0에서8키와형식분리를 확인했다. ConfigStore/MoreCobblemonContentsBetterAi 클래스는 검증한 로컬JAR과 각각SHA동일하므로 새Brain 생성때 파일을 다시 읽는 경로도 같다. 다음 새 더블 전투부터 반영하며 진행중전투의스냅샷은 그대로다. JSON재읽기8true/싱글false 확인. 설정SHA는2067753be6626b8b00c6ed3b153123eebb1941dbfbc316481d9dad5ea20279c4→527fb813e9291c73de78bb7ab8f6d8ae8c35194d870d10adc73aa0572aa689de다.
+- **저장/범위:** VPS 운영저장소main 커밋48d394d0f5f1335968ca78b4e5a926c01c1a0482를origin/main에푸시/일치확인했다. 처음커밋의저자미설정오류는 기존VPS관리도구의설정저자를 그 커밋에만 전달해 해결했고 글로벌Git설정은 안바꿨다. 서버PID260207 유지, 종료/재시작/콘솔reload/JAR교체/빌드/새전투실행/성능재측정은 하지 않았다. F:/AI/betterai-tools/vps-double-options-20261025/change.json에전후설정/해시를보존했다. 개발설정/클라이언트는미변경이다.
+
 ## [2026-10-24 23:34] 주 스레드 준비 분리·애크러뱃 수정본 개발 서버 JAR 배치
 
 - **요청/빌드:** 빡대리의 개발 서버 배포 지시로 origin/main과 동기화된1db9e2cd142c96a0bb00541cf4b138d641598941 소스에서 :more-cobblemon-contents:remapJar를 실행해 성공했다. Gradle 캐시/프로젝트 캐시/모든 빌드 출력/TEMP/TMP/JVM 임시 경로는 F다. 빌드 전후 추적works 입력4726개 해시 차이0을 확인했다. 이번에는 단위 검사를 재실행하지 않았으며 직전264/264 결과와 구분한다.
