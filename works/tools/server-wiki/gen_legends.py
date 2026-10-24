@@ -30,6 +30,9 @@ TIME = {"day": "낮", "night": "밤"}
 MOON = ["보름달", "기우는 볼록달", "하현달", "그믐달", "삭", "초승달", "상현달", "차오르는 볼록달"]
 
 from biomes import TAGS  # noqa: E402
+from pokedex_sources import mod_sources, server_sources, load_resources, minecraft_source  # noqa: E402
+from pokedex_spawns import Labels, biome_registry, expand_spawn  # noqa: E402
+from gen_pokedex import lenient_lang  # noqa: E402
 
 END = {"minecraft:the_end", "minecraft:end_barrens", "minecraft:end_highlands", "minecraft:end_midlands",
        "minecraft:small_end_islands", "#cobblemon:is_end"}
@@ -64,12 +67,26 @@ def catalog():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--cobblemon", default=str(DEFAULT_JAR))
+    parser.add_argument("--server", type=pathlib.Path, default=REPO.parent/'develop-product/server')
+    parser.add_argument("--cobblemon")
     parser.add_argument("--minecraft-lang")
+    parser.add_argument("--minecraft-jar")
+    parser.add_argument("--output", type=pathlib.Path, default=OUT)
     args = parser.parse_args()
+    mods=mod_sources(sorted((args.server/'mods').glob('*.jar')))
+    mods['vanilla']=minecraft_source(args.server,args.minecraft_jar)
+    sources=server_sources(args.server,mods)
+    resources=load_resources(sources,('spawn_pool_world','spawn_detail_presets'))
+    pool_name='data/jbro_policy/spawn_pool_world/legendary_wild_spawns.json'
+    if pool_name not in resources:
+        raise SystemExit('Legendary spawn pack is not enabled on this server')
+    args.cobblemon=args.cobblemon or str(mods['cobblemon'])
+    installed=set(mods)|{'minecraft','fabric','cobblemon'}
     mc = minecraft_lang(args.minecraft_lang)
-    mc.update(json.loads(DIMENSIONS_LANG.read_text(encoding="utf-8")))
-    policy_lang = json.loads(POLICY_LANG.read_text(encoding="utf-8"))
+    with zipfile.ZipFile(mods['cobblemon_dimensions']) as jar:
+        mc.update(lenient_lang(jar.read('assets/cobblemon_dimensions/lang/ko_kr.json').decode('utf-8')))
+    with zipfile.ZipFile(mods['jbro_policy']) as jar:
+        policy_lang = lenient_lang(jar.read('assets/jbro_policy/lang/ko_kr.json').decode('utf-8'))
     legends = catalog()
     with zipfile.ZipFile(args.cobblemon) as jar:
         # Cobblemon's ko_kr.json is not strict JSON, so the names are read by pattern.
@@ -93,13 +110,21 @@ def main():
         assert label, f"No Korean name for biome {id_}"
         return {"name": label, "group": False}
 
-    spawns = json.loads(POOL.read_text(encoding="utf-8"))["spawns"]
+    spawns = resources[pool_name]['spawns']
+    presets={n:d for n,d in resources.items() if '/spawn_detail_presets/' in n}
+    labels=Labels(dict(mc,**lenient_lang(lang)),installed,biome_registry(sources))
     assert {s["id"].removeprefix("jbro-legendary-") for s in spawns} == set(legends), "spawn pool and catalog name different Legends"
     out = []
     for spawn in spawns:
         id_ = spawn["id"].removeprefix("jbro-legendary-")
         species_id, tier, rank, entry, entry_all, aspect = legends[id_]
-        cond = spawn.get("condition", {})
+        expanded=expand_spawn(spawn,presets)
+        if len(expanded['conditions'])!=1:
+            raise ValueError(f'Legend guide needs a single condition row: {spawn["id"]}')
+        # Dimension biome resources are built at startup; their exact names come from the installed language file.
+        cond=expanded['conditions'][0]
+        exclusions=[' · '.join(labels.condition(c)) for c in
+                    (labels.filter_condition(c) for c in expanded['anticonditions']) if c]
         biomes = cond.get("biomes", [])
         dimensions = [MOD_DIMENSIONS[d] for d in cond.get("dimensions", [])]
         if not dimensions and any(b not in END and not any(h in b for h in NETHER_HINT) for b in biomes):
@@ -108,28 +133,7 @@ def main():
             dimensions.append("네더")
         if any(b in END for b in biomes):
             dimensions.append("엔드")
-        conditions = []
-        if "timeRange" in cond:
-            conditions.append({"kind": "time", "text": TIME[cond["timeRange"]]})
-        if cond.get("canSeeSky"):
-            conditions.append({"kind": "sky", "text": "하늘이 보이는 곳"})
-        if cond.get("isThundering"):
-            conditions.append({"kind": "weather", "text": "뇌우"})
-        elif cond.get("isRaining"):
-            conditions.append({"kind": "weather", "text": "비"})
-        if "moonPhase" in cond:
-            conditions.append({"kind": "moon", "text": MOON[int(cond["moonPhase"])]})
-        if "minLight" in cond or "maxLight" in cond:
-            low, high = cond.get("minLight", 0), cond.get("maxLight", 15)
-            text = f"밝은 곳 (밝기 {low} 이상)" if low > 0 else f"어두운 곳 (밝기 {high} 이하)"
-            conditions.append({"kind": "light", "text": text})
-        if "minY" in cond or "maxY" in cond:
-            low, high = cond.get("minY"), cond.get("maxY")
-            text = f"Y {low}~{high}" if low is not None and high is not None else f"Y {low} 이상" if low is not None else f"Y {high} 이하"
-            conditions.append({"kind": "height", "text": text})
-        for block in cond.get("neededNearbyBlocks", []):
-            namespace, path = block.split(":", 1)
-            conditions.append({"kind": "block", "text": f"근처에 {mc.get(f'block.{namespace}.{path}', block)}"})
+        conditions=[{'kind':'spawn','text':text} for text in labels.condition(cond,places=False)]
         data = species[species_id]
         if aspect:
             # The form's own types, falling back to the species' for what the form leaves out.
@@ -150,17 +154,19 @@ def main():
             "position": POSITION[spawn["spawnablePositionType"]],
             "dimensions": dimensions,
             "biomes": [biome(b) for b in biomes],
-            "except": [biome(b)["name"] for b in spawn.get("anticondition", {}).get("biomes", [])],
+            "except": [],
+            "exclusions": exclusions,
             "conditions": conditions,
             "entry": [{"id": e, "name": names.get(e, e)} for e in entry],
             "entryAll": entry_all,
             "line": line,
         })
     out.sort(key=lambda legend: legend["dex"])
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    OUT.write_text("/* Generated by tools/server-wiki/gen_legends.py from the server's Legendary spawn pool; do not edit. */\n"
+    args.output.parent.mkdir(parents=True, exist_ok=True)
+    args.output.write_text("/* Generated by works/tools/server-wiki/gen_legends.py from enabled server resources; do not edit. */\n"
                    "window.WIKI_LEGENDS = " + json.dumps(out, ensure_ascii=False, indent=1) + ";\n", encoding="utf-8")
-    print(f"{len(out)} Legends -> {OUT.relative_to(REPO.parent)}")
+    print(f"{len(out)} Legends -> {args.output}")
 
 
-main()
+if __name__ == '__main__':
+    main()

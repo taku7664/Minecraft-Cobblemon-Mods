@@ -102,8 +102,27 @@ python -m unittest discover -s works/tools/server-wiki -p 'test_*.py'
 
 도감 생성기는 서버 월드의 `level.dat`에 저장된 활성 데이터팩 순서로 모드·데이터팩의 종 데이터와
 `species_additions`를 읽습니다. 추가 팩에서 활성화한 포켓몬과 변경한 드롭·진화도 반영합니다.
-기존 도감의 출현 목록을 유지하며 종 정보를 갱신하려면
-`python works/tools/server-wiki/gen_pokedex.py --preserve-existing-spawns`를 사용합니다.
+출현 목록은 같은 활성 팩 순서로 읽은 스폰표·프리셋과 바이옴 태그를 반영합니다. 비활성 내장 팩과
+존재하지 않는 바이옴·빈 태그는 출현 장소로 싣지 않습니다. 무리는 각 구성원의 모습·소지품·우두머리 여부를
+따로 보존하며, 복합 제외 조건은 하나의 묶음으로 표시합니다. 새로운 미지원 조건이나 활성 스폰 규칙이 있으면
+생성기를 먼저 보완하도록 오류로 중단합니다. 알 수 없는 프리셋은 게임과 같이 경고하고 생략합니다.
+
+능력치·기술·드롭을 보존하며 출현 정보만 갱신할 때는 다음을 실행합니다.
+
+```powershell
+python works/tools/server-wiki/gen_pokedex.py --server "실제 서버 경로" --spawns-only
+python works/tools/server-wiki/gen_legends.py --server "실제 서버 경로"
+```
+
+`--minecraft-jar`는 설치된 마인크래프트 서버 JAR를 지정합니다. 생략하면 서버의 `versions/` 또는
+`.fabric/server/`에서 찾습니다. `--minecraft-lang`으로 한국어 언어 파일을 지정할 수 있습니다.
+`--output`은 결과 폴더(전설 생성기는 파일)를 지정합니다. `--spawns-only`의 기존 데이터는
+`--existing-dex`로 지정하며 기본값은 이 저장소의 도감입니다. 구현된 종 목록까지 달라졌으면 전체 생성이 필요합니다.
+옛 스폰표를 유지하던 `--preserve-existing-spawns`는 오류로 중단합니다.
+
+도감의 출현 표는 모든 모습을 함께 안내합니다. 지역·레벨캡에 따른 진화 단계 보정과 개인별 전설 등급·파티·포획 기록은
+설명으로 안내하며, 정적 생성기가 플레이어별 실제 출현을 시뮬레이션하지는 않습니다. 전설 가이드는 활성 서버 스폰표와
+설치된 언어 파일을 사용하고 등급·엔트리는 커밋된 `LegendCatalog.kt` 정책에서 읽으므로, 운영 JAR의 정책과 같은지 확인합니다.
 
 전설 가이드의 "내 전설 현황"은 jbro-policy가 `/api/me`에 더하는 `legends` 항목(직접 잡은 종, 리그 등급, 지금 파티)을
 씁니다.

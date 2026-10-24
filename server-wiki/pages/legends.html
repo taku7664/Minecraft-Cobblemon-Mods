@@ -67,7 +67,7 @@
   </ul>
 
   <h2 id="ranks">리그 등급과 포획</h2>
-  <p>리그 챌린지에서 딴 배지 수로 등급이 정해지고, 등급에 따라 잡을 수 있는 전설이 늘어납니다. 등급이 모자라도 전설은 <b>나타나고 배틀도 할 수 있지만, 잡을 수만 없습니다.</b> 이때 볼을 던지면 "리그 등급이 ○○ 이상이어야 잡을 수 있는 전설입니다."라는 안내가 나옵니다.</p>
+  <p>리그 챌린지에서 딴 배지 수로 등급이 정해지고, 등급에 따라 만날 수 있는 전설이 늘어납니다. <b>필요한 등급이 부족하면 그 전설은 내 주변에 나타나지 않고 포켓내비 출현 목록에도 보이지 않습니다.</b> 일부 전설은 아래의 파티 조건도 갖춰야 합니다.</p>
   <table>
     <thead><tr><th>등급</th><th>조건</th><th>새로 잡을 수 있는 전설</th></tr></thead>
     <tbody>
@@ -113,7 +113,7 @@
   <h3>전설을 놓아줬는데 다시 잡을 수 있나요?</h3>
   <p>아니요. 한 번 잡은 종은 놓아줘도 내 주변에 다시 나오지 않습니다. 잡은 기록이 실제와 다르게 보인다면 운영자에게 문의하세요.</p>
   <h3>등급이 모자란데 전설이 나왔어요.</h3>
-  <p>배틀은 할 수 있지만 잡을 수는 없습니다. 등급을 올린 뒤 다시 나타나길 기다려야 합니다.</p>
+  <p>필요한 등급을 올려야 내 주변에 나타납니다. 다른 플레이어의 전설은 등급이 충분해도 내가 배틀하거나 잡을 수 없습니다.</p>
   <h3>필요한 포켓몬을 잡았다가 박스에 넣었어요.</h3>
   <p>박스에 있으면 전설이 나타날 조건을 만족하지 못합니다. 그 포켓몬을 파티에 넣고 다니세요.</p>
 </main>
@@ -219,10 +219,11 @@
       row("분류", [el("span", "badge gray", legend.tier), document.createTextNode(" "), el("span", "badge green", legend.rarity)]);
       var rank = el("span", rankClass, legend.rank + " 이상");
       if (legend.rank === "마스터볼") rank.style.background = "#b060d0";
-      row("포획", [rank]);
+      row("출현·포획", [rank]);
       row("장소", legend.dimensions.join(" · ") + " · " + legend.position);
       row("바이옴", legend.biomes.map(function (biome) { return el("span", biome.group ? "chip group" : "chip", biome.group ? biome.name + " 계열" : biome.name); }));
       if (legend.except.length) row("제외", legend.except.map(function (name) { return el("span", "chip no", name); }));
+      if ((legend.exclusions || []).length) row("제외", legend.exclusions.map(function (text) { return el("p", "", "다음 조건이 모두 맞는 곳: " + text); }));
       if (legend.conditions.length) row("조건", legend.conditions.map(function (condition) { return el("span", "chip cond", condition.text); }));
       if (legend.entry.length) {
         var parts = [];

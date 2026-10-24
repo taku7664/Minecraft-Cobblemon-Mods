@@ -7,6 +7,86 @@ import pathlib
 import re
 import struct
 import zipfile
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class NestedJar:
+    path: pathlib.Path
+    entries: tuple
+
+    def is_dir(self):
+        return False
+
+    def __str__(self):
+        return str(self.path) + '!/' + '!/'.join(self.entries)
+
+
+def open_archive(source):
+    if not isinstance(source, NestedJar):
+        return zipfile.ZipFile(source)
+    data = source.path.read_bytes()
+    for entry in source.entries:
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            data = archive.read(entry)
+    return zipfile.ZipFile(io.BytesIO(data))
+
+
+def mod_sources(jars):
+    """Include Fabric's nested mods, and aliases used by neededInstalledMods."""
+    result = {}
+
+    def visit(source):
+        with open_archive(source) as archive:
+            if 'fabric.mod.json' not in archive.namelist():
+                return
+            meta = json.loads(archive.read('fabric.mod.json'), strict=False)
+            for id_ in [meta['id'], *meta.get('provides', [])]:
+                result[id_] = source
+            for entry in meta.get('jars', []):
+                name = entry['file']
+                outer = source.path if isinstance(source, NestedJar) else source
+                parents = source.entries if isinstance(source, NestedJar) else ()
+                visit(NestedJar(outer, parents + (name,)))
+
+    for jar in sorted(jars):
+        visit(jar)
+    return result
+
+
+def minecraft_source(server, explicit=None):
+    candidates = [pathlib.Path(explicit)] if explicit else sorted((server/'versions').glob('*/server-*.jar'))
+    if not candidates:
+        candidates = sorted((server/'.fabric/server').glob('*-server.jar'))
+    if len(candidates) > 1:
+        raise ValueError('Multiple Minecraft server JARs found; select the running version with --minecraft-jar')
+    for path in candidates:
+        with zipfile.ZipFile(path) as archive:
+            if any(n.startswith('data/minecraft/worldgen/biome/') for n in archive.namelist()):
+                return path
+            nested = [n for n in archive.namelist() if n.startswith('META-INF/versions/') and n.endswith('.jar')]
+            if len(nested) == 1:
+                return NestedJar(path, (nested[0],))
+    raise FileNotFoundError('Minecraft server biome resources not found; pass --minecraft-jar with the installed server JAR')
+
+
+def resource_entries(source, prefix=''):
+    if source.is_dir():
+        return [(p.relative_to(source).as_posix(), p.read_bytes())
+                for p in sorted((source / 'data').rglob('*.json'))]
+    with open_archive(source) as archive:
+        return [(name[len(prefix):], archive.read(name)) for name in sorted(archive.namelist())
+                if name.startswith(prefix + 'data/') and name.endswith('.json')]
+
+
+def load_resources(sources, folders):
+    """The last enabled pack wins for an identical resource location."""
+    resources = {}
+    for source, prefix in sources:
+        for name, raw in resource_entries(source, prefix):
+            if any('/' + folder + '/' in name for folder in folders):
+                resources[name] = json.loads(raw)
+    return resources
 
 
 def enabled_packs(level_dat):
@@ -77,19 +157,7 @@ def apply_addition(species, addition):
 
 
 def load_species(sources):
-    resources = {}
-    for path, prefix in sources:
-        if path.is_dir():
-            entries = [(p.relative_to(path).as_posix(), p.read_bytes()) for p in (path / "data").rglob("*.json")
-                       if "/species/" in p.as_posix() or "/species_additions/" in p.as_posix()]
-        else:
-            with zipfile.ZipFile(path) as archive:
-                entries = [(name[len(prefix):], archive.read(name)) for name in archive.namelist()
-                           if name.startswith(prefix + "data/") and name.endswith(".json")
-                           and ("/species/" in name or "/species_additions/" in name)]
-        # A higher-priority pack replaces the same resource location, not all additions to a species.
-        for name, data in entries:
-            resources[name] = json.loads(data)
+    resources = load_resources(sources, ('species', 'species_additions'))
     species = {}
     for name, data in resources.items():
         if "/species/" in name:
