@@ -155,6 +155,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
     }
 
     override fun onChoiceRequested() {
+        val decisionStartedAtNanos = System.nanoTime()
         onChoiceRequestedHook()
         val currentRequest = request ?: return
         if (!pendingRequest.compareAndSet(null, currentRequest)) return
@@ -227,9 +228,8 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 ).withDynamaxInBattle(Cobblemon173BattleRuleHooks.dynamaxAllowed(battle.battleId))
                 // The primary Brain retains the public-only context. Only the local fallback receives
                 // the already-normalized tier budget; the full live moveset never enters either context.
-                val localContext = if (localBrain == null) {
-                    context
-                } else {
+                var localEndpoint = endpoint(localBrain, localSession)
+                val localContext = if (localEndpoint == null) context else {
                     val opponentSpreads = if (trainerProfile.difficulty.tier in setOf(
                             BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS,
                         )) {
@@ -241,27 +241,36 @@ internal class Cobblemon173BrainTrainerBattleActor(
                     val previewRead = if (trainerProfile.difficulty.tier in setOf(BattleTrainerTier.ADVANCED, BattleTrainerTier.BOSS))
                         jbro.cobblemon.mcc.betterai.matchup.LocalSwitchRules.previewSetReading(context) else null
                     val previewFoes = previewRead?.first?.pokemon.orEmpty().filter { foe -> state.pokemon.none { it.battlePokemonId == foe.battlePokemonId } }
-                    context.copy(
-                        publicActionCatalog = publicCatalog.withOpponentMoveInferences(
-                            opponentMoveInference.update(
-                                previewRead?.first ?: state,
-                                previewRead?.second ?: publicCatalog,
-                                trainerProfile.difficulty.tier,
-                                actualOpponentMoveIds() + actualPreviewMoveIds(previewFoes),
-                                observationAdapter.transformedPokemon(),
-                                // An attack's own stat changes read on this board, with the stats the brain reads (user
-                                // decision 2026-10-18).
-                                jbro.cobblemon.mcc.betterai.matchup.LocalOwnStageValue(
-                                    context.copy(localOpponentStatSpreads = opponentSpreads), trainerProfile.difficulty.tier),
-                                actualIllusionTypeIds(state),
-                            ),
-                        ),
-                        localOpponentStatSpreads = opponentSpreads,
-                    ).withShowdownState(liveShowdownState())
+                    // Capture game-owned values here. Only the immutable board/catalog and copied collections
+                    // enter the worker; the worker must not call battle/observationAdapter/liveShowdownState.
+                    val moveIds = actualOpponentMoveIds() + actualPreviewMoveIds(previewFoes)
+                    val transformed = observationAdapter.transformedPokemon().toSet()
+                    val illusionTypes = actualIllusionTypeIds(state)
+                    val tier = trainerProfile.difficulty.tier
+                    val stageContext = context.copy(localOpponentStatSpreads = opponentSpreads)
+                    val inference = opponentMoveInference
+                    localEndpoint = localEndpoint.withPreparedContext { captured ->
+                        jbro.cobblemon.mcc.betterai.simulation.EngineRuntimeDex.withDecisionSnapshot {
+                            jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.with {
+                                captured.copy(publicActionCatalog = publicCatalog.withOpponentMoveInferences(
+                                    inference.update(
+                                        previewRead?.first ?: state,
+                                        previewRead?.second ?: publicCatalog,
+                                        tier,
+                                        moveIds,
+                                        transformed,
+                                        jbro.cobblemon.mcc.betterai.matchup.LocalOwnStageValue(stageContext, tier),
+                                        illusionTypes,
+                                    ),
+                                ))
+                            }
+                        }
+                    }
+                    stageContext.withShowdownState(liveShowdownState())
                 }
                 val decision = fallbackChain.decide(
                     endpoint(primaryBrain, primarySession),
-                    endpoint(localBrain, localSession),
+                    localEndpoint,
                     context,
                     localContext,
                     enforceTimeout = !unboundedDecisionTime,
@@ -272,7 +281,7 @@ internal class Cobblemon173BrainTrainerBattleActor(
                 }
                 PreparedBrainDecision(
                     context = context,
-                    startedAtNanos = System.nanoTime(),
+                    startedAtNanos = decisionStartedAtNanos,
                     pending = decision,
                 )
             },

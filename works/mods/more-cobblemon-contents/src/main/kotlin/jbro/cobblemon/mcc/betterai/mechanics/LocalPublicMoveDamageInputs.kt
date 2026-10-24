@@ -37,7 +37,13 @@ internal object LocalPublicMoveDamageInputs {
             ?: targetHpDependentPowers(id, target)
             ?: ppDependentPower(id, actor, details.currentPp)
         val fixedPower = when (id) {
-            "acrobatics" -> wholePower?.let { if (actor.canonicalKnownHeldItemId == null) it * 2 else it }
+            "acrobatics" -> wholePower?.let {
+                // null on an opponent means not revealed, not an empty slot. Our own items are exact;
+                // "" is the observer's confirmed removal. Follow the same knowledge boundary as Poltergeist.
+                val knownEmpty = actor.canonicalKnownHeldItemId == null &&
+                    (actor.knownHeldItemId != null || actor.side == BattleSide.ALLY)
+                if (knownEmpty) it * 2 else it
+            }
             // 1.5x only for a held item that is public and can be knocked off; an unknown item keeps the
             // printed power as the lower bound.
             "knockoff" -> wholePower?.let { if (knockOffBoosts(target)) it * 3 / 2 else it }
