@@ -11,6 +11,9 @@ internal object LocalHpMatchupAudit {
         var ownStageReads: Int = 0, var fullProfileComputations: Int = 0, var oneHitProfileComputations: Int = 0,
         var actingTacticalCalls: Int = 0, var actingRollCalculations: Int = 0,
         var simpleStatusExchanges: Int = 0, var actingChoiceProducts: Int = 0, var simpleActingModels: Int = 0, var simpleActingPairs: Int = 0,
+        var switchFullContinuations: Int = 0, var switchSimpleContinuations: Int = 0,
+        var switchTacticalCalls: Int = 0, var switchRollCalculations: Int = 0,
+        var representativeOutcomes: Int = 0, var exactOutcomes: Int = 0, var perHitRecalculations: Int = 0,
         @Transient var futureDepth: Int = 0, @Transient var seedDepth: Int = 0)
     private val active = ThreadLocal<Counts?>()
     fun begin() { active.set(Counts()) }
@@ -45,6 +48,19 @@ internal object LocalHpMatchupAudit {
         try { return block() } finally {
             counts.statusTacticalCalls += counts.tacticalCalls - tactical
             counts.statusRollCalculations += counts.rollCalculations - rolls
+        }
+    }
+    fun impactOutcomes(representative: Boolean) { active.get()?.let {
+        if (representative) it.representativeOutcomes++ else it.exactOutcomes++ } }
+    fun perHitRecalculation() { active.get()?.let { it.perHitRecalculations++ } }
+    fun simpleSwitchContinuation() { active.get()?.let { it.switchSimpleContinuations++ } }
+    fun <T> switchContinuation(block: () -> T): T {
+        val counts = active.get() ?: return block()
+        counts.switchFullContinuations++
+        val tactical = counts.tacticalCalls; val rolls = counts.rollCalculations
+        try { return block() } finally {
+            counts.switchTacticalCalls += counts.tacticalCalls - tactical
+            counts.switchRollCalculations += counts.rollCalculations - rolls
         }
     }
     fun reused() { active.get()?.let { it.hpHits++ } }

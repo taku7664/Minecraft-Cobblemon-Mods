@@ -62,9 +62,10 @@ internal object LocalAceScore {
         }
 
     private fun retainedFreshScores(context: BattleDecisionContext, fresh: jbro.cobblemon.mcc.internal.ai.BattleStateView): MatchupScores {
-        val key = fresh.format.name + "|" + fresh.pokemon.joinToString(";") {
+        val boardKey = fresh.format.name + "|" + fresh.pokemon.joinToString(";") {
             "${it.battlePokemonId}/${it.side}/${it.speciesId}/${it.formId}/${it.knownMoveIds.sorted()}/${it.knownAbilityId}/${it.knownHeldItemId}/${it.knownTypeIds}"
         } + "|" + context.publicActionCatalog.hashCode()
+        val key = boardKey to jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current()
         synchronized(freshTables) { freshTables[key]?.let { return it } }
         val scores = LocalMatchupScoreCalculator.calculate(context.copy(state = fresh))
         if (scores.complete) synchronized(freshTables) {
@@ -74,7 +75,7 @@ internal object LocalAceScore {
         return scores
     }
 
-    private val freshTables = LinkedHashMap<String, MatchupScores>()
+    private val freshTables = LinkedHashMap<Pair<String, jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning>, MatchupScores>()
     private const val FRESH_TABLES_KEPT = 8
 }
 

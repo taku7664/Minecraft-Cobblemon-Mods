@@ -20,6 +20,8 @@ internal data class LocalOptimizationSettings(
     val firstHitActingChance: Boolean = false,
     val simpleStatusMatchups: Boolean = false,
     val simpleActingChance: Boolean = false,
+    val representativeHitOutcomes: Boolean = false,
+    val simpleSwitchContinuations: Boolean = false,
 ) {
     init { require(poisonEvaluationTurns in 1..8) }
     fun applyTo(tuning: LocalDecisionTuning): LocalDecisionTuning = tuning.copy(
@@ -30,6 +32,8 @@ internal data class LocalOptimizationSettings(
         firstHitActingChance = firstHitActingChance,
         simpleStatusMatchups = simpleStatusMatchups,
         simpleActingChance = simpleActingChance,
+        representativeHitOutcomes = representativeHitOutcomes,
+        simpleSwitchContinuations = simpleSwitchContinuations,
         poisonEvaluationTurns = poisonEvaluationTurns.takeIf { simplePoisonEvaluation },
     )
 }
@@ -60,7 +64,7 @@ internal object LocalOptimizationConfigStore {
                 require(it.isJsonPrimitive && it.asJsonPrimitive.isNumber && it.asBigDecimal.stripTrailingZeros().scale() <= 0)
                 it.asBigDecimal.intValueExact()
             } ?: 2
-            return LocalOptimizationSettings(flag("simpleFixedHpReactions"), flag("simplePoisonEvaluation"), turns, flag("simpleHpMatchups"), flag("simpleForecastMatchups"), flag("skipUnusedStatusMatchups"), flag("firstHitActingChance"), flag("simpleStatusMatchups"), flag("simpleActingChance"))
+            return LocalOptimizationSettings(flag("simpleFixedHpReactions"), flag("simplePoisonEvaluation"), turns, flag("simpleHpMatchups"), flag("simpleForecastMatchups"), flag("skipUnusedStatusMatchups"), flag("firstHitActingChance"), flag("simpleStatusMatchups"), flag("simpleActingChance"), flag("representativeHitOutcomes"), flag("simpleSwitchContinuations"))
         }
         // Existing flat files retain their previous meaning for both formats until explicitly separated.
         val legacy = settings(root)
@@ -86,11 +90,13 @@ internal object LocalOptimizationConfigStore {
             section.addProperty("firstHitActingChance", settings.firstHitActingChance)
             section.addProperty("simpleStatusMatchups", settings.simpleStatusMatchups)
             section.addProperty("simpleActingChance", settings.simpleActingChance)
+            section.addProperty("representativeHitOutcomes", settings.representativeHitOutcomes)
+            section.addProperty("simpleSwitchContinuations", settings.simpleSwitchContinuations)
             root.add(key, section)
         }
         saveSection("single", config.single)
         saveSection("double", config.double)
-        for (key in listOf("simpleFixedHpReactions", "simplePoisonEvaluation", "poisonEvaluationTurns", "simpleHpMatchups", "simpleForecastMatchups", "skipUnusedStatusMatchups", "firstHitActingChance", "simpleStatusMatchups", "simpleActingChance")) root.remove(key)
+        for (key in listOf("simpleFixedHpReactions", "simplePoisonEvaluation", "poisonEvaluationTurns", "simpleHpMatchups", "simpleForecastMatchups", "skipUnusedStatusMatchups", "firstHitActingChance", "simpleStatusMatchups", "simpleActingChance", "representativeHitOutcomes", "simpleSwitchContinuations")) root.remove(key)
         Files.createDirectories(requireNotNull(path.parent))
         val temporary = path.resolveSibling("${path.fileName}.${UUID.randomUUID()}.tmp")
         try {

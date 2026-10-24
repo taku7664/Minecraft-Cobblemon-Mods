@@ -16,7 +16,7 @@ internal object LocalMoveHitSequence {
                 totalDamage: Double, effects: List<BattleMoveEffectView>, bypassesSubstitute: Boolean,
                 source: BattleDecisionContext, side: BattleSide, userEffects: Boolean = true,
                 hitCountOverride: Int? = null, rollPercentile: Double? = null,
-                reactions: Boolean = true, finishMove: Boolean = userEffects): List<LocalMoveHitSequenceResult> {
+                reactions: Boolean = true, finishMove: Boolean = userEffects, representative: Boolean = false): List<LocalMoveHitSequenceResult> {
         val actor = initial.pokemon.firstOrNull { it.battlePokemonId == actorId } ?: return emptyList()
         val beatUpMembers = if (PublicIds.canonical(action.moveId.orEmpty()) == "beatup") initial.pokemon.filter {
             it.side == actor.side && !it.fainted && it.hpFraction > 0.0 && it.statusId == null
@@ -44,7 +44,8 @@ internal object LocalMoveHitSequence {
                 val target = previous.state.pokemon.firstOrNull { it.battlePokemonId == targetId }
                 val currentActor = previous.state.pokemon.firstOrNull { it.battlePokemonId == actorId }
                 if (target?.fainted == true || currentActor?.fainted == true) return@flatMap listOf(previous)
-                val damage = if (!perHitCalculation) totalDamage / count else {
+                val damage = if (representative || !perHitCalculation) totalDamage / count else {
+                    jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit.perHitRecalculation()
                     val tagged = BattleActionCandidate(action.actionId, action.kind, actorSlot = action.actorSlot, moveSlot = action.moveSlot,
                         moveId = action.moveId, targets = action.targets, mechanic = action.mechanic, moveDetails = action.moveDetails,
                         tags = action.tags + setOf("better_ai:single_hit", "better_ai:hit_index=${index + 1}") +
@@ -56,7 +57,12 @@ internal object LocalMoveHitSequence {
                 }
                 // A decoy whose remaining HP is not known may or may not survive this hit: one branch for each.
                 val hypotheses = if (bypassesSubstitute || targetId == actorId) listOf(previous.state to 1.0)
-                    else LocalPersistentMoveState.substituteHypotheses(previous.state, targetId, damage)
+                    else if (representative && target != null) {
+                        val range = LocalPersistentMoveState.substituteRange(target)
+                        val narrowed = if (range == null) previous.state else previous.state.copyState(pokemon = previous.state.pokemon.map {
+                            if (it.battlePokemonId == targetId) LocalPersistentMoveState.withSubstitute(it, (range.start + range.endInclusive) / 2) else it })
+                        listOf(narrowed to 1.0)
+                    } else LocalPersistentMoveState.substituteHypotheses(previous.state, targetId, damage)
                 hypotheses.flatMap { (hitState, chance) ->
                     val hadDecoy = !bypassesSubstitute && target?.knownVolatileEffectIds?.contains("substitute") == true
                     val hitEffects = effects.filter { effect ->
@@ -76,7 +82,8 @@ internal object LocalMoveHitSequence {
                         finishMove = finishMove && index == count - 1),
                         targetId, action, direct.directDamageFraction, hadDecoy).let {
                             raisedThisTurnSecondary(it, actorId, targetId, action, direct.directDamageFraction, hadDecoy) }
-                    LocalContactAfterHitMechanics.project(reacted, actorId, targetId, action, direct.directDamageFraction).map {
+                    LocalContactAfterHitMechanics.project(reacted, actorId, targetId, action, direct.directDamageFraction,
+                        chanceTrials = if (representative) 0 else 1).map {
                         LocalMoveHitSequenceResult(LocalBerryMechanics.afterUpdate(it.state), previous.probability * chance * it.probability,
                             previous.directDamageFraction + direct.directDamageFraction,
                             previous.recoilHpFraction + direct.recoilHpFraction,
@@ -87,6 +94,13 @@ internal object LocalMoveHitSequence {
                                     currentActor?.side, currentActor?.activeSlot)) else emptyList())
                     }
                 }
+            }
+        }
+        if (representative && reactions) return branches.flatMap { branch ->
+            val hits = branch.receivedHits.size
+            if (hits == 0) listOf(branch) else LocalContactAfterHitMechanics.project(branch.state, actorId, targetId,
+                action, branch.directDamageFraction, chanceTrials = hits, deterministic = false).map {
+                branch.copy(state = LocalBerryMechanics.afterUpdate(it.state), probability = branch.probability * it.probability)
             }
         }
         return branches

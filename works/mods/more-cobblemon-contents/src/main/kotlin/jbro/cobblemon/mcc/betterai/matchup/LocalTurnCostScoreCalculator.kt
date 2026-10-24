@@ -180,6 +180,32 @@ internal object LocalTurnCostScoreCalculator {
         }
         // All move outcomes are calculated once. A later repeat/tendency reading changes only their weights.
         val exchanges = HashMap<Triple<Double, Map<String, Int>, Set<String>>, PokemonMatchupScore?>()
+        val simpleContinuation = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().simpleSwitchContinuations
+        val basePair by lazy { pairs.pokemon(incoming.battlePokemonId, opponent.battlePokemonId) }
+        val representativeBefore by lazy { basePair?.let { LocalSimpleMatchup.continuation(position, position, it) } }
+        fun continuation(next: BattleStateView): PokemonMatchupScore? {
+            if (!simpleContinuation) return LocalHpMatchupAudit.switchContinuation {
+                LocalMatchupScoreCalculator.pairMatchup(position.copy(state = next), incoming.battlePokemonId,
+                    opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
+            }
+            LocalHpMatchupAudit.simpleSwitchContinuation()
+            val base = basePair ?: return null
+            val before = checkNotNull(representativeBefore)
+            val after = LocalSimpleMatchup.continuation(position, position.copy(state = next), base)
+            val result = LocalSimpleMatchup.transition(base, before, after)
+            val score = result.score
+            jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record(
+                "simpleSwitch:${incoming.battlePokemonId}:${opponent.battlePokemonId}:${cache.fingerprints.keyOf(next).hashCode()}",
+                mapOf("base" to base.score, "hp" to next.pokemon.first { it.battlePokemonId == incoming.battlePokemonId }.hpFraction,
+                    "score" to score, "fullContinuationCalls" to 0.0,
+                    "baseWin" to base.winProbability, "representativeBeforeWin" to before.winProbability,
+                    "representativeAfterWin" to after.winProbability, "win" to result.winProbability,
+                    "baseWinHp" to base.subjectRemainingHpOnWin, "beforeWinHp" to before.subjectRemainingHpOnWin,
+                    "afterWinHp" to after.subjectRemainingHpOnWin, "winHp" to result.subjectRemainingHpOnWin,
+                    "baseLossHp" to base.opponentRemainingHpOnLoss, "beforeLossHp" to before.opponentRemainingHpOnLoss,
+                    "afterLossHp" to after.opponentRemainingHpOnLoss, "lossHp" to result.opponentRemainingHpOnLoss))
+            return result
+        }
         val reactedExchanges = HashMap<jbro.cobblemon.mcc.betterai.mechanics.LocalBattleStateFingerprint.Key, PokemonMatchupScore?>()
         fun reactionEntry(moveId: String, action: jbro.cobblemon.mcc.internal.ai.BattleActionCandidate): SwitchInOutcome? {
             val impact = jbro.cobblemon.mcc.betterai.mechanics.LocalMoveImpactProjector
@@ -194,8 +220,7 @@ internal object LocalTurnCostScoreCalculator {
                 val body = path.bodyState.pokemon.first { it.battlePokemonId == incoming.battlePokemonId }
                 val survives = !arrived.fainted && arrived.hpFraction > 0.0
                 val after = if (!survives) null else reactedExchanges.getOrPut(cache.fingerprints.keyOf(path.state)) {
-                    LocalMatchupScoreCalculator.pairMatchup(position.copy(state = path.state), incoming.battlePokemonId,
-                        opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
+                    continuation(path.state)
                 }
                 if (representative == null) representative = after
                 SwitchInReactionBranch(path.probability, survives, arrived.hpFraction, after?.score ?: 0.0,
@@ -233,8 +258,7 @@ internal object LocalTurnCostScoreCalculator {
             })
             val arrived = worn.pokemon.first { it.battlePokemonId == incoming.battlePokemonId }
             val afterEntry = exchanges.getOrPut(Triple(hpAfterEntry, arrived.statStages, arrived.knownVolatileEffectIds)) {
-                LocalMatchupScoreCalculator.pairMatchup(position.copy(state = worn), incoming.battlePokemonId,
-                    opponent.battlePokemonId, MatchupSpeedField.CURRENT, cache)
+                continuation(worn)
             }
             return SwitchInOutcome(moveId, survival, hpAfterEntry, afterEntry,
                 survival * (afterEntry?.score ?: 0.0) - (1.0 - survival),

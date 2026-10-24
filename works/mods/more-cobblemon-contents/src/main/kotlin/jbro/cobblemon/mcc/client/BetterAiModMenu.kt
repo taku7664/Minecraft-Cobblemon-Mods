@@ -19,6 +19,7 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
     private val path = FabricLoader.getInstance().configDir.resolve("more-cobblemon-contents")
         .resolve(LocalOptimizationConfigStore.FILE_NAME)
     private var failed = false
+    private var page = 0
     private var config = runCatching { LocalOptimizationConfigStore.loadOrCreate(path) }.getOrElse {
         failed = true; LocalOptimizationConfig()
     }
@@ -30,25 +31,24 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
             fun update(change: (LocalOptimizationSettings) -> LocalOptimizationSettings) {
                 config = if (doubles) config.copy(double = change(config.double)) else config.copy(single = change(config.single))
             }
-            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleFixedHpReactions)
-                .create(x, 62, 146, 20, text("fixed_hp")) { _, enabled -> update { it.copy(simpleFixedHpReactions = enabled) } }
-                .also { it.setTooltip(Tooltip.create(text("fixed_hp_help"))) })
-            addRenderableWidget(CycleButton.onOffBuilder(settings.simplePoisonEvaluation)
-                .create(x, 86, 146, 20, text("poison")) { _, enabled -> update { it.copy(simplePoisonEvaluation = enabled) } }
-                .also { it.setTooltip(Tooltip.create(text("poison_help"))) })
-            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleHpMatchups)
-                .create(x, 110, 146, 20, text("matchup")) { _, enabled -> update { it.copy(simpleHpMatchups = enabled) } }
-                .also { it.setTooltip(Tooltip.create(text("matchup_help"))) })
-            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleForecastMatchups)
-                .create(x, 134, 146, 20, text("forecast")) { _, enabled -> update { it.copy(simpleForecastMatchups = enabled) } }
-                .also { it.setTooltip(Tooltip.create(text("forecast_help").copy().append("\n\n").append(text("scope")))) })
-            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleStatusMatchups)
-                .create(x, 158, 146, 20, text("simple_status")) { _, enabled -> update { it.copy(simpleStatusMatchups = enabled) } }
-                .also { it.setTooltip(Tooltip.create(text("simple_status_help"))) })
-            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleActingChance)
-                .create(x, 182, 146, 20, text("simple_acting")) { _, enabled -> update { it.copy(simpleActingChance = enabled) } }
-                .also { it.setTooltip(Tooltip.create(text("simple_acting_help"))) })
+            fun toggle(index: Int, enabled: Boolean, key: String, change: (LocalOptimizationSettings, Boolean) -> LocalOptimizationSettings) {
+                if (index / 4 != page) return
+                addRenderableWidget(CycleButton.onOffBuilder(enabled)
+                    .create(x, 62 + (index % 4) * 24, 146, 20, text(key)) { _, value -> update { change(it, value) } }
+                    .also { it.setTooltip(Tooltip.create(text(key + "_help"))) })
+            }
+            toggle(0, settings.simpleFixedHpReactions, "fixed_hp") { value, enabled -> value.copy(simpleFixedHpReactions = enabled) }
+            toggle(1, settings.simplePoisonEvaluation, "poison") { value, enabled -> value.copy(simplePoisonEvaluation = enabled) }
+            toggle(2, settings.simpleHpMatchups, "matchup") { value, enabled -> value.copy(simpleHpMatchups = enabled) }
+            toggle(3, settings.simpleForecastMatchups, "forecast") { value, enabled -> value.copy(simpleForecastMatchups = enabled) }
+            toggle(4, settings.simpleStatusMatchups, "simple_status") { value, enabled -> value.copy(simpleStatusMatchups = enabled) }
+            toggle(5, settings.simpleActingChance, "simple_acting") { value, enabled -> value.copy(simpleActingChance = enabled) }
+            toggle(6, settings.representativeHitOutcomes, "representative_hit") { value, enabled -> value.copy(representativeHitOutcomes = enabled) }
+            toggle(7, settings.simpleSwitchContinuations, "simple_switch") { value, enabled -> value.copy(simpleSwitchContinuations = enabled) }
         }
+        addRenderableWidget(Button.builder(Component.translatable("config.more_cobblemon_contents.betterai.options_page", page + 1)) {
+            page = 1 - page; clearWidgets(); init()
+        }.bounds(left, height - 62, 300, 20).build())
         addRenderableWidget(Button.builder(Component.translatable("gui.done")) {
             try { LocalOptimizationConfigStore.save(path, config); onClose() } catch (_: Exception) { failed = true }
         }.bounds(left, height - 36, 146, 20).build())
@@ -62,9 +62,9 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
         graphics.drawCenteredString(font, title, width / 2, 28, 0xFFFFFF)
         graphics.drawCenteredString(font, text("single"), width / 2 - 77, 48, 0xFFFFFF)
         graphics.drawCenteredString(font, text("double"), width / 2 + 77, 48, 0xFFFFFF)
-        var y = 212
+        var y = 164
         for (key in listOf("scope")) {
-            font.split(text(key), (width - 48).coerceAtLeast(100)).take(((height - 60 - y) / 12).coerceAtLeast(0)).forEach {
+            font.split(text(key), (width - 48).coerceAtLeast(100)).take(((height - 84 - y) / 12).coerceAtLeast(0)).forEach {
                 graphics.drawString(font, it, 24, y, 0xCCCCCC); y += 12
             }
             y += 8

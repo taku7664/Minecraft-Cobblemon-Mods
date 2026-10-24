@@ -45,6 +45,7 @@ internal object LocalMoveImpactProjector {
             })
             return listOf(Path(loafed(context.state), loafed(initialBody), 1.0))
         }
+        val representative = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().representativeHitOutcomes
         val targets = LocalPublicMoveTargets.resolve(action, context, side)
         var paths = listOf(Path(context.state, initialBody, 1.0))
         for ((index, declaredTarget) in targets.withIndex()) {
@@ -64,11 +65,18 @@ internal object LocalMoveImpactProjector {
                     candidate.moveDetails?.damageCategory == BattleMoveDamageCategory.STATUS) return@flatMap listOf(parent)
                 val counts = LocalDeclaredMultiHit.countDistribution(candidate, source, parent.state)
                 val splitCounts = counts.keys.any { it > 1 } && !LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)
-                val rollAction = if (splitCounts) BattleActionCandidate(candidate.actionId, candidate.kind,
+                val representativeCount = if (!representative) 1 else if (LocalDeclaredMultiHit.usesPerHitAccuracy(candidate)) {
+                    val accuracy = LocalPublicAccuracy.probability(candidate, calculated, side).coerceIn(0.0, 1.0)
+                    if (accuracy <= 0.0) 1 else kotlin.math.round((1..LocalDeclaredMultiHit.maximumCount(candidate)).sumOf {
+                        Math.pow(accuracy, it.toDouble()) } / accuracy).toInt().coerceAtLeast(1)
+                } else kotlin.math.round(counts.entries.sumOf { it.key * it.value }).toInt().coerceAtLeast(1)
+                val rollAction = if (splitCounts || representative && LocalDeclaredMultiHit.maximumCount(candidate) > 1) BattleActionCandidate(candidate.actionId, candidate.kind,
                     actorSlot = candidate.actorSlot, moveSlot = candidate.moveSlot, moveId = candidate.moveId,
                     targets = candidate.targets, mechanic = candidate.mechanic, moveDetails = candidate.moveDetails,
                     facts = candidate.facts, tags = candidate.tags + "better_ai:single_hit") else candidate
-                val outcomes = PublicMoveOutcomeBranchProjector.withChanceModel(LocalChanceModel.EXACT_ROLLS) {
+                jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit.impactOutcomes(representative)
+                val outcomes = if (representative) PublicMoveOutcomeBranchProjector.representative(rollAction, calculated, side, representativeCount)
+                    else PublicMoveOutcomeBranchProjector.withChanceModel(LocalChanceModel.EXACT_ROLLS) {
                     PublicMoveOutcomeBranchProjector.project(rollAction, calculated, side)
                 }.flatMap { outcome ->
                     if (!splitCounts || !outcome.hit) listOf(outcome) else counts.map { (count, chance) ->
@@ -82,17 +90,17 @@ internal object LocalMoveImpactProjector {
                         (it.probability ?: 1.0) >= 1.0
                     }
                     val bypass = LocalSubstituteRules.bypasses(hit, source, parent.state)
-                    val bodyDamage = if (LocalDeclaredMultiHit.maximumCount(hit) > 1 || parent.state === parent.bodyState) outcome.damageFraction else {
+                    val bodyDamage = if (representative || LocalDeclaredMultiHit.maximumCount(hit) > 1 || parent.state === parent.bodyState) outcome.damageFraction else {
                         val rolls = PublicBattleTacticalCalculator.conservativeDamageRollFractions(hit,
                             calculated.copy(state = parent.bodyState), side)?.sorted()
                         rolls?.get(kotlin.math.round((rolls.size - 1) * (outcome.rollPercentile ?: 0.5)).toInt()) ?: outcome.damageFraction
                     }
                     val bodies = LocalMoveHitSequence.project(parent.bodyState, source.battlePokemonId, target.battlePokemonId, hit,
                         bodyDamage, effects, bypass, calculated.copy(state = parent.bodyState), side,
-                        hitCountOverride = outcome.hitCount, rollPercentile = outcome.rollPercentile, reactions = false)
+                        hitCountOverride = outcome.hitCount, rollPercentile = outcome.rollPercentile, reactions = false, representative = representative)
                     LocalMoveHitSequence.project(parent.state, source.battlePokemonId, target.battlePokemonId, hit,
                         outcome.damageFraction, effects, bypass, calculated, side,
-                        hitCountOverride = outcome.hitCount, rollPercentile = outcome.rollPercentile, finishMove = false).flatMap { result ->
+                        hitCountOverride = outcome.hitCount, rollPercentile = outcome.rollPercentile, finishMove = false, representative = representative).flatMap { result ->
                         bodies.map { body -> Path(result.state, body.state,
                             parent.probability * outcome.probability * result.probability * body.probability,
                             parent.directDamage + result.directDamageFraction,
