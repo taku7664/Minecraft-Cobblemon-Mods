@@ -83,6 +83,8 @@ works\tools\betterai-arena\play-server.bat
 - **기믹:** 기술 화면 왼쪽 위 주황 버튼(키보드 D)으로 고른다. 그 포켓몬이 쓸 수 있는 것만 나오고, 누를 때마다 끔 → 메가진화 → 다이맥스로 바뀐다. 메가진화는 메가스톤을 든 포켓몬, 다이맥스는 `다이맥스: 안 함`이 아닌 팀에서 한 번이다. 테라스탈·Z기술은 대전 브리지가 내주지 않는다.
 - 보스 세트는 판이 끝날 때까지 종족만 보낸다.
 - 판마다 `F:/AI/betterai-arena/play/<시각>/battle/`에 `decisions.jsonl`(보스 쪽), `result.json`, `referee-input.json`이 남는다.
+- **턴 결과:** 차례가 끝나면 그 사이 일어난 일이 윗화면 메시지 창에 한 줄씩 나오고, 장면(교체, HP, 쓰러짐)도 줄마다 바뀐다. 한 줄에 1.3초, 화면을 탭하거나 Z·Enter를 누르면 다음 줄, Esc·X를 누르면 끝까지 넘어간다. 재생 중에는 메뉴가 잠긴다.
+- **지난 판:** 페이지 아래 「지난 판」에 저장된 모든 판(시각, 양쪽 팀, 승·패·중단·진행 중, 턴)이 나온다. 누르면 턴별 로그와 그 턴에 보스가 본 후보, 두 팀 세트를 보여 주고, 기록 파일 3개를 휴대폰으로 받을 수 있다. 중단된 판은 보스 결정 기록에 든 로그로 연다. 두는 중인 판은 끝나야 열린다(보스 세트를 가리려고). 서버 경로는 `api/records`, `api/record?id=`, `api/record-file?id=&name=`이다.
 - 모드 JAR은 `arena.properties`의 `playJar`다. 실행부와 같은 `main`에서 빌드한 것이어야 한다. 개발 서버 JAR이 더 오래됐으면 `NoSuchMethodError`가 난다.
 - 서버는 `play.html`에 폰트와 Showdown 기술 타입·스프라이트 이름을 넣은 `play/page.html`을 요청마다 읽는다. `play.html`을 고친 뒤 `python works/tools/betterai-arena/arena.py play-page`만 돌리면 서버를 다시 켤 필요가 없다. 서버 코드(`BetterAiPlayServer.kt`)를 고치면 실행부를 다시 만들고 다시 켠다.
 - `cloudflared.exe`는 Cloudflare 공식 GitHub 릴리스에서 받아 `F:/AI/betterai-arena/tools/`에 둔다(2026-10-21 받은 2026.10.2, Cloudflare 서명 확인).

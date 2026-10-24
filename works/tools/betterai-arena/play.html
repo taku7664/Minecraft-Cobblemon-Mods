@@ -157,6 +157,24 @@ details[open] > summary { margin-bottom: 8px; }
 .sets { display: grid; gap: 8px; font-size: 13px; }
 .err { color: var(--danger); }
 .keys { margin: 0; }
+/* The message box while a turn's results play: tap or Z for the next line. */
+.msg.more::after { animation: blink 1s steps(2) infinite; }
+.scene { cursor: default; }
+.scene.playing { cursor: pointer; }
+.rec-tag { font-size: 11px; color: var(--text); background: var(--good); border-radius: 3px; padding: 0 6px; margin-left: 6px; letter-spacing: 0; }
+.rec-list { display: grid; gap: 6px; }
+.rec { display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: center; width: 100%; text-align: left;
+  padding: 8px 10px; background: var(--panel); border: 2px solid var(--frame-shade); border-radius: 4px; }
+.rec:hover, .rec:focus-visible { border-color: var(--primary); outline: none; }
+.rec .when { font-size: 12px; color: var(--panel-text-dim); white-space: nowrap; }
+.rec .teams { font-size: 13px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec .badge { font-size: 12px; color: #fff; border-radius: 3px; padding: 0 6px; white-space: nowrap; }
+.badge.win { background: var(--good); } .badge.lose { background: var(--danger); } .badge.stop { background: var(--panel-text-dim); }
+.badge.live { background: var(--cursor); }
+.replay h3 { margin: 14px 0 4px; font-size: 14px; padding-bottom: 2px; border-bottom: 2px solid var(--info-band); }
+.replay .head { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.replay .files { display: flex; gap: 6px; flex-wrap: wrap; margin: 8px 0; }
+.replay .files a { font-size: 12px; text-decoration: none; }
 .entry section { display: grid; gap: 6px; margin-bottom: 12px; }
 .entry h3 { margin: 4px 0 0; font-size: 14px; }
 .entry select, .entry textarea { width: 100%; font: 13px/1.5 var(--font); color: var(--panel-text); background: var(--panel);
@@ -176,7 +194,7 @@ details[open] > summary { margin-bottom: 8px; }
       <div class="screen scene" id="top"></div>
       <div class="screen touch" id="bottom"></div>
     </div>
-    <div class="card"><h2>결과</h2><pre class="log" id="results">아직 아무 일도 없습니다.</pre></div>
+    <div class="card"><h2>로그</h2><pre class="log" id="results">아직 아무 일도 없습니다.</pre></div>
     <div class="card entry"><h2>엔트리</h2>
       <section><h3><span class="side-tag me">나</span> 내 팀</h3><select id="pick-p1" aria-label="내 팀 불러오기"></select>
         <textarea id="team-p1" spellcheck="false" aria-label="내 팀"></textarea><p class="dim" id="check-p1"></p></section>
@@ -187,6 +205,10 @@ details[open] > summary { margin-bottom: 8px; }
     </div>
     <p class="dim keys">키보드: 방향키 이동 · Z/Enter 고르기 · X/Esc 취소 · 1~4 기술 · D 메가진화·다이맥스 켜기(누를 때마다 바뀜)</p>
     <div id="extra"></div>
+    <div class="card records"><h2>지난 판</h2>
+      <p class="dim">판마다 PC의 <code>F:/AI/betterai-arena/play/&lt;시각&gt;/battle/</code>에 자동으로 저장됩니다. 누르면 턴별로 다시 봅니다.</p>
+      <div id="records"><p class="dim">불러오는 중…</p></div>
+    </div>
   </div>
 </div>
 
@@ -296,7 +318,7 @@ function line(raw) {
     case '-miss': return `  ${who(a(1) || a(0))}에게는 맞지 않았다!`;
     case '-fail': return '  그러나 실패했다!';
     case 'cant': return `  ${josa(who(a(0)), '은', '는')} 움직일 수 없다! (${a(1)})`;
-    case '-enditem': return `  ${who(a(0))}의 ${item(a(1))}${src}`;
+    case '-enditem': return id(a(1)) === 'focussash' ? `${josa(who(a(0)), '은', '는')} 기합의띠로 버텼다!` : `  ${who(a(0))}의 ${item(a(1))}${src}`;
     case '-item': return `  ${who(a(0))}의 ${item(a(1))}${src}`;
     case '-ability': return `  ${who(a(0))}의 ${ability(a(1))}!`;
     case '-start': return a(1) === 'Dynamax' ? `${josa(who(a(0)), '은', '는')} ${a(2) === 'Gmax' ? '거다이맥스' : '다이맥스'}했다!` : `  ${josa(who(a(0)), '은', '는')} ${source(a(1))}`;
@@ -364,7 +386,99 @@ function hpBox(side, who, cls) {
   </div>`;
 }
 
+/*
+ * A turn's results, played line by line in the message box as the games do: the scene changes with each line
+ * (switch-ins, HP, faints), a damage line without a source only moves the HP bar.
+ */
+let playback = null, seen = { id: null, len: 0 }, justStarted = false;
+const hpOf = text => { const x = /^(\d+)(?:\/(\d+))?/.exec(text || ''); return x ? Number(x[1]) / Number(x[2] || 100) : null; };
+/** The scene as the previous request left it, before this turn's results play. */
+function sceneFrom(p) {
+  const s = p ? sides(p, game?.teams) : { mine: [] };
+  return {
+    mine: s.mine || [],
+    foe: s.foe ? { name: s.foe.name, level: s.foe.level, gender: s.foe.gender, hp: s.foe.hp, status: String(s.foe.status || '').split(':').pop(), stages: { ...(s.foe.stages || {}) } } : null,
+    me: s.me ? { name: s.me.name, level: s.me.level, gender: s.me.gender, hp: s.me.frac, status: s.me.status, stages: {} } : null,
+  };
+}
+function applyEvent(raw, scene) {
+  const parts = raw.split('|').slice(1), kind = parts[0];
+  const m = /^(p\d)[a-z]?: (.+)$/.exec(parts[1] || '');
+  if (!m) return;
+  const side = m[1] === 'p1' ? 'me' : 'foe';
+  if (['switch', 'drag', 'replace'].includes(kind)) {
+    const d = String(parts[2] || '').split(',').map(x => x.trim());
+    scene[side] = { name: d[0], level: (d.find(x => /^L\d+$/.test(x)) || 'L100').slice(1), gender: d.find(x => x === 'M' || x === 'F') || '',
+      hp: hpOf(parts[3]) ?? 1, status: String(parts[3] || '').split(' ')[1] || '', stages: {} };
+    return;
+  }
+  const v = scene[side];
+  if (!v) return;
+  if (kind === '-damage' || kind === '-heal') { const f = hpOf(parts[2]); if (f != null) v.hp = /fnt/.test(parts[2]) ? 0 : f; }
+  else if (kind === 'faint') scene[side] = null;
+  else if (kind === '-status') v.status = parts[2];
+  else if (kind === '-curestatus') v.status = '';
+  else if (kind === 'detailschange') v.name = String(parts[2] || '').split(',')[0];
+  else if (kind === '-boost' || kind === '-unboost') v.stages[parts[2]] = (v.stages[parts[2]] || 0) + (kind === '-boost' ? 1 : -1) * Number(parts[3] || 1);
+}
+/** Lines that print, each carrying the silent events (a plain damage or heal) that follow it. */
+function buildSteps(raws) {
+  const steps = [];
+  for (const raw of raws) {
+    const kind = raw.split('|')[1];
+    const silent = (kind === '-damage' || kind === '-heal') && !raw.includes('[from]');
+    const text = silent || kind === 'turn' ? null : line(raw);
+    if (text) steps.push({ text: text.trim(), events: [raw] });
+    else if (steps.length) steps[steps.length - 1].events.push(raw);
+    else steps.push({ text: null, events: [raw] });
+  }
+  return steps;
+}
+function startPlayback(raws, scene) {
+  const steps = buildSteps(raws);
+  if (!steps.some(st => st.text)) { return; }
+  clearTimeout(playback?.timer);
+  playback = { steps, index: -1, scene };
+  nextStep();
+}
+function nextStep() {
+  if (!playback) return;
+  clearTimeout(playback.timer);
+  playback.index++;
+  const step = playback.steps[playback.index];
+  if (!step) { playback = null; render(); return; }
+  step.events.forEach(raw => applyEvent(raw, playback.scene));
+  if (!step.text) { nextStep(); return; }
+  render();
+  playback.timer = setTimeout(nextStep, 1300);
+}
+function skipPlayback() {
+  while (playback) {
+    clearTimeout(playback.timer);
+    playback.index++;
+    const step = playback.steps[playback.index];
+    if (!step) { playback = null; break; }
+    step.events.forEach(raw => applyEvent(raw, playback.scene));
+  }
+  render();
+}
+/** Called with the new state before it is drawn: plays what happened since the last request this page showed. */
+function onUpdate() {
+  if (!game) return;
+  const log = game.status === 'done' ? game.result?.log : game.pending?.log;
+  if (!log) return;
+  if (seen.id !== game.id) {
+    seen = { id: game.id, len: justStarted ? 0 : log.length };
+    justStarted = false;
+  }
+  if (log.length <= seen.len) return;
+  const base = window.__last && window.__lastGame === game.id ? window.__last : null;
+  startPlayback(log.slice(seen.len), sceneFrom(base));
+  seen.len = log.length;
+}
+
 function message() {
+  if (playback) return esc(playback.steps[playback.index]?.text || '');
   if (flash) return flash;
   if (!game) return '보스 AI와 3대3 싱글 승부!<br>아래 버튼으로 시작하세요.';
   const p = game.pending || window.__last;
@@ -383,13 +497,21 @@ function message() {
 
 function renderTop() {
   const p = game?.pending || window.__last;
-  const s = p ? sides(p, game?.teams) : {};
-  const wait = game && ['starting', 'ai_thinking'].includes(game.status);
+  let s = p ? sides(p, game?.teams) : {};
+  if (playback) {
+    // The scene as the results so far leave it; my HP shown against the real maximum.
+    const sc = playback.scene;
+    const real = name => sc.mine.find(m => id(m.name) === id(name) || id(m.name).startsWith(id(name)) || id(name).startsWith(id(m.name)));
+    const meMax = sc.me ? (real(sc.me.name)?.max || 100) : 0;
+    s = { ...s, foe: sc.foe, me: sc.me && { ...sc.me, frac: sc.me.hp, max: meMax, cur: Math.round(sc.me.hp * meMax) } };
+  }
+  const wait = !playback && game && ['starting', 'ai_thinking'].includes(game.status);
+  $('top').classList.toggle('playing', !!playback);
   $('top').innerHTML = `<span class="stripe"></span><span class="platform foe"></span><span class="platform me"></span>
     ${s.foe ? spriteTag(s.foe.name, false, 'sprite foe') : ''}
     ${s.me ? spriteTag(s.me.name, true, 'sprite me') : ''}
     ${hpBox('foe', s.foe, 'foe')}${hpBox('me', s.me, 'me')}
-    <div class="msg ${wait ? 'wait' : ''}">${message()}</div>`;
+    <div class="msg ${wait ? 'wait' : ''} ${playback ? 'more' : ''}">${message()}</div>`;
 }
 
 function balls(list) {
@@ -447,14 +569,15 @@ function renderBottom() {
     el.innerHTML = `<button class="tbtn big" id="start-big">새 대전<small>프리셋 팀 3대3 · 보스 AI</small></button>`;
     return;
   }
-  if (game.status === 'done') {
+  if (game.status === 'done' && !playback) {
     el.innerHTML = `<button class="tbtn big" id="start-big">한 판 더<small>새 팀으로 다시 붙기</small></button>`;
     return;
   }
   const p = game.pending || window.__last;
   if (!p) { el.innerHTML = ''; return; }
   const s = sides(p, game.teams);
-  const live = game.status === 'your_turn' && game.pending && !sending;
+  if (game.status === 'done') { el.innerHTML = `<div class="balls"><span>${balls(s.mine)}</span><span>${balls(s.foeTeam)}</span></div>`; return; }
+  const live = game.status === 'your_turn' && game.pending && !sending && !playback;
   const forced = game.pending?.forced;
   const view = forced ? 'party' : screen;
   const ballRow = `<div class="balls"><span>${balls(s.mine)}</span><span>${balls(s.foeTeam)}</span></div>`;
@@ -491,8 +614,9 @@ function setsBlock(teams) {
 }
 
 function render() {
-  $('info').textContent = game ? `${game.id} · 시드 ${game.seed}` : '';
-  if (game?.pending) window.__last = game.pending;
+  const recording = game && !['error'].includes(game.status);
+  $('info').innerHTML = game ? `${esc(game.id)} · 시드 ${game.seed}<span class="rec-tag">${game.status === 'done' ? '기록 저장됨' : recording ? '기록 중' : '기록 없음'}</span>` : '';
+  if (game?.pending) { window.__last = game.pending; window.__lastGame = game.id; }
   renderTop();
   renderBottom();
   const p = game?.status === 'done' ? null : (game?.pending || window.__last);
@@ -689,6 +813,11 @@ function nearest(from, dx, dy) {
 }
 document.addEventListener('keydown', e => {
   if (e.altKey || e.ctrlKey || e.metaKey || e.target.matches?.('input, textarea, select')) return;
+  if (playback) {
+    const k = e.key.length === 1 ? e.key.toLowerCase() : e.key;
+    if (k === 'z' || k === 'Enter' || k === ' ') { e.preventDefault(); nextStep(); return; }
+    if (k === 'x' || k === 'Escape') { e.preventDefault(); skipPlayback(); return; }
+  }
   const buttons = touchButtons();
   const current = buttons.includes(document.activeElement) ? document.activeElement : null;
   const dirs = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, -1], ArrowDown: [0, 1] };
@@ -718,6 +847,8 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('pointerdown', () => { keyboard = false; });
 
+$('top').addEventListener('click', () => { if (playback) nextStep(); });
+
 document.addEventListener('click', e => {
   const t = e.target.closest('button');
   if (!t || t.disabled) return;
@@ -741,12 +872,17 @@ async function post(path, body) {
   try {
     const res = await fetch(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) });
     const data = await res.json();
+    const before = game?.status;
     game = data.game || null;
+    onUpdate();
+    if (game?.status === 'done' && before !== 'done') loadRecords();
+    if (path === 'api/start') loadRecords();
     if (data.error) { $('note').textContent = data.error; $('note').className = 'err'; } else { $('note').textContent = ''; }
   } catch (e) { $('note').textContent = '서버에 닿지 못했습니다. PC의 대전 서버가 켜져 있는지 확인하세요.'; $('note').className = 'err'; }
   sending = false; render(); schedule();
 }
 function start() {
+  justStarted = true;
   const p1 = checkEntry('p1'), p2 = checkEntry('p2');
   if (p1.errors.length || p2.errors.length) {
     $('note').className = 'err'; $('note').textContent = '엔트리에 고칠 곳이 있습니다. 빨간 줄을 확인하세요.';
@@ -762,6 +898,64 @@ function choose(action) {
   post('api/choose', { action, request: game.pending.request });
 }
 
+/* ---- Past battles: every battle the server kept, replayed turn by turn ---------------------------------------- */
+let records = [], recordsShown = 8;
+const whenOf = rid => `${rid.slice(4, 6)}-${rid.slice(6, 8)} ${rid.slice(9, 11)}:${rid.slice(11, 13)}`;
+const teamText = list => list.length ? `${mon(list[0])}${list.length > 1 ? ` 외 ${list.length - 1}` : ''}` : '?';
+async function loadRecords() {
+  try { records = (await (await fetch('api/records', { cache: 'no-store' })).json()).records || []; }
+  catch (e) { $('records').innerHTML = '<p class="err">지난 판 목록을 불러오지 못했습니다.</p>'; return; }
+  renderRecords();
+}
+function badge(r) {
+  if (r.status === 'live') return '<span class="badge live">진행 중</span>';
+  if (r.status !== 'done') return '<span class="badge stop">중단</span>';
+  return r.winner === 'p1' ? `<span class="badge win">승 · ${r.turn}턴</span>` : r.winner ? `<span class="badge lose">패 · ${r.turn}턴</span>` : `<span class="badge stop">무승부</span>`;
+}
+function renderRecords() {
+  if (!records.length) { $('records').innerHTML = '<p class="dim">아직 저장된 판이 없습니다.</p>'; return; }
+  $('records').innerHTML = `<div class="rec-list">${records.slice(0, recordsShown).map(r => `
+    <button class="rec" data-record="${esc(r.id)}" ${r.status === 'live' ? 'disabled' : ''}>
+      <span class="when">${esc(whenOf(r.id))}</span>
+      <span class="teams">${esc(teamText(r.p1 || []))} <span class="dim">vs</span> ${esc(teamText(r.p2 || []))}</span>
+      ${badge(r)}</button>`).join('')}</div>
+    ${records.length > recordsShown ? `<p><button class="pm-button" id="more-records">더 보기 (${records.length - recordsShown})</button></p>` : ''}`;
+}
+async function openRecord(rid) {
+  $('records').innerHTML = '<p class="dim">불러오는 중…</p>';
+  let r;
+  try { r = await (await fetch(`api/record?id=${encodeURIComponent(rid)}`, { cache: 'no-store' })).json(); }
+  catch (e) { r = { error: '기록을 불러오지 못했습니다.' }; }
+  if (r.error) { $('records').innerHTML = `<p class="err">${esc(r.error)}</p><p><button class="pm-button" id="back-records">← 목록</button></p>`; return; }
+  // The log by turn: what happened in turn N follows its |turn|N marker; the boss's choice for turn N sits with it.
+  const turns = [{ turn: 0, lines: [] }];
+  for (const raw of r.log || []) {
+    const t = /^\|turn\|(\d+)/.exec(raw);
+    if (t) { turns.push({ turn: Number(t[1]), lines: [] }); continue; }
+    const text = line(raw);
+    if (text) turns[turns.length - 1].lines.push(text);
+  }
+  const byTurn = {};
+  (r.decisions || []).forEach(d => (byTurn[d.turn] = byTurn[d.turn] || []).push(d));
+  const result = r.status !== 'done' ? '중단된 판' : r.winner === 'p1' ? `이겼습니다 · ${r.turn}턴` : r.winner ? `졌습니다 · ${r.turn}턴` : '무승부';
+  $('records').innerHTML = `<div class="replay">
+    <div class="head"><button class="pm-button" id="back-records">← 목록</button><b>${esc(whenOf(r.id))}</b>${badge(r)}<span class="dim">${esc(result)}</span></div>
+    <div class="files">${(r.files || []).map(f => `<a class="pm-button" href="api/record-file?id=${encodeURIComponent(r.id)}&name=${encodeURIComponent(f)}" download>${esc(f)} 받기</a>`).join('')}</div>
+    ${setsBlock(r.teams)}
+    ${turns.filter(t => t.lines.length || byTurn[t.turn]).map(t => `<h3>${t.turn ? `${t.turn}턴` : '시작'}</h3>
+      <pre class="log">${esc(t.lines.join('\n'))}</pre>
+      ${(byTurn[t.turn] || []).map(d => aiBlock(d)).join('')}`).join('')}
+  </div>`;
+  $('records').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+$('records').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b) return;
+  if (b.dataset.record) openRecord(b.dataset.record);
+  else if (b.id === 'back-records') renderRecords();
+  else if (b.id === 'more-records') { recordsShown += 8; renderRecords(); }
+});
+
 let timer = null;
 function schedule() {
   clearTimeout(timer);
@@ -772,9 +966,12 @@ async function poll() {
   try {
     const data = await (await fetch('api/state', { cache: 'no-store' })).json();
     const before = [game?.status, game?.pending?.request, game?.id].join('|');
+    const was = game?.status;
     game = data.game || null;
     const after = [game?.status, game?.pending?.request, game?.id].join('|');
     if (after !== before && !sending) {
+      onUpdate();
+      if (game?.status === 'done' && was !== 'done') loadRecords();
       if (game?.pending && game.pending.request !== shownRequest) { shownRequest = game.pending.request; screen = 'main'; gimmick = ''; }
       render();
     }
@@ -787,7 +984,9 @@ async function poll() {
   try { game = (await (await fetch('api/state', { cache: 'no-store' })).json()).game || null; } catch (e) { $('note').textContent = '서버에 닿지 못했습니다.'; }
   if (game?.pending) shownRequest = game.pending.request;
   setupEntries();
+  if (game) seen = { id: game.id, len: (game.status === 'done' ? game.result?.log : game.pending?.log)?.length || 0 };
   render(); schedule();
+  loadRecords();
 })();
 </script>
 </html>

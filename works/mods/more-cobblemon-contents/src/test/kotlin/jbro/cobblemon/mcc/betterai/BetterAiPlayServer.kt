@@ -74,6 +74,15 @@ private fun route(exchange: HttpExchange, token: String, page: Path, play: PlayS
         rest == "/api/state" -> json(exchange, play.state())
         rest == "/api/start" && exchange.requestMethod == "POST" -> json(exchange, play.start(body(exchange)))
         rest == "/api/choose" && exchange.requestMethod == "POST" -> json(exchange, play.choose(body(exchange)))
+        rest == "/api/records" -> json(exchange, play.records())
+        rest == "/api/record" -> json(exchange, play.record(query(exchange)["id"].orEmpty()))
+        rest == "/api/record-file" -> {
+            val q = query(exchange)
+            val file = play.recordFile(q["id"].orEmpty(), q["name"].orEmpty())
+                ?: return reply(exchange, 404, "text/plain", "not found".toByteArray())
+            exchange.responseHeaders.add("Content-Disposition", "attachment; filename=\"${q["id"]}-${q["name"]}\"")
+            reply(exchange, 200, if (q["name"]!!.endsWith(".json")) "application/json" else "application/x-ndjson", Files.readAllBytes(file))
+        }
         else -> reply(exchange, 404, "text/plain", "not found".toByteArray())
     }
 }
@@ -85,6 +94,11 @@ private fun body(exchange: HttpExchange): JsonObject {
     return runCatching { JsonParser.parseString(text).asJsonObject }
         .getOrElse { throw IllegalArgumentException("요청을 읽지 못했습니다: ${it.message}") }
 }
+
+private fun query(exchange: HttpExchange): Map<String, String> =
+    exchange.requestURI.rawQuery.orEmpty().split('&').filter { '=' in it }.associate {
+        java.net.URLDecoder.decode(it.substringBefore('='), Charsets.UTF_8) to java.net.URLDecoder.decode(it.substringAfter('='), Charsets.UTF_8)
+    }
 
 private fun json(exchange: HttpExchange, value: JsonObject) =
     reply(exchange, 200, "application/json; charset=utf-8", value.toString().toByteArray(Charsets.UTF_8))
@@ -125,6 +139,79 @@ private class PlayServer(private val out: Path, private val showdown: Path) {
 
     @Synchronized
     fun state(): JsonObject = JsonObject().apply { game?.let { add("game", it.view()) } }
+
+    private fun playing(folder: Path) = game?.folder == folder && game?.status !in setOf("done", "error", "stopped")
+
+    /** Every battle folder under OUT (yyyyMMdd-HHmmss), newest first: its teams' species, how it ended. */
+    @Synchronized
+    fun records(): JsonObject = JsonObject().apply {
+        add("records", JsonArray().apply {
+            recordFolders().forEach { folder ->
+                val battle = folder.resolve("battle")
+                val referee = readJson(battle.resolve("referee-input.json"))
+                val result = readJson(battle.resolve("result.json"))
+                add(JsonObject().apply {
+                    addProperty("id", folder.fileName.toString())
+                    addProperty("status", when { playing(folder) -> "live"; result != null -> "done"; else -> "stopped" })
+                    result?.let { addProperty("winner", it["winner"]?.takeUnless { w -> w.isJsonNull }?.asString); addProperty("turn", it["turn"]?.asInt) }
+                    for (side in listOf("p1", "p2")) add(side, JsonArray().apply {
+                        referee?.getAsJsonObject(side)?.getAsJsonArray("sets")?.forEach { set -> add(set.asJsonObject["species"]) }
+                    })
+                })
+            }
+        })
+    }
+
+    /**
+     * One finished or abandoned battle: both teams' sets, the public log (the result's, or the last boss decision's for a
+     * battle left before its end) and every boss decision condensed. A battle being played is not opened, so the boss's
+     * sets stay hidden meanwhile.
+     */
+    @Synchronized
+    fun record(id: String): JsonObject {
+        val folder = recordFolders().firstOrNull { it.fileName.toString() == id }
+            ?: return JsonObject().apply { addProperty("error", "그런 기록이 없습니다: $id") }
+        if (playing(folder)) return JsonObject().apply { addProperty("error", "지금 두는 판은 끝난 뒤에 볼 수 있습니다") }
+        val battle = folder.resolve("battle")
+        val rows = battle.resolve("decisions.jsonl").takeIf(Files::exists)?.let { file ->
+            Files.readAllLines(file).filter(String::isNotBlank).map { JsonParser.parseString(it).asJsonObject }
+        }.orEmpty()
+        val result = readJson(battle.resolve("result.json"))
+        val log = result?.getAsJsonArray("publicLog") ?: rows.lastOrNull()?.getAsJsonObject("input")?.getAsJsonArray("publicLog")
+        return JsonObject().apply {
+            addProperty("id", id)
+            addProperty("status", if (result != null) "done" else "stopped")
+            result?.let { addProperty("winner", it["winner"]?.takeUnless { w -> w.isJsonNull }?.asString); addProperty("turn", it["turn"]?.asInt) }
+            readJson(battle.resolve("referee-input.json"))?.let { referee ->
+                add("teams", JsonObject().apply { for (side in listOf("p1", "p2")) add(side, referee.getAsJsonObject(side)?.getAsJsonArray("sets") ?: JsonArray()) })
+            }
+            add("log", JsonArray().apply { cleanLog(log).forEach(::add) })
+            add("decisions", JsonArray().apply { rows.forEach { row -> bossDecision(row)?.let(::add) } })
+            add("files", JsonArray().apply { RECORD_FILES.filter { Files.exists(battle.resolve(it)) }.forEach(::add) })
+        }
+    }
+
+    /** A record file to hand the phone: only a battle's own files, and not while it is being played. */
+    @Synchronized
+    fun recordFile(id: String, name: String): Path? {
+        if (name !in RECORD_FILES) return null
+        val folder = recordFolders().firstOrNull { it.fileName.toString() == id } ?: return null
+        if (playing(folder)) return null
+        return folder.resolve("battle").resolve(name).takeIf(Files::exists)
+    }
+
+    private fun recordFolders(): List<Path> = if (!Files.isDirectory(out)) emptyList() else Files.list(out).use { files ->
+        files.filter { Files.isDirectory(it) && RECORD_ID.matches(it.fileName.toString()) && Files.isDirectory(it.resolve("battle")) }
+            .toList().sortedByDescending { it.fileName.toString() }
+    }
+
+    private fun readJson(path: Path): JsonObject? =
+        path.takeIf(Files::exists)?.let { runCatching { JsonParser.parseString(Files.readString(it)).asJsonObject }.getOrNull() }
+
+    private companion object {
+        val RECORD_ID = Regex("""\d{8}-\d{6}""")
+        val RECORD_FILES = listOf("result.json", "decisions.jsonl", "referee-input.json")
+    }
 
     @Synchronized
     fun start(body: JsonObject): JsonObject {
@@ -327,54 +414,59 @@ private class Game(val folder: Path, val seed: Int, private val showdown: Path, 
         return choices.take()
     }
 
-    /** The boss's latest decision as the arena viewer shows it: top candidates, rule adjustments, draw chances. */
+    /** The boss's latest decision, as [bossDecision] condenses it. */
     private fun lastAi(battle: Path): JsonObject? {
         val file = battle.resolve("decisions.jsonl")
         if (!Files.exists(file)) return null
         val line = Files.readAllLines(file).lastOrNull { it.isNotBlank() } ?: return null
-        val row = JsonParser.parseString(line).asJsonObject
-        val stages = row.getAsJsonObject("stages") ?: return null
-        val refined = stages.getAsJsonObject("refined") ?: return null
-        val base = stages.getAsJsonObject("base") ?: JsonObject()
-        val rules = stages.getAsJsonObject("rules") ?: JsonObject()
-        val draws = stages.getAsJsonObject("drawProbabilities") ?: JsonObject()
-        val moves = row.getAsJsonObject("candidateMoves") ?: JsonObject()
-        val exclusions = JsonObject().apply {
-            listOf("drawExclusions", "ruleExclusions").forEach { key -> stages.getAsJsonObject(key)?.entrySet()?.forEach { (k, v) -> add(k, v) } }
-        }
-        val ranked = refined.entrySet().sortedByDescending { it.value.asDouble }.map { it.key }
-        val shown = (ranked.take(6) + listOfNotNull(row["actionId"]?.asString) + draws.keySet()).distinct()
-        return JsonObject().apply {
-            addProperty("turn", row["turn"].asInt)
-            addProperty("action", row["actionId"].asString)
-            add("candidates", JsonArray().apply {
-                shown.filter { refined.has(it) }.forEach { key ->
-                    add(JsonObject().apply {
-                        addProperty("id", key)
-                        moves[key]?.let { addProperty("target", it.asString) }
-                        addProperty("base", base[key]?.asDouble)
-                        addProperty("refined", refined[key].asDouble)
-                        draws[key]?.let { addProperty("p", it.asDouble) }
-                        exclusions[key]?.let { addProperty("ex", it.asString) }
-                        add("rules", JsonObject().apply {
-                            rules.entrySet().forEach { (name, values) ->
-                                values.asJsonObject[key]?.asDouble?.takeIf { kotlin.math.abs(it) >= 0.05 }?.let { addProperty(name, it) }
-                            }
-                        })
-                    })
-                }
-            })
-            addProperty("hidden", (refined.size() - shown.count { refined.has(it) }).coerceAtLeast(0))
-        }
+        return bossDecision(JsonParser.parseString(line).asJsonObject)
     }
 
-    /** The public log with each Pokemon's battle id replaced by its species, learned from the log's own switch lines. */
-    private fun cleanLog(log: JsonArray?, ids: Map<String, String>): List<String> {
-        val uuid = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
-        val lines = log?.map { it.asString }.orEmpty().filterNot { it.isBlank() || it.startsWith("|t:|") }
-        val seen = ids.toMutableMap()
-        val entry = Regex("""^\|(?:switch|drag|replace|detailschange)\|p\d[a-z]?: (${uuid.pattern})\|([^,|]+)""")
-        lines.forEach { line -> entry.find(line)?.let { seen[it.groupValues[1]] = it.groupValues[2] } }
-        return lines.map { line -> uuid.replace(line) { seen[it.value] ?: it.value.takeLast(4) } }
+}
+
+/** One boss decision row as the arena viewer shows it: top candidates, rule adjustments, draw chances. */
+private fun bossDecision(row: JsonObject): JsonObject? {
+    val stages = row.getAsJsonObject("stages") ?: return null
+    val refined = stages.getAsJsonObject("refined") ?: return null
+    val base = stages.getAsJsonObject("base") ?: JsonObject()
+    val rules = stages.getAsJsonObject("rules") ?: JsonObject()
+    val draws = stages.getAsJsonObject("drawProbabilities") ?: JsonObject()
+    val moves = row.getAsJsonObject("candidateMoves") ?: JsonObject()
+    val exclusions = JsonObject().apply {
+        listOf("drawExclusions", "ruleExclusions").forEach { key -> stages.getAsJsonObject(key)?.entrySet()?.forEach { (k, v) -> add(k, v) } }
     }
+    val ranked = refined.entrySet().sortedByDescending { it.value.asDouble }.map { it.key }
+    val shown = (ranked.take(6) + listOfNotNull(row["actionId"]?.asString) + draws.keySet()).distinct()
+    return JsonObject().apply {
+        addProperty("turn", row["turn"].asInt)
+        addProperty("action", row["actionId"].asString)
+        add("candidates", JsonArray().apply {
+            shown.filter { refined.has(it) }.forEach { key ->
+                add(JsonObject().apply {
+                    addProperty("id", key)
+                    moves[key]?.let { addProperty("target", it.asString) }
+                    addProperty("base", base[key]?.asDouble)
+                    addProperty("refined", refined[key].asDouble)
+                    draws[key]?.let { addProperty("p", it.asDouble) }
+                    exclusions[key]?.let { addProperty("ex", it.asString) }
+                    add("rules", JsonObject().apply {
+                        rules.entrySet().forEach { (name, values) ->
+                            values.asJsonObject[key]?.asDouble?.takeIf { kotlin.math.abs(it) >= 0.05 }?.let { addProperty(name, it) }
+                        }
+                    })
+                })
+            }
+        })
+        addProperty("hidden", (refined.size() - shown.count { refined.has(it) }).coerceAtLeast(0))
+    }
+}
+
+/** The public log with each Pokemon's battle id replaced by its species, learned from the log's own switch lines. */
+private fun cleanLog(log: JsonArray?, ids: Map<String, String> = emptyMap()): List<String> {
+    val uuid = Regex("[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+    val lines = log?.map { it.asString }.orEmpty().filterNot { it.isBlank() || it.startsWith("|t:|") }
+    val seen = ids.toMutableMap()
+    val entry = Regex("""^\|(?:switch|drag|replace|detailschange)\|p\d[a-z]?: (${uuid.pattern})\|([^,|]+)""")
+    lines.forEach { line -> entry.find(line)?.let { seen[it.groupValues[1]] = it.groupValues[2] } }
+    return lines.map { line -> uuid.replace(line) { seen[it.value] ?: it.value.takeLast(4) } }
 }
