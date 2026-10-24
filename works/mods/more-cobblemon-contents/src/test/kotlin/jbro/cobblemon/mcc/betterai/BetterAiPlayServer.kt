@@ -74,6 +74,8 @@ private fun route(exchange: HttpExchange, token: String, page: Path, play: PlayS
         rest == "/api/state" -> json(exchange, play.state())
         rest == "/api/start" && exchange.requestMethod == "POST" -> json(exchange, play.start(body(exchange)))
         rest == "/api/choose" && exchange.requestMethod == "POST" -> json(exchange, play.choose(body(exchange)))
+        rest == "/api/entry" && exchange.requestMethod == "POST" -> json(exchange, play.saveEntry(body(exchange)))
+        rest == "/api/entry" -> json(exchange, play.entry())
         rest == "/api/records" -> json(exchange, play.records())
         rest == "/api/record" -> json(exchange, play.record(query(exchange)["id"].orEmpty()))
         rest == "/api/record-file" -> {
@@ -139,6 +141,25 @@ private class PlayServer(private val out: Path, private val showdown: Path) {
 
     @Synchronized
     fun state(): JsonObject = JsonObject().apply { game?.let { add("game", it.view()) } }
+
+    /**
+     * The entry panel as last edited (both sides' text and picker), kept on this PC: the page's own storage is per
+     * address, and the tunnel's address changes with every start, so a reconnecting phone would lose it.
+     */
+    private val entryFile: Path get() = out.resolve("entry.json")
+
+    @Synchronized
+    fun entry(): JsonObject = readJson(entryFile) ?: JsonObject()
+
+    @Synchronized
+    fun saveEntry(body: JsonObject): JsonObject {
+        require(body.keySet().all { it in setOf("p1", "p2") }) { "엔트리에는 p1, p2만 있습니다" }
+        Files.createDirectories(out)
+        val tmp = out.resolve("entry.json.tmp")
+        Files.writeString(tmp, body.toString())
+        Files.move(tmp, entryFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING, java.nio.file.StandardCopyOption.ATOMIC_MOVE)
+        return JsonObject().apply { addProperty("saved", true) }
+    }
 
     private fun playing(folder: Path) = game?.folder == folder && game?.status !in setOf("done", "error", "stopped")
 

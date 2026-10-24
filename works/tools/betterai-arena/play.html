@@ -180,6 +180,9 @@ details[open] > summary { margin-bottom: 8px; }
 .entry select, .entry textarea { width: 100%; font: 13px/1.5 var(--font); color: var(--panel-text); background: var(--panel);
   border: 2px solid var(--border); border-radius: 4px; padding: 6px 8px; }
 .entry select:focus, .entry textarea:focus { outline: none; border-color: var(--cursor); }
+.pick-row { display: flex; gap: 6px; align-items: stretch; }
+.pick-row select { flex: 1; min-width: 0; }
+.pick-row .pm-button { flex: none; white-space: nowrap; }
 .entry textarea { min-height: 220px; resize: vertical; white-space: pre; overflow-x: auto; }
 .side-tag { font-size: 12px; color: #fff; border-radius: 3px; padding: 0 6px; }
 .side-tag.me { background: var(--danger); } .side-tag.foe { background: var(--primary); }
@@ -196,9 +199,9 @@ details[open] > summary { margin-bottom: 8px; }
     </div>
     <div class="card"><h2>로그</h2><pre class="log" id="results">아직 아무 일도 없습니다.</pre></div>
     <div class="card entry"><h2>엔트리</h2>
-      <section><h3><span class="side-tag me">나</span> 내 팀</h3><select id="pick-p1" aria-label="내 팀 불러오기"></select>
+      <section><h3><span class="side-tag me">나</span> 내 팀</h3><div class="pick-row"><select id="pick-p1" aria-label="내 팀 불러오기"></select><button class="pm-button" id="reroll-p1" type="button">다시 뽑기</button></div>
         <textarea id="team-p1" spellcheck="false" aria-label="내 팀"></textarea><p class="dim" id="check-p1"></p></section>
-      <section><h3><span class="side-tag foe">보스</span> 상대 팀 (보스 AI)</h3><select id="pick-p2" aria-label="상대 팀 불러오기"></select>
+      <section><h3><span class="side-tag foe">보스</span> 상대 팀 (보스 AI)</h3><div class="pick-row"><select id="pick-p2" aria-label="상대 팀 불러오기"></select><button class="pm-button" id="reroll-p2" type="button">다시 뽑기</button></div>
         <textarea id="team-p2" spellcheck="false" aria-label="상대 팀"></textarea><p class="dim" id="check-p2"></p></section>
       <p class="dim">트레이너를 고르면 그 팀이 펼쳐지고, 바로 고쳐 쓸 수 있습니다. Showdown 영어 텍스트를 붙여 넣어도 됩니다.</p>
       <div class="row-btns"><button class="pm-button" id="new">이 엔트리로 새 대전</button><span class="dim" id="note"></span></div>
@@ -754,6 +757,31 @@ function loadPreset(side, value) {
   $(`team-${side}`).value = exportText(sets);
   checkEntry(side);
 }
+function reroll(side) {
+  const value = $(`pick-${side}`).value;
+  const league = /^(\d+):(\d+)$/.exec(value);
+  if (league) {
+    const trainers = PRESETS.leagues[Number(league[1])].trainers;
+    const others = trainers.map((_, i) => i).filter(i => i !== Number(league[2]));
+    const next = `${league[1]}:${others[Math.floor(Math.random() * others.length)]}`;
+    $(`pick-${side}`).value = next;
+    loadPreset(side, next);
+  } else {
+    $(`pick-${side}`).value = 'random';
+    loadPreset(side, 'random');
+  }
+}
+
+/** Both sides' entry text and picker, kept on the PC so a new tunnel address (a new page origin) still has them. */
+let saveTimer = null;
+function saveEntries() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    const body = Object.fromEntries(['p1', 'p2'].map(side => [side, { text: $(`team-${side}`).value, pick: $(`pick-${side}`).value }]));
+    fetch('api/entry', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).catch(() => {});
+  }, 600);
+}
+
 function checkEntry(side) {
   const { sets, errors } = parseText($(`team-${side}`).value);
   const out = $(`check-${side}`);
@@ -767,17 +795,35 @@ function checkEntry(side) {
   }
   store.set(`entry-${side}`, $(`team-${side}`).value);
   store.set(`pick-${side}`, $(`pick-${side}`).value);
+  if (entriesReady) saveEntries();
   return { sets, errors };
 }
-function setupEntries() {
+let entriesReady = false;
+/** The PC's saved entry first, then this browser's, else a fresh random draw. */
+async function setupEntries() {
+  let server = {};
+  try { server = await (await fetch('api/entry', { cache: 'no-store' })).json(); } catch (e) { /* this browser's copy then */ }
+  if (!server.p1 || !server.p2) {
+    // Nothing saved on the PC yet: the last finished battle's two teams, so a reconnect shows that matchup.
+    try {
+      const last = ((await (await fetch('api/records', { cache: 'no-store' })).json()).records || []).find(r => r.status === 'done');
+      const r = last && await (await fetch(`api/record?id=${encodeURIComponent(last.id)}`, { cache: 'no-store' })).json();
+      if (r?.teams) server = Object.fromEntries(['p1', 'p2'].map(side => [side, { text: exportText(r.teams[side].map(t => ({
+        ...t, item: id(t.item), ability: id(t.ability), moves: (t.moves || []).map(id) }))), pick: 'custom' }]));
+    } catch (e) { /* this browser's copy then */ }
+  }
   for (const side of ['p1', 'p2']) {
     fillPicker(side);
-    const saved = store.get(`entry-${side}`);
-    $(`pick-${side}`).value = store.get(`pick-${side}`) || 'random';
-    if (saved) { $(`team-${side}`).value = saved; checkEntry(side); } else loadPreset(side, $(`pick-${side}`).value);
+    const text = server[side]?.text ?? store.get(`entry-${side}`);
+    const pick = server[side]?.pick ?? store.get(`pick-${side}`) ?? 'random';
+    $(`pick-${side}`).value = [...$(`pick-${side}`).options].some(o => o.value === pick) ? pick : 'custom';
+    if (text) { $(`team-${side}`).value = text; checkEntry(side); } else loadPreset(side, $(`pick-${side}`).value);
     $(`pick-${side}`).addEventListener('change', e => loadPreset(side, e.target.value));
     $(`team-${side}`).addEventListener('input', () => { $(`pick-${side}`).value = 'custom'; checkEntry(side); });
+    $(`reroll-${side}`).addEventListener('click', () => reroll(side));
   }
+  entriesReady = true;
+  if (!server.p1 || !server.p2) saveEntries();
 }
 
 /* ---- Keyboard: a DS cursor over the bottom screen's buttons ---------------------------------------------- */
@@ -983,7 +1029,7 @@ async function poll() {
   try { N = await (await fetch('api/names')).json(); } catch (e) { /* English names then */ }
   try { game = (await (await fetch('api/state', { cache: 'no-store' })).json()).game || null; } catch (e) { $('note').textContent = '서버에 닿지 못했습니다.'; }
   if (game?.pending) shownRequest = game.pending.request;
-  setupEntries();
+  await setupEntries();
   if (game) seen = { id: game.id, len: (game.status === 'done' ? game.result?.log : game.pending?.log)?.length || 0 };
   render(); schedule();
   loadRecords();
