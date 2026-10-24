@@ -106,13 +106,15 @@ class GalarContentTest {
         }
     }
 
-    @Test fun `Galar ships inactive, so no request reaches it and it earns no cap until released`() {
+    @Test fun `Galar ships released, and a region switched off takes no request and earns no cap`() {
+        // Released in 1.4.0 (user decision 2026-10-24); `active: false` still hides a region.
         val c = catalog()
-        assertFalse(c.active)
+        assertTrue(c.active)
+        val off = c.copy(active = false)
         val unlocked = mapOf("$ns:sinnoh" to LeagueProgress(champion = true), c.id to LeagueProgress(cleared = c.gyms.toSet()))
-        assertEquals("catalog_unavailable", assertThrows(IllegalStateException::class.java) { LeagueWorldRules.requireCanChallenge(c, unlocked) }.message)
-        assertEquals(16, LeagueWorldRules.earnedCap(listOf(c), unlocked))
-        assertTrue(LeagueWorldRules.earnedCap(listOf(c.copy(active = true)), unlocked) > 16)
+        assertEquals("catalog_unavailable", assertThrows(IllegalStateException::class.java) { LeagueWorldRules.requireCanChallenge(off, unlocked) }.message)
+        assertEquals(16, LeagueWorldRules.earnedCap(listOf(off), unlocked))
+        assertTrue(LeagueWorldRules.earnedCap(listOf(c), unlocked) > 16)
     }
 
     @Test fun `locked region and another regional run cannot be bypassed by a direct request`() {

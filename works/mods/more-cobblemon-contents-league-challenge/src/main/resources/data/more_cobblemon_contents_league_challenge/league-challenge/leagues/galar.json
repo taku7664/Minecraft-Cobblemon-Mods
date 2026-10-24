@@ -2,7 +2,7 @@
   "schema_version": 2,
   "progress_id": "more_cobblemon_contents_league_challenge:galar",
   "name_key": "league.more_cobblemon_contents_league_challenge.galar",
-  "active": false,
+  "active": true,
   "initial_cap": 80,
   "unlock_league": "more_cobblemon_contents_league_challenge:sinnoh",
   "player_mechanic": "DYNAMAX",
