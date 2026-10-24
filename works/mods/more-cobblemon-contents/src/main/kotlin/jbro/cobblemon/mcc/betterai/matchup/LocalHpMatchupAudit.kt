@@ -5,6 +5,8 @@ internal object LocalHpMatchupAudit {
     data class Counts(var tacticalCalls: Int = 0, var rollCalculations: Int = 0, var hpHits: Int = 0,
         var futureCalls: Int = 0, var futureTacticalCalls: Int = 0, var futureRollCalculations: Int = 0,
         var seedRollCalculations: Int = 0, var seeds: Int = 0, var simpleExchanges: Int = 0,
+        var statusVisits: Int = 0, var statusPreparations: Int = 0, var statusExchanges: Int = 0,
+        var statusTacticalCalls: Int = 0, var statusRollCalculations: Int = 0,
         @Transient var futureDepth: Int = 0, @Transient var seedDepth: Int = 0)
     private val active = ThreadLocal<Counts?>()
     fun begin() { active.set(Counts()) }
@@ -22,5 +24,17 @@ internal object LocalHpMatchupAudit {
         try { return block() } finally { counts.seedDepth-- }
     }
     fun simpleExchange() { active.get()?.let { it.simpleExchanges++ } }
+    fun statusVisit() { active.get()?.let { it.statusVisits++ } }
+    fun statusPrepared() { active.get()?.let { it.statusPreparations++ } }
+    fun <T> statusExchange(block: () -> T): T {
+        val counts = active.get() ?: return block()
+        counts.statusExchanges++
+        val tactical = counts.tacticalCalls
+        val rolls = counts.rollCalculations
+        try { return block() } finally {
+            counts.statusTacticalCalls += counts.tacticalCalls - tactical
+            counts.statusRollCalculations += counts.rollCalculations - rolls
+        }
+    }
     fun reused() { active.get()?.let { it.hpHits++ } }
 }

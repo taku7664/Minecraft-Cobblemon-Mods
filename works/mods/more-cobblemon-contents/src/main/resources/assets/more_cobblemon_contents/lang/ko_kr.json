@@ -1,4 +1,6 @@
 {
+  "config.more_cobblemon_contents.betterai.unused_status": "불필요한 변화기 대면 생략",
+  "config.more_cobblemon_contents.betterai.unused_status_help": "평가할 변화기 효과가 없을 때 피격 후·파트너 대면을 계산하지 않습니다. 기존 점수식은 유지합니다.",
   "config.more_cobblemon_contents.betterai.forecast_help": "미래 스윕·저지의 반복 피해 계산을 배율과 필요 턴으로 근사합니다. 현재 행동의 랭크 평가식은 유지합니다. 판단값과 선택이 달라질 수 있습니다.",
   "config.more_cobblemon_contents.betterai.forecast": "미래 대면 간단 계산",
   "config.more_cobblemon_contents.betterai.double": "더블",

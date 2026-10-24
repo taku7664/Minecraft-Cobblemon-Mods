@@ -21,6 +21,51 @@ import org.junit.jupiter.api.Test
 
 class LocalMatchupScoreTest {
     @Test
+    fun `unused status exchanges are skipped with identical supported scores in singles and doubles`() {
+        val tuning = jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT
+        val audit = jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit
+        val protect = BattlePublicMoveOptionView("protect", BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS,
+            0.0, 100.0, 4, 10, BattleMoveTargetPattern.SELF, effects = BattleShowdownMoveEffects.resolve("protect")),
+            BattlePublicMoveKnowledge.EXACT_OWN)
+        for (format in BattleFormat.entries) for (kind in listOf("attacks", "protect", "setup", "burn", "blocked burn")) {
+            val wisp = BattlePublicMoveOptionView("willowisp", BattleMoveCandidateView("fire", BattleMoveDamageCategory.STATUS,
+                0.0, 85.0, 0, 10, effects = BattleShowdownMoveEffects.resolve("willowisp")), BattlePublicMoveKnowledge.EXACT_OWN)
+            val board = context(100, 120, allyPower = 65.0, foePower = 65.0,
+                allySetup = if (kind == "setup") mapOf("atk" to 2) else null,
+                allyExtra = when (kind) { "protect" -> listOf(protect); "burn", "blocked burn" -> listOf(wisp); else -> emptyList() },
+                foeStatus = if (kind == "blocked burn") "par" else null,
+                format = format, benchActive = format == BattleFormat.DOUBLE,
+                secondFoe = true, secondFoeActive = format == BattleFormat.DOUBLE)
+            val pairs = LocalMatchupScoreCalculator.calculate(board)
+            val user = board.state.pokemon.first { it.battlePokemonId == ALLY }
+            val foe = board.state.pokemon.first { it.battlePokemonId == FOE }
+            fun read(enabled: Boolean): Pair<List<StatusMoveMatchupScore>, jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit.Counts> {
+                audit.begin()
+                try {
+                    val scores = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(tuning.copy(skipUnusedStatusMatchups = enabled)) {
+                        jbro.cobblemon.mcc.betterai.matchup.LocalTurnCostScoreCalculator.statusMoves(board, user, foe, pairs,
+                            jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache())
+                    }
+                    return scores to audit.take()
+                } finally { audit.take() }
+            }
+            val (before, oldWork) = read(false)
+            val (after, newWork) = read(true)
+            assertEquals(before, after, "$format/$kind")
+            assertTrue(oldWork.statusExchanges > 0, "$format/$kind: baseline must actually enter exchange")
+            if (kind in listOf("attacks", "protect", "blocked burn")) {
+                assertTrue(after.isEmpty(), "$format/$kind")
+                assertEquals(0, newWork.statusExchanges, "$format/$kind")
+                assertEquals(0, newWork.statusTacticalCalls)
+                assertEquals(0, newWork.statusRollCalculations)
+            } else {
+                assertFalse(after.isEmpty(), "$format/$kind")
+                assertEquals(oldWork.statusExchanges, newWork.statusExchanges)
+            }
+        }
+    }
+
+    @Test
     fun `low HP discounts positive setup gain smoothly without changing its HP cost`() {
         val base = context(allySpeed = 150, foeSpeed = 100, allyPower = 40.0, foePower = 0.01,
             allySetup = mapOf("atk" to 2), secondFoe = true)
