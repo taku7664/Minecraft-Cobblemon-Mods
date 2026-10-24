@@ -7,7 +7,8 @@
 - **로컬 운영:** `develop-product/server` 기준 19건 반영. 개발 서버 팩토리 JAR은 Better AI 대전 프로세스(PID 44772·43224)가 잠가 옛것이라, 반영 직후 릴리스 빌드본으로 덮어썼다. 우리 모드 13개가 릴리스 빌드와 해시 같음. 운영 저장소 `3ae5a562` 푸시(LFS 12개).
 - **PPakemon:** `client-stage` 기준 21건, 재계획 0. **deploy-product:** 서버 49 = 운영 49, 클라이언트 18. VERSION.txt 두 곳에 1.4.0 블록(가라르 공개 포함), 개발 저장소 커밋·푸시.
 - **VPS 반영:** 계획이 `mods/jbro-policy-0.1.7.jar`(10-19 반격 끄기 핫픽스 `ff78b374…`, 커밋 안 된 수정)와 겹쳐 멈췄다. 그 JAR을 `~/.local/share/ppakemon-backups/hotfix/20261024-before-1.4.0/`에 백업하고 그 파일만 `git checkout`으로 되돌린 뒤 `6ddd9716 → 3ae5a562` 19건 업데이트. 월드 백업 `gdrive:VPS-backups/PPakemon/manager/20261024-200127-8f13116c`(drive_verified). 20:16 완료. VPS `mods` 49개가 `deploy-product/server`와 해시 차이 0. `vps-rpc.ps1`은 10분 넘는 작업에서 대기만 끝나고 VPS 작업은 계속되므로 `-Action job`으로 결과를 받는다.
-- **남은 것:** 21:00 VPS 시작(예약), 실접속(1.4.0 통과·1.3.x 거절, 가라르 탭), 개발 서버 팩토리 JAR(대전 프로세스 종료 뒤 `install-dev.ps1`).
+- **오픈:** 빡대리님 "열자"로 21:00 예약을 취소하고 20:44 `start`, 20:45:56 `Done`, 게임 포트 확인, head `3ae5a562`, 모드 147개, 믹스인 오류 없음. 메가쇼다운 1.2.0·포케배지 2.0.0의 `ko_kr.json`이 원본부터 JSON 오류라 그 모드 한국어 문구는 영어로 대체된다(1.3.0 때부터 같음).
+- **남은 것:** 실접속(1.4.0 통과·1.3.x 거절, 가라르 탭), 개발 서버 팩토리 JAR(대전 프로세스 종료 뒤 `install-dev.ps1`).
 
 ## [2026-10-24 19:40] 1.4.0 모드팩 다시 만듦 — Better AI 커밋 포함, 가라르 공개 (PPakemon·운영·VPS·드라이브는 아직)
 
