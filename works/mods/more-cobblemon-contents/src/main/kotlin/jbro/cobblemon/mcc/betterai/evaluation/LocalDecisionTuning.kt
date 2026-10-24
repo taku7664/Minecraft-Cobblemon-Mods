@@ -200,6 +200,8 @@ internal data class LocalDecisionTuning(
     val evolvingMatchups: Boolean = false,
     /** Price an isolated, nonlethal Life Orb tick without projecting damage-roll states. */
     val simpleFixedHpReactions: Boolean = false,
+    val representativeHitOutcomes: Boolean = false,
+    val simpleSwitchContinuations: Boolean = false,
     /** Opt-in HP-only reuse of uncapped damage instead of repeated tactical calculation. */
     val simpleHpMatchups: Boolean = false,
     /** Approximate only long-term sweep/stop forecasts; current-action marginal ranks stay exact. */

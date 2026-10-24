@@ -58,6 +58,33 @@ internal object PublicMoveOutcomeBranchProjector {
         }
     }
 
+    /** Opt-in reaction forecast: one representative count, conditional mean rolls in KO/survival
+     * classes. Random critical damage uses the engine's 1.5 multiplier, not a second damage calculation.
+     * The root attack's damage/KO score is still calculated by its original owner.
+     */
+    fun representative(candidate: BattleActionCandidate, context: BattleDecisionContext, side: BattleSide,
+        count: Int): List<PublicMoveOutcomeBranch> {
+        val accuracy = LocalPublicAccuracy.probability(candidate, context, side).coerceIn(0.0, 1.0)
+        val actor = context.state.pokemon.firstOrNull { it.side == side && it.activeSlot == candidate.actorSlot }
+        val target = LocalPublicMoveTargets.resolve(candidate, context, side).firstOrNull()
+        val guaranteed = LocalCriticalHitRules.confirmed(candidate, actor, target, context.state)
+        val critical = if (guaranteed) 0.0 else criticalChance(candidate, context, side)
+        val anger = target != null && LocalPublicAbilityState.effectiveKnownAbility(context.state, target) == "angerpoint"
+        val rolls = PublicBattleTacticalCalculator.conservativeDamageRollFractions(candidate, context, side)
+            ?: fallbackDamageOutcomes(candidate, side)
+        val samples = if (anger && critical > 0.0) rolls.flatMap { listOf(
+            Triple(it * count, (1.0 - critical) / rolls.size, false),
+            Triple(it * count * CRITICAL_HIT_MULTIPLIER, critical / rolls.size, true)) }
+            else rolls.map { Triple(it * count * (1.0 + critical * (CRITICAL_HIT_MULTIPLIER - 1.0)), 1.0 / rolls.size, guaranteed) }
+        val hits = samples.filter { it.second > 0.0 }.groupBy { (it.first >= (target?.hpFraction ?: Double.POSITIVE_INFINITY)) to it.third }.values.map { same ->
+            val weight = same.sumOf { it.second }
+            PublicMoveOutcomeBranch(accuracy * weight, true, same.sumOf { it.first * it.second } / weight,
+                critical = same.first().third, hitCount = count, rollPercentile = 0.5)
+        }
+        return (hits + if (accuracy < 1.0) listOf(PublicMoveOutcomeBranch(1.0 - accuracy, false, 0.0)) else emptyList())
+            .filter { it.probability > 0.0 }
+    }
+
     fun project(
         candidate: BattleActionCandidate,
         context: BattleDecisionContext,

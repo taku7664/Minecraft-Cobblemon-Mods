@@ -71,7 +71,10 @@ internal object LocalSimpleMatchup {
         return Hit(scaled, action)
     }
 
-    fun exchange(base: BattleDecisionContext, future: BattleDecisionContext, pair: PokemonMatchupScore): Double = LocalHpMatchupAudit.statusRead {
+    fun exchange(base: BattleDecisionContext, future: BattleDecisionContext, pair: PokemonMatchupScore): Double =
+        continuation(base, future, pair).score
+
+    fun continuation(base: BattleDecisionContext, future: BattleDecisionContext, pair: PokemonMatchupScore): PokemonMatchupScore = LocalHpMatchupAudit.statusRead {
         val own = future.state.pokemon.first { it.battlePokemonId == pair.subjectId }
         val foe = future.state.pokemon.first { it.battlePokemonId == pair.opponentId }
         val mine = pair.subjectMove?.let { hit(base, future, it) }
@@ -93,7 +96,19 @@ internal object LocalSimpleMatchup {
             "ownTurns" to ours.takeIf(Double::isFinite).orZero(), "foeTurns" to theirs.takeIf(Double::isFinite).orZero(),
             "ownCanDamage" to LocalDecisionInternals.flag(d > 0), "foeCanDamage" to LocalDecisionInternals.flag(e > 0),
             "first" to first, "win" to win, "hpOnWin" to hp, "hpOnLoss" to other, "score" to score))
-        score
+        pair.copy(subjectMove = mine?.move, opponentMove = enemy?.move, subjectMovesFirstProbability = first,
+            winProbability = win, subjectRemainingHpOnWin = hp, opponentRemainingHpOnLoss = other, score = score)
+    }
+
+    /** Preserve the existing exchange at zero change. Only the representative transition is new;
+     * replacing an entire exchange by a fixed attack can otherwise turn a zero first-hit move into a loss.
+     */
+    fun transition(base: PokemonMatchupScore, before: PokemonMatchupScore, after: PokemonMatchupScore): PokemonMatchupScore {
+        val win = (base.winProbability + after.winProbability - before.winProbability).coerceIn(0.0, 1.0)
+        val hp = (base.subjectRemainingHpOnWin + after.subjectRemainingHpOnWin - before.subjectRemainingHpOnWin).coerceIn(0.0, 1.0)
+        val other = (base.opponentRemainingHpOnLoss + after.opponentRemainingHpOnLoss - before.opponentRemainingHpOnLoss).coerceIn(0.0, 1.0)
+        return after.copy(winProbability = win, subjectRemainingHpOnWin = hp, opponentRemainingHpOnLoss = other,
+            score = win * (.5 + .5 * hp) - (1.0 - win) * (.5 + .5 * other))
     }
 
     private fun Double?.orZero() = this ?: 0.0

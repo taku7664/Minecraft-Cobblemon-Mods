@@ -176,5 +176,10 @@
   "config.more_cobblemon_contents.betterai.simple_status": "상태기 대면 단순화",
   "config.more_cobblemon_contents.betterai.simple_status_help": "기존 대표 공격을 고정하고 배율·평균 피해·필요 타격 수로 후속 대면을 계산합니다. 기술 재선택과 장기 KO 분포를 생략하므로 점수와 선택이 바뀔 수 있습니다.",
   "config.more_cobblemon_contents.betterai.simple_acting": "행동 확률 단순화",
-  "config.more_cobblemon_contents.betterai.simple_acting_help": "기존 피해 구간을 상대 슬롯별 낮은 피해·높은 피해 두 대표 구간으로 합칩니다. 정밀 공격 재계산과 선택 조합 전개를 생략하며 두 공격 합산 KO는 유지합니다. 점수와 선택이 바뀔 수 있습니다."
+  "config.more_cobblemon_contents.betterai.simple_acting_help": "기존 피해 구간을 상대 슬롯별 낮은 피해·높은 피해 두 대표 구간으로 합칩니다. 정밀 공격 재계산과 선택 조합 전개를 생략하며 두 공격 합산 KO는 유지합니다. 점수와 선택이 바뀔 수 있습니다.",
+  "config.more_cobblemon_contents.betterai.representative_hit": "피격 분기 대표값",
+  "config.more_cobblemon_contents.betterai.representative_hit_help": "반응 예측의 피해 난수는 KO·생존별 평균, 타격 수와 대타 HP는 대표값을 사용합니다. 급소는 기본 1.5배로 근사하고 접촉 확률은 한 번에 누적합니다. 공격 자체의 피해·KO 점수와 랭크 평가식은 유지하며 반응 점수와 선택은 달라질 수 있습니다.",
+  "config.more_cobblemon_contents.betterai.simple_switch": "교체 후 대면 간단식",
+  "config.more_cobblemon_contents.betterai.simple_switch_help": "피격 후 정밀 대면 재계산을 생략합니다. 기존 대면을 기준으로 대표 공격의 승률·잔여 HP 변화만 반영합니다. 피해 구간은 능력치·상태 배율로 환산하며 점수와 선택이 바뀔 수 있습니다.",
+  "config.more_cobblemon_contents.betterai.options_page": "설정 페이지: %s / 2"
 }

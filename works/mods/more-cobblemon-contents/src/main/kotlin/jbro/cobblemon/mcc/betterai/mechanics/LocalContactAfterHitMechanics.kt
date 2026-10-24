@@ -16,26 +16,29 @@ internal object LocalContactAfterHitMechanics {
         targetId: UUID?,
         action: BattleActionCandidate,
         directDamageFraction: Double,
+        chanceTrials: Int = 1,
+        deterministic: Boolean = true,
     ): List<LocalContactAfterHitBranch> {
         if (directDamageFraction <= 0.0) return listOf(LocalContactAfterHitBranch(state, 1.0))
         // Cursed Body disables the move that hit it 30% of the time, contact or not.
         val cursed = state.pokemon.firstOrNull { it.battlePokemonId == targetId }?.let {
             LocalPublicAbilityState.effectiveKnownAbility(state, it) == "cursedbody"
-        } == true
+        } == true && chanceTrials > 0
         if ("contact" !in action.moveDetails?.effects?.mechanicFlags.orEmpty()) {
-            return if (cursed) disabled(state, actorId) else listOf(LocalContactAfterHitBranch(state, 1.0))
+            return if (cursed) disabled(state, actorId, chanceTrials) else listOf(LocalContactAfterHitBranch(state, 1.0))
         }
-        if (cursed) return disabled(state, actorId).flatMap { branch ->
-            projectContact(branch.state, actorId, targetId, action).map { it.copy(probability = it.probability * branch.probability) }
+        if (cursed) return disabled(state, actorId, chanceTrials).flatMap { branch ->
+            projectContact(branch.state, actorId, targetId, action, chanceTrials, deterministic).map { it.copy(probability = it.probability * branch.probability) }
         }
-        return projectContact(state, actorId, targetId, action)
+        return projectContact(state, actorId, targetId, action, chanceTrials, deterministic)
     }
 
-    private fun disabled(state: BattleStateView, actorId: UUID): List<LocalContactAfterHitBranch> {
+    private fun disabled(state: BattleStateView, actorId: UUID, trials: Int): List<LocalContactAfterHitBranch> {
         val marked = updateActor(state, actorId) { current ->
             current.copyState(knownVolatileEffectIds = current.knownVolatileEffectIds + "disable")
         }
-        return listOf(LocalContactAfterHitBranch(state, 0.7), LocalContactAfterHitBranch(marked, 0.3))
+        val untouched = Math.pow(0.7, trials.toDouble())
+        return listOf(LocalContactAfterHitBranch(state, untouched), LocalContactAfterHitBranch(marked, 1.0 - untouched))
     }
 
     private fun projectContact(
@@ -43,6 +46,8 @@ internal object LocalContactAfterHitMechanics {
         actorId: UUID,
         targetId: UUID?,
         action: BattleActionCandidate,
+        chanceTrials: Int,
+        deterministic: Boolean,
     ): List<LocalContactAfterHitBranch> {
         val actor = state.pokemon.firstOrNull { it.battlePokemonId == actorId }
             ?: return listOf(LocalContactAfterHitBranch(state, 1.0))
@@ -54,7 +59,7 @@ internal object LocalContactAfterHitMechanics {
             return listOf(LocalContactAfterHitBranch(state, 1.0))
         }
         val indirectImmune = LocalPublicAbilityState.effectiveKnownAbility(state, actor) == "magicguard"
-        val contactDamage = if (indirectImmune) 0.0 else {
+        val contactDamage = if (indirectImmune || !deterministic) 0.0 else {
             (if (LocalPublicItemState.activeItemId(state, target) == "rockyhelmet"
             ) 1.0 / 6.0 else 0.0) +
                 (if (LocalPublicAbilityState.effectiveKnownAbility(state, target) in CONTACT_DAMAGE_ABILITIES) {
@@ -71,7 +76,7 @@ internal object LocalContactAfterHitMechanics {
         }
         val targetAbility = LocalPublicAbilityState.effectiveKnownAbility(state, target)
         // Gooey and Tangling Hair lower the attacker's Speed; Aftermath takes a quarter from whoever knocked it out.
-        var reacted = when (targetAbility) {
+        var reacted = when (targetAbility.takeIf { deterministic }) {
             "gooey", "tanglinghair" -> LocalStatStageChange.apply(damaged, actorId, targetId, mapOf("speed" to -1))
             "aftermath" -> if (!indirectImmune && (target.fainted || target.hpFraction <= 0.0)) updateActor(damaged, actorId) { current ->
                 val hp = (current.hpFraction - 0.25).coerceAtLeast(0.0)
@@ -105,17 +110,19 @@ internal object LocalContactAfterHitMechanics {
             !current.fainted && current.hpFraction > 0.0 && !LocalPublicStatusImmunity.blocked(reacted, current, status, actor)
         }
         var branches = listOf(LocalContactAfterHitBranch(reacted, 1.0))
-        if (statuses.isNotEmpty()) {
-            val untouched = 1.0 - statuses.sumOf { it.second }
+        if (statuses.isNotEmpty() && chanceTrials > 0) {
+            val oneTrial = statuses.sumOf { it.second }
+            val untouched = Math.pow(1.0 - oneTrial, chanceTrials.toDouble())
             branches = listOf(LocalContactAfterHitBranch(reacted, untouched)) + statuses.map { (status, chance) ->
                 LocalContactAfterHitBranch(updateActor(reacted, actorId) {
                     if (status == CUTE_CHARM) it.copyState(knownVolatileEffectIds = it.knownVolatileEffectIds + "attract")
                     else copyPokemon(it, statusId = status)
-                }, chance)
+                }, (1.0 - untouched) * chance / oneTrial)
             }
         }
-        if (attackerStatus != null) {
-            val (status, chance) = attackerStatus
+        if (attackerStatus != null && chanceTrials > 0) {
+            val (status, oneTrial) = attackerStatus
+            val chance = 1.0 - Math.pow(1.0 - oneTrial, chanceTrials.toDouble())
             branches = branches.flatMap { branch ->
                 listOf(
                     branch.copy(probability = branch.probability * (1.0 - chance)),

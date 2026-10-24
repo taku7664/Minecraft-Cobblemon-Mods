@@ -176,5 +176,10 @@
   "config.more_cobblemon_contents.betterai.simple_status": "Simple status matchups",
   "config.more_cobblemon_contents.betterai.simple_status_help": "Hold each existing representative attack and use scaled mean damage and hit counts. Skips attack reselection and long KO distributions; scores and choices may change.",
   "config.more_cobblemon_contents.betterai.simple_acting": "Simple acting chance",
-  "config.more_cobblemon_contents.betterai.simple_acting_help": "Keep two representative damage intervals per opposing slot. Skips repeated attack calculations and intent products while retaining joint-hit KO. Scores and choices may change."
+  "config.more_cobblemon_contents.betterai.simple_acting_help": "Keep two representative damage intervals per opposing slot. Skips repeated attack calculations and intent products while retaining joint-hit KO. Scores and choices may change.",
+  "config.more_cobblemon_contents.betterai.representative_hit": "Representative hit outcomes",
+  "config.more_cobblemon_contents.betterai.representative_hit_help": "Approximate reaction forecasts with conditional mean KO/survival damage, representative hit counts and Substitute HP. Critical damage uses 1.5x; contact chances accumulate once. Root damage/KO and stage valuation formulas stay unchanged. Reaction scores and choices may change.",
+  "config.more_cobblemon_contents.betterai.simple_switch": "Simple switch continuation",
+  "config.more_cobblemon_contents.betterai.simple_switch_help": "Skip full post-hit matchup recalculation. Apply representative win-probability and remaining-HP changes to the existing exchange. Rescale attack intervals by stat and status factors. Scores and choices may change.",
+  "config.more_cobblemon_contents.betterai.options_page": "Options page: %s / 2"
 }
