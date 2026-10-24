@@ -12,7 +12,9 @@ inventory texture, so it matches the inventory under any resource pack.
 - **Tooltip:** hover a Pokemon to see its level, name and gender, HP, nature and ability, moves with their PP, and the
   IVs and EVs of each stat, its capture-ball icon and native XS/S/M/L/XL size category. Shiny names and their `★` marker are yellow. No action hint is appended. The shared tooltip belongs to Cobblemon To Item. Stats its nature raises are red, lowered ones blue.
 - **Quick move:** shift-click a Pokemon to itemize it directly into the inventory or hotbar.
-  If both are full, the Pokemon stays in the party. Ordinary pickup only requires an empty cursor.
+  If both are full, the client refuses the request and shows the inventory-full message; the server also checks
+  capacity before removing the Pokemon from the party and never drops sidebar quick-move output.
+  Ordinary pickup only requires an empty cursor.
   Shift-click a Pokemon item in the survival inventory or hotbar to restore it to the lowest empty party slot.
   A full party refuses quick restoration; right-clicking a held item can overflow to the PC instead.
   Inventory items in chest and fusion screens keep their normal shift-click behavior. No itemize key or separate model drag is registered.

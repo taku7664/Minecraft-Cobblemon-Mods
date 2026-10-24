@@ -1,5 +1,13 @@
 # cobblemon-party-sidebar 작업 기록
 
+## [2026-10-24 15:01] Shift 아이템화 공간 부족 요청 차단 (0.2.3, 미배포)
+
+- **요청·구현:** 포켓몬 모델 Shift+클릭은 인벤토리·퀵슬롯에 빈칸이 없으면 클라이언트에서 패킷을 보내지 않고 기존 한영 inventory_full 메시지를 표시한다. 일반 클릭은 기존대로 빈 커서에 집는다. 인벤토리 화면·포켓퓨전 화면이 같은 경로를 사용한다.
+- **서버 소유권:** 기존 PokemonItemize는 PokemonTransfers.itemize(..., dropOverflow = false)를 호출한다. 아이템화 모드는 36칸의 공간을 확인한 뒤에만 파티에서 제거하므로, 클라이언트 판정 이후 공간이 바뀌어도 서버가 거부한다. 이미 존재하는 서버 차단은 변경하지 않았다. 실제 신고 환경에서 드롭이 발생한 설치본·원인은 확인하지 못했다.
+- **검증:** 세 모듈 대상 Gradle build 성공, cobblemon-to-item 21/21·pokefusion 37/37 단위 검증 통과. 사이드바 자체 단위 테스트는 없으며 실제 입력·패킷·화면은 미확인이다. 모든 Gradle 출력·캐시·임시 경로를 F 드라이브로 지정했다. 로그: F:/AI/builds/cobblemon-mods-sidebar-fusion-20261024/build-targeted.log.
+- **범위:** 소스·README와 버전을 변경했다. 개발/운영/VPS/릴리스 JAR 배치 및 서버·게임 기동은 하지 않았다. 사용자가 승인한 범위는 사이드바 Shift 차단과 합성 결과 직접 집기이며 /poke2item 명령·지닌 물건 반환 규칙은 유지한다.
+- **최종 산출물:** final-jars.log에서 remapJar 성공을 확인했고 최종 JAR 전체 ZIP CRC·모드 ID·버전을 검증했다. SHA-256: `859822a201fa29197a47e92ff1cbbe74ed6c09137c5267e569e2302f20088701`. 설치본과의 해시 비교는 미배포이므로 수행하지 않았다.
+
 ## [2026-10-12 23:45] 포켓몬 합성창 사이드바·활성 메뉴 커서 지원 개발 배포 (0.2.2)
 
 - **구현:** 생존 `InventoryMenu`와 등록 메뉴 `pokefusion:fusion`에 사이드바를 표시한다. `AbstractContainerScreen`의 renderBackground/render/click/release/outside hook을 추가하고 기존 인벤 hook을 유지했다. 실제 Minecraft 메서드를 확인하여 배경은 `renderBackground` TAIL에 연결했다. 패널 경계/높이는 해당 화면 imageHeight에 맞추고 EMI 제외 영역도 일반화했다. 합성창의 합성 재열기 버튼은 비활성화한다. GUI 전송·커서 복원·지닌 물건 교환은 실제 `player.containerMenu` 커서를 쓰며, 합성창 Shift 클릭의 기존 재료 입고는 유지한다. pokefusion 소스는 변경하지 않았다.

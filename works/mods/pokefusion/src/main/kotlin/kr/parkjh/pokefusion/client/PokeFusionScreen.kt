@@ -5,7 +5,6 @@ import kr.parkjh.pokefusion.PokeFusionLayout
 import kr.parkjh.pokefusion.PokeFusionMenu
 import net.minecraft.ChatFormatting
 import net.minecraft.client.gui.GuiGraphics
-import net.minecraft.client.gui.components.Button
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
@@ -18,46 +17,11 @@ import net.minecraft.world.item.ItemStack
  */
 class PokeFusionScreen(menu: PokeFusionMenu, inventory: Inventory, title: Component) :
     AbstractContainerScreen<PokeFusionMenu>(menu, inventory, title) {
-    private lateinit var confirmButton: Button
-
     init {
         imageWidth = PokeFusionLayout.IMAGE_WIDTH
         imageHeight = PokeFusionLayout.IMAGE_HEIGHT
         inventoryLabelY = imageHeight - 94
         titleLabelX = TITLE_ICON_X + TITLE_ICON_SIZE + 3
-    }
-
-    override fun init() {
-        super.init()
-        confirmButton = addRenderableWidget(
-            Button.builder(Component.translatable("item.pokefusion.cannot_fuse")) {
-                minecraft?.gameMode?.handleInventoryButtonClick(menu.containerId, PokeFusionMenu.CONFIRM_BUTTON)
-            }
-                .bounds(
-                    leftPos + PokeFusionLayout.BUTTON_X,
-                    topPos + PokeFusionLayout.BUTTON_Y,
-                    PokeFusionLayout.BUTTON_WIDTH,
-                    PokeFusionLayout.BUTTON_HEIGHT
-                )
-                .build()
-        )
-        updateButton()
-    }
-
-    override fun containerTick() {
-        super.containerTick()
-        updateButton()
-    }
-
-    private fun updateButton() {
-        val (key, active) = when (menu.buttonState) {
-            PokeFusionMenu.BUTTON_CONFIRM -> "item.pokefusion.confirm" to true
-            PokeFusionMenu.BUTTON_RETRY -> "item.pokefusion.retry_results" to true
-            PokeFusionMenu.BUTTON_STORAGE_ERROR -> "item.pokefusion.storage_error" to false
-            else -> "item.pokefusion.cannot_fuse" to false
-        }
-        confirmButton.message = Component.translatable(key)
-        confirmButton.active = active
     }
 
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {

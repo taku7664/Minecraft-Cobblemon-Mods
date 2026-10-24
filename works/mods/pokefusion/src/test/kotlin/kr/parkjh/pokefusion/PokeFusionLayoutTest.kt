@@ -24,7 +24,6 @@ class PokeFusionLayoutTest {
         // 결과 칸은 26x26 테두리로 그리고 오른쪽 7px 테두리 안에 들어가야 한다.
         assertTrue(PokeFusionLayout.ARROW_X + 24 <= PokeFusionLayout.PREVIEW_X - 5)
         assertTrue(PokeFusionLayout.PREVIEW_X + 21 <= PokeFusionLayout.IMAGE_WIDTH - 7)
-        assertTrue(PokeFusionLayout.materialY(8) + 16 < PokeFusionLayout.BUTTON_Y)
-        assertTrue(PokeFusionLayout.BUTTON_Y + PokeFusionLayout.BUTTON_HEIGHT <= PokeFusionLayout.FUSION_AREA_BOTTOM)
+        assertTrue(PokeFusionLayout.materialY(8) + 16 < PokeFusionLayout.FUSION_AREA_BOTTOM)
     }
 }

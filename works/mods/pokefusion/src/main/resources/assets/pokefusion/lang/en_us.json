@@ -11,7 +11,7 @@
   "item.pokefusion.cannot_fuse": "Cannot fuse",
   "item.pokefusion.pending_results": "%s undelivered result(s)",
   "item.pokefusion.retry_results": "Retry result delivery",
-  "item.pokefusion.preview": "Fusion result preview",
+  "item.pokefusion.preview": "Click to fuse and pick up the result",
   "item.pokefusion.confirm": "Confirm fusion",
   "item.pokefusion.failure.invalid_item": "Not a valid Pokemon item",
   "item.pokefusion.failure.different_family": "Only Pokemon in the same evolution family can be fused",
@@ -20,8 +20,8 @@
   "message.pokefusion.no_permission": "You do not have permission to use this command.",
   "message.pokefusion.invalid_item": "Only Cobblemon To Item Pokemon items can be inserted.",
   "message.pokefusion.store_result_failed": "The result could not be stored safely, so the fusion was cancelled. Input items were not consumed.",
-  "message.pokefusion.completed": "Pokemon fusion completed.",
-  "message.pokefusion.delivery_incomplete": "Some result items could not be added to your inventory or dropped. Press the fusion button to try again.",
+  "message.pokefusion.completed": "Picked up the fusion result. Place it in your inventory.",
+  "message.pokefusion.delivery_incomplete": "Some returned items could not be delivered or dropped. Click the chest in the result slot to retry.",
   "message.pokefusion.store_input_failed": "Fusion stopped because the input items could not be stored safely.",
   "message.pokefusion.failure.missing_input": "Insert a base Pokemon and material Pokemon.",
   "message.pokefusion.failure.invalid_item": "This is not a valid Cobblemon To Item Pokemon item.",
@@ -34,5 +34,5 @@
   "screen.pokefusion.material_slot": "Material",
   "screen.pokefusion.material_slot.hint": "Same evolution family. Consumed on fusion",
   "screen.pokefusion.result": "Result",
-  "screen.pokefusion.result.hint": "Add a base and materials to see the result"
+  "screen.pokefusion.result.hint": "Add a base and materials, then click the result to pick it up"
 }

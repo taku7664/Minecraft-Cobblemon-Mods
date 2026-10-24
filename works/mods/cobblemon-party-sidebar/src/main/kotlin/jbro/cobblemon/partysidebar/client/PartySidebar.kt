@@ -284,6 +284,11 @@ object PartySidebar {
     private fun itemize(screen: AbstractContainerScreen<*>, row: Int, toCursor: Boolean) {
         val pokemon = party(row) ?: return
         if (!canItemize() || !screen.menu.carried.isEmpty || CobblemonClient.battle != null) return
+        val player = Minecraft.getInstance().player ?: return
+        if (!toCursor && player.inventory.getFreeSlot() < 0) {
+            player.displayClientMessage(Component.translatable("cobblemon_party_sidebar.message.inventory_full"), true)
+            return
+        }
         ClientPlayNetworking.send(ItemizePayload(row, pokemon.uuid, toCursor))
     }
 

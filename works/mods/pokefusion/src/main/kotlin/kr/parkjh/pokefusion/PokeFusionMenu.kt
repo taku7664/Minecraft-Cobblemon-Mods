@@ -83,18 +83,9 @@ class PokeFusionMenu(
         }
     }
 
-    /** 클라이언트 화면이 읽는 버튼 상태. */
-    val buttonState: Int get() = state.get(FIELD_BUTTON)
-    val pendingCount: Int get() = state.get(FIELD_PENDING)
     val materialCount: Int get() = state.get(FIELD_MATERIALS)
 
     fun isFusionSlot(slot: Slot): Boolean = slot is FusionSlot
-
-    override fun clickMenuButton(player: Player, id: Int): Boolean {
-        if (id != CONFIRM_BUTTON || serverPlayer == null) return false
-        confirmFusion()
-        return true
-    }
 
     override fun clicked(slotIndex: Int, button: Int, clickType: ClickType, player: Player) {
         if (slotIndex in 0 until PokeFusionLayout.SIZE) {
@@ -102,6 +93,7 @@ class PokeFusionMenu(
             when {
                 slotIndex == PokeFusionLayout.BASE_SLOT -> handleBaseClick()
                 PokeFusionLayout.materialIndexOf(slotIndex) >= 0 -> handleMaterialClick(slotIndex)
+                slotIndex == PokeFusionLayout.PREVIEW_SLOT -> confirmFusion()
                 else -> return
             }
             refreshDisplay()
@@ -223,10 +215,8 @@ class PokeFusionMenu(
 
     private fun refreshPreview() {
         val player = server()
-        state.set(FIELD_PENDING, 0)
         if (!storageAvailable) {
             fusionContainer.setItem(PokeFusionLayout.PREVIEW_SLOT, named(ItemStack(Items.BARRIER), "item.pokefusion.storage_error", ChatFormatting.RED))
-            state.set(FIELD_BUTTON, BUTTON_STORAGE_ERROR)
             return
         }
         val pendingCount = PendingOutputService.count(player)
@@ -235,8 +225,6 @@ class PokeFusionMenu(
                 PokeFusionLayout.PREVIEW_SLOT,
                 named(ItemStack(Items.CHEST), "item.pokefusion.pending_results", ChatFormatting.YELLOW, pendingCount)
             )
-            state.set(FIELD_PENDING, pendingCount)
-            state.set(FIELD_BUTTON, BUTTON_RETRY)
             return
         }
         when (val result = PokeFusionService.createResult(player, baseInput, materialInputs)) {
@@ -248,16 +236,16 @@ class PokeFusionMenu(
                     ItemLore(oldLore + PokeFusionText.of("item.pokefusion.preview").withStyle(ChatFormatting.GREEN))
                 )
                 fusionContainer.setItem(PokeFusionLayout.PREVIEW_SLOT, preview)
-                state.set(FIELD_BUTTON, BUTTON_CONFIRM)
             }
             is PokeFusionService.Result.Failure -> {
                 fusionContainer.setItem(PokeFusionLayout.PREVIEW_SLOT, statusItem(result.reason))
-                state.set(FIELD_BUTTON, BUTTON_CANNOT_FUSE)
             }
         }
     }
 
     private fun confirmFusion() {
+        // 미리보기는 복사본이다. 빈 커서로 직접 집을 때만 서버에서 입력을 소모한다.
+        if (!storageAvailable || !carried.isEmpty) return
         val player = server()
         if (PendingOutputService.count(player) > 0) {
             deliverPendingOutputs()
@@ -269,7 +257,8 @@ class PokeFusionMenu(
             is PokeFusionService.Result.Failure -> showFailure(result.reason)
             is PokeFusionService.Result.Success -> {
                 try {
-                    check(PendingOutputService.completeFusion(player, listOf(result.item) + result.materialHeldItems))
+                    // 결과 본체는 커서로 전달하고, 재료의 지닌 물건만 기존 반환 큐에 넣는다.
+                    check(PendingOutputService.completeFusion(player, result.materialHeldItems))
                 } catch (exception: Exception) {
                     LOGGER.error("Pokefusion 결과를 저장하지 못해 합성을 취소했습니다.", exception)
                     player.displayClientMessage(
@@ -283,6 +272,7 @@ class PokeFusionMenu(
                 }
                 baseInput = ItemStack.EMPTY
                 materialSlots.fill(ItemStack.EMPTY)
+                carried = result.item
                 deliverPendingOutputs()
                 if (PendingOutputService.count(player) == 0) {
                     player.displayClientMessage(
@@ -390,17 +380,8 @@ class PokeFusionMenu(
     }
 
     companion object {
-        const val CONFIRM_BUTTON = 0
-
-        const val BUTTON_CANNOT_FUSE = 0
-        const val BUTTON_CONFIRM = 1
-        const val BUTTON_RETRY = 2
-        const val BUTTON_STORAGE_ERROR = 3
-
-        private const val FIELD_BUTTON = 0
-        private const val FIELD_PENDING = 1
-        private const val FIELD_MATERIALS = 2
-        private const val STATE_FIELDS = 3
+        private const val FIELD_MATERIALS = 0
+        private const val STATE_FIELDS = 1
 
         private val LOGGER = LoggerFactory.getLogger(PokeFusionMenu::class.java)
 

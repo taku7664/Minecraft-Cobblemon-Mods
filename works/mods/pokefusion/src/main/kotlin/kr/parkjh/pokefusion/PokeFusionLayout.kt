@@ -8,7 +8,6 @@ package kr.parkjh.pokefusion
  *   베이스     [m][m][m]           결과
  *    [B]       [m][m][m]   ──▶   [P]
  *              [m][m][m]
- *              ( 합성 확정 )
  * ```
  */
 object PokeFusionLayout {
@@ -33,11 +32,6 @@ object PokeFusionLayout {
     const val PREVIEW_Y = 54
     const val ARROW_X = 116
     const val ARROW_Y = 54
-
-    const val BUTTON_X = 48
-    const val BUTTON_Y = 93
-    const val BUTTON_WIDTH = 80
-    const val BUTTON_HEIGHT = 14
 
     const val INVENTORY_X = 8
     const val INVENTORY_Y = FUSION_AREA_BOTTOM + 14
