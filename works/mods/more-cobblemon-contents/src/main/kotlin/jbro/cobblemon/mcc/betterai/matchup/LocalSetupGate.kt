@@ -123,7 +123,8 @@ internal object LocalSetupGate {
 
     /** All components use score units: actual marginal HP/KO pressure, action order, HP paid and usable effect chance. */
     data class Reading(val pressure: Double, val speed: Double, val hpCost: Double, val survival: Double,
-        val holds: Double, val effectChance: Double, val value: Double)
+        val holds: Double, val effectChance: Double, val value: Double,
+        val hpRatio: Double, val hpSafety: Double)
 
     fun score(
         candidate: BattleActionCandidate,
@@ -161,7 +162,11 @@ internal object LocalSetupGate {
         val moveId = PublicIds.canonical(candidate.moveId ?: return null)
         val stages = LocalMatchupScoreCalculator.setupMoves(context, user)[moveId] ?: return null
         val cost = LocalMatchupScoreCalculator.setupHpCosts(context, user)[moveId] ?: 0.0
-        if (cost > 0.0 && user.hpFraction <= cost) return Reading(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
+        // User-chosen 0.1 reserve for unmodelled item/spread error, separate from calculated KO risk.
+        val hpRatio = user.hpFraction.coerceIn(0.0, 1.0)
+        val missingHp = 1.0 - hpRatio
+        val hpSafety = 1.0 - 0.1 * missingHp * missingHp
+        if (cost > 0.0 && user.hpFraction <= cost) return Reading(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, hpRatio, hpSafety)
         val foes = context.state.pokemon.filter { it.side != user.side && !it.fainted && it.hpFraction > 0.0 }
         if (foes.isEmpty()) return null
         val facing = foes.filter { it.activeSlot != null }
@@ -197,11 +202,15 @@ internal object LocalSetupGate {
             candidate.moveDetails?.effects?.effects.orEmpty().filter { it.kind == BattleMoveEffectKind.STAT_STAGE }
                 .minOfOrNull { (it.probability ?: 1.0).coerceIn(0.0, 1.0) }.let { it ?: 1.0 }
         val hpCost = cost * tuning.boardToScore
-        val value = ((pressure + speed) * survival * holds - hpCost) * effectChance
+        // Only positive setup gain is discounted; HP paid and negative outcomes keep their full cost.
+        val gain = (pressure + speed) * survival * holds
+        val guardedGain = if (gain > 0.0) gain * hpSafety else gain
+        val value = (guardedGain - hpCost) * effectChance
         jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record("setup:${candidate.actionId}", mapOf(
             "pressure" to pressure, "speed" to speed, "hpCost" to hpCost, "survival" to survival, "holds" to holds,
+            "hpRatio" to hpRatio, "hpSafety" to hpSafety, "gain" to gain, "guardedGain" to guardedGain,
             "effectChance" to effectChance, "opponents" to changes.size.toDouble(), "value" to value))
-        return Reading(pressure, speed, hpCost, survival, holds, effectChance, value)
+        return Reading(pressure, speed, hpCost, survival, holds, effectChance, value, hpRatio, hpSafety)
     }
 
     /**

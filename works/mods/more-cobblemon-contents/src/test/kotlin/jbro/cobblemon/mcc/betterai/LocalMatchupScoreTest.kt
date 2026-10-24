@@ -21,6 +21,50 @@ import org.junit.jupiter.api.Test
 
 class LocalMatchupScoreTest {
     @Test
+    fun `low HP discounts positive setup gain smoothly without changing its HP cost`() {
+        val base = context(allySpeed = 150, foeSpeed = 100, allyPower = 40.0, foePower = 0.01,
+            allySetup = mapOf("atk" to 2), secondFoe = true)
+        for ((hp, safety) in listOf(1.0 to 1.0, 0.5 to 0.975, 0.25 to 0.94375, 0.1 to 0.919)) {
+            val board = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+                if (it.battlePokemonId == ALLY) it.copyState(hpFraction = hp) else it }))
+            val internals = jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals
+            internals.begin()
+            val reading: LocalSetupGate.Reading
+            val trace: Map<String, Double>
+            try {
+                reading = LocalSetupGate.score(setupAction(board), board, LocalMatchupScoreCalculator.calculate(board), 200.0)!!
+                trace = internals.take().getValue("setup:${setupAction(board).actionId}")
+            } finally { internals.clear() }
+            val gain = (reading.pressure + reading.speed) * reading.survival * reading.holds
+            assertTrue(gain > 0.0, "hp=$hp: $reading")
+            assertEquals(hp, reading.hpRatio, 1e-12)
+            assertEquals(safety, reading.hpSafety, 1e-12)
+            assertEquals((gain * safety - reading.hpCost) * reading.effectChance, reading.value, 1e-9)
+            assertEquals(gain * safety, trace.getValue("guardedGain"), 1e-9)
+            assertEquals(hp, trace.getValue("hpRatio"), 1e-12)
+        }
+        val drumDetails = BattleMoveCandidateView("normal", BattleMoveDamageCategory.STATUS, 0.0, 100.0, 0, 10,
+            BattleMoveTargetPattern.SELF, effects = BattleShowdownMoveEffects.resolve("bellydrum"))
+        val drum = BattlePublicMoveOptionView("bellydrum", drumDetails, BattlePublicMoveKnowledge.EXACT_OWN)
+        val built = context(150, 100, allyPower = 40.0, foePower = 0.01, allyExtra = listOf(drum))
+        val board = built.copy(state = built.state.derive(pokemon = built.state.pokemon.map {
+            if (it.battlePokemonId == ALLY) it.copyState(hpFraction = 0.75) else it }))
+        val action = BattleActionCandidate("bellydrum", BattleActionKind.USE_MOVE, 0, 1, "bellydrum", moveDetails = drumDetails)
+        val reading = LocalSetupGate.score(action, board, LocalMatchupScoreCalculator.calculate(board), 200.0)!!
+        val gain = (reading.pressure + reading.speed) * reading.survival * reading.holds
+        assertEquals(50.0, reading.hpCost, 1e-9)
+        assertEquals(0.99375, reading.hpSafety, 1e-12)
+        assertEquals(((if (gain > 0.0) gain * reading.hpSafety else gain) - 50.0) * reading.effectChance, reading.value, 1e-9)
+        val insufficient = board.copy(state = board.state.derive(pokemon = board.state.pokemon.map {
+            if (it.battlePokemonId == ALLY) it.copyState(hpFraction = 0.25) else it }))
+        val failed = LocalSetupGate.score(action, insufficient, LocalMatchupScoreCalculator.calculate(insufficient), 200.0)!!
+        assertEquals(0.0, failed.value, 1e-12)
+        assertEquals(0.25, failed.hpRatio, 1e-12)
+        assertEquals(0.94375, failed.hpSafety, 1e-12)
+    }
+
+
+    @Test
     fun `Max history preserves inferred attacks and intent probabilities before and during Dynamax`() {
         fun board(withHistory: Boolean, dynamax: Boolean): BattleDecisionContext {
             val maxMoves = if (!withHistory) emptyList() else listOf("maxflare", "maxquake", "gmaxwildfire", "maxguard").map {
