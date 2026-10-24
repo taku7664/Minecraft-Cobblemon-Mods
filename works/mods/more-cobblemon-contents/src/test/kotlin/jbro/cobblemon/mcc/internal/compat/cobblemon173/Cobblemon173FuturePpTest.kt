@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -8,6 +9,27 @@ import jbro.cobblemon.mcc.internal.ai.PublicSpeciesMoveKnowledge
 import jbro.cobblemon.mcc.internal.ai.PublicSpeciesMovePool
 
 class Cobblemon173FuturePpTest {
+    @Test
+    fun `Max and G-Max public history do not complete four base move slots`() {
+        val maxIds = setOf("maxflare", "maxquake", "gmaxwildfire", "maxguard")
+        val baseIds = setOf("flamethrower", "hurricane")
+        fun catalog(ids: Set<String>): BattlePublicActionCatalogView {
+            val opponent = pokemon(BattleSide.OPPONENT).copyState(knownMoveIds = ids)
+            val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 2, listOf(opponent),
+                BattleFieldStateView.empty(), BattleSide.entries.associateWith { 1 }, emptyList(), emptyList())
+            return Cobblemon173PublicActionCatalog.from(state, emptyMap(), emptyMap(),
+                moveKnowledge = PublicSpeciesMoveKnowledge { _, _ -> null }) {
+                BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL, 10.0, 100.0, 0, 8)
+            }
+        }
+        val partial = catalog(baseIds + maxIds)
+        assertEquals(false, partial.entries.single().moveSetComplete)
+        assertEquals(baseIds + maxIds, partial.entries.single().moves.map { it.moveId }.toSet())
+        assertEquals(true, catalog(baseIds + maxIds + setOf("solarbeam", "scorchingsands")).entries.single().moveSetComplete)
+        assertEquals(false, catalog(maxIds).entries.single().moveSetComplete)
+    }
+
+
     @Test
     fun `public learnsets reach the catalog without becoming known moves or changing PP`() {
         val own = pokemon(BattleSide.ALLY)

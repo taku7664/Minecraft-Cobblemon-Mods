@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.state
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import java.util.Collections
 import java.util.Locale
 import jbro.cobblemon.mcc.internal.ai.*
@@ -30,8 +31,8 @@ internal object LocalOpponentMoveHypotheses {
         if (catalog.isMoveSetComplete(pokemon.battlePokemonId)) return emptyMap()
         val pool = catalog.candidatePools.singleOrNull { it.battlePokemonId == pokemon.battlePokemonId }
             ?.takeIf { it.speciesId == pokemon.speciesId && it.formId == pokemon.formId } ?: return emptyMap()
-        val known = pokemon.knownMoveIds.mapTo(hashSetOf(), ::canonical)
-        val assumed = history.assumedOpponentMoveIds[pokemon.battlePokemonId].orEmpty()
+        val known = pokemon.knownMoveIds.filterNot(LocalDynamax::isMaxMove).mapTo(hashSetOf(), ::canonical)
+        val assumed = history.assumedOpponentMoveIds[pokemon.battlePokemonId].orEmpty().filterNot(LocalDynamax::isMaxMove)
         val occupied = known + assumed
         return pool.moveDetails.filter { (move, details) ->
             val key = canonical(move)

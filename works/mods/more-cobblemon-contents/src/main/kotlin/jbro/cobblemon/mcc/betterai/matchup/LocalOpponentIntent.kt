@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import java.util.UUID
 import kotlin.math.exp
 import kotlin.math.ln
@@ -84,7 +85,9 @@ internal object LocalOpponentIntentPredictor {
                 DAMAGE_WEIGHT * hit * jbro.cobblemon.mcc.betterai.evaluation.LocalStatStageMarginalEvaluator.selfChangeBoard(
                     user, option.details.effects?.effects.orEmpty(), context, cache)
             }
-            val known = context.publicActionCatalog.forPokemon(user.battlePokemonId).distinctBy { PublicIds.canonical(it.moveId) }
+            val known = context.publicActionCatalog.forPokemon(user.battlePokemonId)
+                // Max history reveals a converted move, not another base moveset slot.
+                .filterNot { LocalDynamax.isMaxMove(it.moveId) }.distinctBy { PublicIds.canonical(it.moveId) }
             val offered = known + inferredAttacks(user, known, context)
             // Held to one move (Outrage, Encore, a shown Choice item), it uses that one; a lock onto a move the list does
             // not hold is no evidence about the others, as the search's own actions read it.

@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.calculation
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.evaluation.LocalHypothesisPriorityReservation
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicMoveDamageInputs
@@ -334,7 +335,9 @@ internal object PublicFutureActionFactory {
             .firstOrNull { it.startsWith("disablemove:") }?.substringAfter(':') ?: history.lastMoveByPokemon[active.battlePokemonId] else null
         val throatChopped = "throatchop" in volatiles
         val currentCatalog = catalog.afterSwitch(history.restoredOriginalPokemonIds)
-        val knownOptions = currentCatalog.forPokemon(active.battlePokemonId).map {
+        val knownOptions = currentCatalog.forPokemon(active.battlePokemonId)
+            // Rebuild converted moves from base moves when scoring a Dynamaxed user.
+            .filterNot { LocalDynamax.isMaxMove(it.moveId) }.map {
             FutureMoveOption(it.moveId, it.details)
         }
         val hypotheses = if (includeMoveHypotheses) LocalOpponentMoveHypotheses

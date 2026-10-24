@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.simulation
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.internal.ai.PublicIds
 import java.util.Locale
 import java.util.UUID
@@ -411,7 +412,7 @@ internal object NativeOpponentPreviewMoveCatalogMaterializer {
         preview: BattleOpponentTeamPreviewPokemonView,
     ): WeightedInference {
         val details = preview.moveCandidatePool?.moveDetails.orEmpty().entries.associate { canonical(it.key) to it }
-        val revealed = pokemon.knownMoveIds.map(::canonical).distinct()
+        val revealed = pokemon.knownMoveIds.filterNot(LocalDynamax::isMaxMove).map(::canonical).distinct()
             .mapNotNull { id -> details[id] }.take(MAX_MOVE_SLOTS)
         if (revealed.isEmpty()) return this
         val revealedIds = revealed.mapTo(hashSetOf()) { canonical(it.key) }

@@ -21,6 +21,33 @@ import org.junit.jupiter.api.Test
 
 class LocalMatchupScoreTest {
     @Test
+    fun `Max history preserves inferred attacks and intent probabilities before and during Dynamax`() {
+        fun board(withHistory: Boolean, dynamax: Boolean): BattleDecisionContext {
+            val maxMoves = if (!withHistory) emptyList() else listOf("maxflare", "maxquake", "gmaxwildfire", "maxguard").map {
+                BattlePublicMoveOptionView(it, BattleMoveCandidateView("fire", BattleMoveDamageCategory.SPECIAL,
+                    10.0, 100.0, 0, 8), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+            }
+            val base = context(allySpeed = 100, foeSpeed = 120, foeExtra = maxMoves)
+            val flame = BattleMoveCandidateView("fire", BattleMoveDamageCategory.SPECIAL, 90.0, 100.0, 0, 8)
+            val catalog = base.publicActionCatalog.withOpponentMoveInferences(listOf(BattleOpponentMoveInferenceView(FOE,
+                listOf(BattleOpponentMoveSlotView(0, "flamethrower", BattleOpponentMoveGroup.COVERAGE_ATTACK,
+                    BattleOpponentMoveKnowledge.CONFIRMED, BattleOpponentMoveSource.DIFFICULTY_SET_READ, flame)))))
+            return base.copy(publicActionCatalog = catalog, state = base.state.derive(pokemon = base.state.pokemon.map {
+                if (it.battlePokemonId == FOE && dynamax) jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.start(it) else it
+            }))
+        }
+        fun predict(context: BattleDecisionContext) = LocalOpponentIntentPredictor.predict(context,
+            LocalMatchupScoreCalculator.calculate(context)).single().options
+        for (dynamax in listOf(false, true)) {
+            val expected = predict(board(false, dynamax))
+            val actual = predict(board(true, dynamax))
+            assertTrue(actual.any { it.moveId == "flamethrower" && it.probability > 0.0 })
+            assertEquals(expected, actual)
+        }
+    }
+
+
+    @Test
     fun `rank transfer is read from move data rather than assumed for every pivot`() {
         assertTrue("passes_stat_stages" in BattleShowdownMoveEffects.flags("batonpass"))
         assertFalse("passes_stat_stages" in BattleShowdownMoveEffects.flags("uturn"))

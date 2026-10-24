@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.evaluation
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import jbro.cobblemon.mcc.internal.ai.BattleMoveDamageCategory
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonStateView
 import jbro.cobblemon.mcc.internal.ai.BattlePublicActionCatalogView
@@ -30,7 +31,7 @@ internal object LocalPersistentStageValue {
     }
 
     private fun pokemonValue(pokemon: BattlePokemonStateView, catalog: BattlePublicActionCatalogView): Double {
-        val moves = catalog.forPokemon(pokemon.battlePokemonId)
+        val moves = catalog.forPokemon(pokemon.battlePokemonId).filterNot { LocalDynamax.isMaxMove(it.moveId) }
         val physical = moves.any { it.details.damageCategory == BattleMoveDamageCategory.PHYSICAL && (it.details.power ?: 0.0) > 0.0 }
         val special = moves.any { it.details.damageCategory == BattleMoveDamageCategory.SPECIAL && (it.details.power ?: 0.0) > 0.0 }
         // No known attack yet: either attacking stat may be the one that matters, each at half.

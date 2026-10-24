@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.internal.compat.cobblemon173
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.BattleMoveCandidateView
 import jbro.cobblemon.mcc.internal.ai.BattlePokemonActionCatalogView
@@ -45,7 +46,8 @@ internal object Cobblemon173PublicActionCatalog {
             return BattlePokemonActionCatalogView(
                 battlePokemonId = pokemon.battlePokemonId,
                 moves = moves,
-                moveSetComplete = pokemon.side == BattleSide.ALLY || moves.size >= MAX_MOVE_SLOTS,
+                moveSetComplete = pokemon.side == BattleSide.ALLY || moves.asSequence().filterNot { LocalDynamax.isMaxMove(it.moveId) }
+                    .distinctBy { jbro.cobblemon.mcc.internal.ai.PublicIds.canonical(it.moveId) }.count() >= MAX_MOVE_SLOTS,
             )
         }
         val living = state.pokemon.filterNot { it.fainted }

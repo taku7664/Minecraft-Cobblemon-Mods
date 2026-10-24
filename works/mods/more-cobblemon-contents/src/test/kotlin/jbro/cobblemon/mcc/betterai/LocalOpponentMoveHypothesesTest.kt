@@ -1,6 +1,8 @@
 package jbro.cobblemon.mcc.betterai
 
 import jbro.cobblemon.mcc.betterai.evaluation.LocalHypothesisPriorityReservation
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.state.*
@@ -10,6 +12,47 @@ import org.junit.jupiter.api.Assertions.*
 import org.junit.jupiter.api.Test
 
 class LocalOpponentMoveHypothesesTest {
+    @Test
+    fun `Max placeholder categories do not invent a physical use for stored Attack stages`() {
+        val actor = pokemon.copyState(knownMoveIds = setOf("flamethrower", "maxflare"), statStages = mapOf("attack" to 2))
+        val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(actor),
+            BattleFieldStateView.empty(), BattleSide.entries.associateWith { 1 }, emptyList(), emptyList())
+        fun catalog(includeMax: Boolean) = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(id,
+            listOf(BattlePublicMoveOptionView("flamethrower", details.copy(damageCategory = BattleMoveDamageCategory.SPECIAL),
+                BattlePublicMoveKnowledge.PUBLICLY_REVEALED)) + if (includeMax) listOf(BattlePublicMoveOptionView("maxflare", details,
+                BattlePublicMoveKnowledge.PUBLICLY_REVEALED)) else emptyList(), false)))
+        val evaluate = jbro.cobblemon.mcc.betterai.evaluation.LocalPersistentStageValue
+        assertEquals(0.0, evaluate.evaluate(state, catalog(false)), 1e-12)
+        assertEquals(evaluate.evaluate(state, catalog(false)), evaluate.evaluate(state, catalog(true)), 1e-12)
+    }
+
+
+    @Test
+    fun `Max history neither fills base slots nor becomes a future executable move`() {
+        val maxHistory = setOf("maxflare", "maxquake", "gmaxwildfire", "maxguard")
+        val seen = pokemon.copyState(knownMoveIds = pokemon.knownMoveIds + maxHistory)
+        assertEquals(setOf("d", "e"), LocalOpponentMoveHypotheses.options(seen, catalog, RecursiveActionHistory()).keys)
+        val committed = LocalOpponentMoveHypotheses.assume(seen, catalog, RecursiveActionHistory(), "d")
+        assertEquals(setOf("d"), LocalOpponentMoveHypotheses.options(seen, catalog, committed).keys)
+        assertTrue(LocalOpponentMoveHypotheses.options(seen.copyState(knownMoveIds = seen.knownMoveIds + "fourth"),
+            catalog, RecursiveActionHistory()).isEmpty())
+        val source = BattlePublicActionCatalogView(listOf(BattlePokemonActionCatalogView(id,
+            seen.knownMoveIds.map { BattlePublicMoveOptionView(it, details, BattlePublicMoveKnowledge.PUBLICLY_REVEALED) },
+            moveSetComplete = false)), candidatePools = catalog.candidatePools)
+        val ally = BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY, 0, "target", null, 50,
+            1.0, null, emptyMap(), emptySet(), null, null, false)
+        for (actor in listOf(seen, LocalDynamax.start(seen))) {
+            val state = BattleStateView(UUID.randomUUID(), BattleFormat.SINGLE, 1, listOf(ally, actor),
+                BattleFieldStateView.empty(), BattleSide.entries.associateWith { 1 }, emptyList(), emptyList())
+            val moves = PublicFutureActionFactory.actions(state, BattleSide.OPPONENT, source,
+                includeMoveHypotheses = true).filter { it.kind == BattleActionKind.USE_MOVE }
+            assertEquals(setOf("a", "b", "c", "d", "e"), moves.mapNotNull { it.moveId }.toSet())
+            assertTrue(moves.none { LocalDynamax.isMaxMove(it.moveId) })
+        }
+        assertEquals(maxHistory, source.forPokemon(id).map { it.moveId }.filter(LocalDynamax::isMaxMove).toSet())
+    }
+
+
     @Test
     fun `dynamic ability priority is retained under a hypothetical move cap`() {
         val ally = BattlePokemonStateView(UUID.randomUUID(), BattleSide.ALLY, 0, "target", null, 50,

@@ -1,5 +1,6 @@
 package jbro.cobblemon.mcc.betterai.search
 
+import jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.ai.*
 import jbro.cobblemon.mcc.betterai.calculation.LocalForcedReplacementResolution
@@ -1210,7 +1211,9 @@ internal object LocalRecursiveLookaheadEvaluator {
                             BattleOpponentMoveKnowledge.EXPECTED -> tuning.expectedMoveResponseConfidence
                             BattleOpponentMoveKnowledge.GUESS -> 0.0
                         }
-                    } ?: currentCatalog.forPokemon(pokemonId).size.toDouble()
+                    } ?: currentCatalog.forPokemon(pokemonId).asSequence()
+                        .filterNot { LocalDynamax.isMaxMove(it.moveId) }
+                        .distinctBy { PublicIds.canonical(it.moveId) }.count().toDouble()
                     val knownFraction = (concreteCoverage / STANDARD_MOVE_SLOTS).coerceIn(0.0, 1.0)
                     coverage * confidence(knownFraction)
                 }
