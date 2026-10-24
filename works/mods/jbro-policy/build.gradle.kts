@@ -8,7 +8,10 @@ group = "jbro.cobblemon"
 
 base { archivesName.set("jbro-policy") }
 
+repositories { maven("https://maven.terraformersmc.com/releases/") }
+
 dependencies {
+    modCompileOnly("com.terraformersmc:modmenu:11.0.3")
     minecraft("com.mojang:minecraft:${property("minecraft_version")}")
     mappings(loom.officialMojangMappings())
     modImplementation("net.fabricmc:fabric-loader:${property("fabric_loader_version")}")

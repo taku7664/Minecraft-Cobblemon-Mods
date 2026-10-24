@@ -231,5 +231,13 @@
   "key.categories.jbro_policy": "jbro 정책",
   "key.jbro_policy.pokenav": "포켓내비 열기·닫기",
   "message.jbro_policy.waypoint_created": "웨이포인트 생성: %s",
-  "message.jbro_policy.waypoint_failed": "웨이포인트를 만들지 못했습니다. 게임 로그를 확인하세요."
+  "message.jbro_policy.waypoint_failed": "웨이포인트를 만들지 못했습니다. 게임 로그를 확인하세요.",
+  "message.jbro_policy.inquiry.followup_sent": "추가 설명을 접수했어요. 검토 결과는 문의 답변에서 확인해 주세요.",
+  "message.jbro_policy.inquiry.followup_failed": "추가 설명을 받지 못했어요. 본인의 진행 중인 문의 번호와 내용(100자 이내)을 확인해 주세요. 문의당 3회까지 보낼 수 있어요.",
+  "config.jbro_policy.inquiry.title": "피츄 문의 설정",
+  "config.jbro_policy.inquiry.enabled": "문의 AI 검토",
+  "config.jbro_policy.inquiry.automatic": "근거 있는 질문 자동 종결",
+  "config.jbro_policy.inquiry.local": "이 컴퓨터의 설정만 저장하며 서버 재시작 후 적용됩니다.",
+  "config.jbro_policy.inquiry.rewards": "자동 종결을 켜도 보상·복구 명령은 실행하지 않습니다.",
+  "config.jbro_policy.inquiry.failed": "설정을 읽거나 저장하지 못했습니다."
 }
