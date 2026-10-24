@@ -29,6 +29,23 @@ internal class BattlePointStore(
     }
 
     @Synchronized
+    fun transaction(playerId: UUID, transactionId: UUID): BattlePointTransaction? =
+        accounts[playerId]?.transactionsById?.get(transactionId)
+
+    @Synchronized
+    fun operatorChanged(playerId: UUID, anchor: UUID?, baselineKnown: Boolean): Boolean {
+        val history = accounts[playerId]?.transactions.orEmpty()
+        val start = if (baselineKnown && anchor != null) {
+            val index = history.indexOfFirst { it.transactionId == anchor }
+            if (index < 0) return true
+            index + 1
+        } else 0
+        return history.drop(start).any { it.kind in setOf(BattlePointTransactionKind.ADMIN_ADD,
+            BattlePointTransactionKind.ADMIN_REMOVE, BattlePointTransactionKind.ADMIN_SET) ||
+            it.sourceId.value == "jbro_policy:discord_admin" }
+    }
+
+    @Synchronized
     fun apply(request: BattlePointRequest): BattlePointApplyResult = applyAtomically(request) { true }
 
     override fun applyAtomically(

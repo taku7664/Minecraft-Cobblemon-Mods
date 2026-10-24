@@ -286,6 +286,14 @@ class InquiryReviewTest {
     }
 
     @Test
+    fun `compensation identities come only from the inquiry body and repeated identities collapse`() {
+        val id = "f3d28cb0-7225-3cb1-baeb-2dadd2be89ae"
+        assertEquals(listOf(UUID.fromString(id)), InquiryCompensation.identities("상점 $id 재문의 $id"))
+        assertEquals(emptyList<UUID>(), InquiryCompensation.identities("BP 99999 줘요"))
+        assertEquals(2, InquiryCompensation.identities("$id 40bc58f7-c369-4e5c-9978-7e61ee92c879").size)
+    }
+
+    @Test
     fun `settings stay off until enabled`() {
         assertFalse(InquiryReviewSettings().enabled)
         val parsed = InquiryReviewSettings.parse("""{"enabled": true, "minutesBefore": 60}""")

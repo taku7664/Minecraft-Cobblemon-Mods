@@ -169,5 +169,8 @@
   "screen.more_cobblemon_contents.dashboard.format.double_normal": "더블 · 일반",
   "modmenu.nameTranslation.more_cobblemon_contents": "More Cobblemon Contents Core",
   "modmenu.descriptionTranslation.more_cobblemon_contents": "Cobblemon 전투 콘텐츠의 공통 기반 모드입니다. 관리 전투, 내장 전술 AI, BP·상점·기록, 배틀 허브와 홀로그램 터미널을 제공하며 콘텐츠는 별도 애드온으로 추가합니다.",
-  "screen.more_cobblemon_contents.versus.tournament": "챔피언컵"
+  "screen.more_cobblemon_contents.versus.tournament": "챔피언컵",
+  "message.more_cobblemon_contents.shop.recovery": "구매 처리 결과를 확인해 주세요. 상품이 안 왔다면 /문의 상점 미지급 %s 로 문의해 주세요. 추가 구매는 별도 결제입니다.",
+  "message.more_cobblemon_contents.recovery.held": "원거래의 자동 복구를 보류했습니다. 수동 처리 후에도 자동 재지급하지 않습니다.",
+  "message.more_cobblemon_contents.recovery.hold_failed": "보류하지 못했습니다. 플레이어 UUID·원거래 UUID와 기록 상태를 확인하세요. 수동 지급 전에 보류 성공을 확인하세요."
 }

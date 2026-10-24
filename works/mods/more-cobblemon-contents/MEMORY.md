@@ -6,6 +6,15 @@
 
 
 
+## [2026-10-24 17:03] BP 원거래 기록·상점 전달 실패 복구 및 중복 방지
+
+- **사용자 결정·소유권:** 피츄 문의의 BP 미지급·상점 전달 실패 자동 복구를 위해 core BP 저장소·상점·공개 지원 API와 jbro-policy 연동만 수정한다. Better AI·다른 상점·포켓몬 데이터·배포 설정은 변경하지 않는다.
+- **원거래 기록:** 콘텐츠 BP의 서버 지급 요청과 검증된 BP 상점 장바구니에서만 원거래 권리를 만든다. 월드 data/mcc-compensation-v1/<플레이어UUID>/<거래UUID>.json에 정확한 금액·원래 상품·수량·발생 시각·기존 거래 내역의 기준점·처리 상태를 보관하고 파일 force(true)와 원자 교체를 사용한다. 문의 ID나 날짜별 한도가 아니라 원거래로 중복을 막으며 완료 표식은 삭제하지 않는다. 운영자 직접 BP 지급은 복구 권리로 만들지 않는다.
+- **지급 순서·예외:** 상점은 최초 공간 확인→원거래 기록→차감 시작 표식→BP 차감→차감 완료 표식→전달 시작 표식→전달→완료 표식 순서다. 복구는 원거래의 전체 BP 거래 내역과 일치하며 전달을 시작하지 않은 결제만 재개한다. 복구 문의로 새 결제하지 않는다. 지급/전달 도중 중단·부분 전달·원거래 충돌·기록 손상·BP 내역과 완료 표식 불일치는 관리자 상태로 고정한다. BP 저장소 불가·확실한 미실행 거절은 대기로 남긴다. 저장·BP·플레이어 인벤토리가 한 트랜잭션이라고 가정하지 않으며 완료 표식은 인벤토리 파일의 영속 수령을 증명하지 않는다. 완료된 구매의 미수령 주장도 자동 재지급하지 않는다.
+- **수동 보상·API:** 운영자 BP 조정은 원거래의 마지막 BP 거래 ID 이후 순서로 확인하므로 시계 역행/같은 시각에도 누락하지 않는다. /give 같은 외부 지급은 자동 감지할 수 없어 OP2 /bp recoveryhold <플레이어UUID> <원거래UUID>와 MccCompensation.hold를 제공한다. 수동 지급 전에 보류 성공을 확인한다. MccCompensation.resolve는 소유자·거래 ID/구간만 받으며 금액·상품을 받지 않는다. 기존 BP 데이터 형식과 상점 네트워크 상태 enum은 유지했다.
+- **검증·기존 실패:** 원거래 복구 17/17 통과(실제 파일 저장·BP NBT 재로딩, 재문의, 금액/상품 변조, 소유권, 다중 후보, 미차감 구매, 가득 찬 가방, 운영자 조정/보류, 부분 전달, 중단 표식, 기록 손상/삭제/쓰기 불가). core 전체678=성공674·실패3·중단1. 실패3은 변경 전 7fc3d12b0의 두 클래스18검사에서도 동일 재현했고 이번 범위 밖이라 수정하지 않았다. 실패: BattleSceneLifecyclePolicyTest held managed battle reads showdown id only after the hold starts; Cobblemon173ActionCandidateAdapterTest AI offers every enabled available mechanic 및 selected major mechanic. 중단: Cobblemon173ShowdownBoostsTest stages follow Showdown through a silent White Herb reset and later boosts. 명령 목록 검사는 recoveryhold 추가와 권한0/1 거부·권한2 허용을 반영했다. 전체 suite green으로 보고하지 않는다.
+- **빌드·미적용:** :more-cobblemon-contents:assemble와 :jbro-policy:build 성공, Gradle 쓰기는 모두 F 경로. core JAR SHA256 26e560372d82919f80ebf2e17e56d3f4e51767937ab52c5e8d4dae0732e6355c, CRC 정상. 검증 근거 F:/AI/builds/pichu-inquiry-117d/compensation-verification.json 및 final-core-junit/TEST-junit-jupiter.xml. 제품 폴더 배치·서버 기동/재시작·실제 지급·실프로세스 강제 종료는 하지 않았다. 기능 설치 전 기록 없는 사건과 파일/월드 임의 롤백은 자동 복구 보장 대상이 아니다.
+
 ## [2026-10-24 17:02] 행동 확률 첫 피격 전용 경로 — 값 보존 확인·실제 전체 연산 감소 0.03%
 
 - **승인/범위:** 빡대리의 "이제2번해봐"는 앞서 제안한 행동 가능 확률의 이번 한 번 피격 자료만 만드는 경로다. 기준3dde085c5, 1b39/codex/betterai-entry-healblock. 후보3·4, 현재 행동의 랭크 평가 모듈/점수식/순위 뒤 보정은 변경하지 않았다. 배포 지시로 확대하지 않았으며 직전 개발 서버 설치본은 보존했다.

@@ -74,6 +74,7 @@ internal object ShopPlayNetworking {
                 catalog = BattlePointShopCatalogResources.store::snapshot,
                 battlePoints = ServerBattlePointAtomicApplier(player),
                 delivery = MinecraftBattlePointShopDelivery(player.server),
+                settlePurchase = { request, grants -> jbro.cobblemon.mcc.internal.bp.recovery.CompensationRuntime.purchase(player.server, request, grants) },
             )
             service.purchase(
                 BattlePointShopPurchaseRequest(
@@ -88,6 +89,10 @@ internal object ShopPlayNetworking {
             failedPurchaseResult(player, failure)
         } catch (failure: LinkageError) {
             failedPurchaseResult(player, failure)
+        }
+        if (result.status == BattlePointShopPurchaseStatus.DELIVERY_FAILED || result.status == BattlePointShopPurchaseStatus.BP_UNAVAILABLE) {
+            player.sendSystemMessage(net.minecraft.network.chat.Component.translatable(
+                "message.more_cobblemon_contents.shop.recovery", payload.purchaseId.toString()))
         }
         runManagedCleanupActionsSafely(
             reportFailure = { failure ->

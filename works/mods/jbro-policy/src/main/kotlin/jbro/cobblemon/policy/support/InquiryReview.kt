@@ -251,12 +251,12 @@ internal object InquiryReview {
         val verdict = answer.verdict
         if (!save(record.copy(conversationId = answer.conversationId, reviewed = true,
             suggestedActions = verdict.suggestedActions, suggestedCommands = verdict.suggestedCommands))) return
-        val handling = settle(verdict, reference)
+        val handling = settle(inquiry, verdict, reference)
         JbroPolicy.LOGGER.info("Reviewed inquiry {} from {}: {}, {}", record.id, record.accountName, verdict.verdict, handling.note)
         if (record.conversationId != null && record.conversationId != answer.conversationId) {
             runCatching { reviewer.forget(record.conversationId) }
         }
-        val answerText = InquiryReviewer.reply(verdict.playerSummary, handling.handedOver, handling.ran.isNotEmpty()) +
+        val answerText = InquiryReviewer.reply(handling.answer ?: verdict.playerSummary, handling.handedOver, handling.changed) +
             if (handling.handedOver) " 추가 설명은 /문의추가 ${record.id} <내용>으로 보내 주세요." else ""
         server?.execute { OperatorWhisper.send(server ?: return@execute, inquiry.playerId, answerText, inquiry.reason) }
         post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, answerText))
@@ -271,13 +271,20 @@ internal object InquiryReview {
     }
 
     /** How Pichu dealt with an inquiry: what it ran, and whether an operator still has to look. */
-    internal data class Handling(val handedOver: Boolean, val ran: List<String>, val note: String)
+    internal data class Handling(val handedOver: Boolean, val ran: List<String>, val note: String,
+        val answer: String? = null, val changed: Boolean = false)
 
     /** How much of the player data the prompt carries; the server's own checks read all of it. */
     private const val PLAYER_DATA_CHARACTERS = 20_000
 
-    private fun settle(verdict: InquiryVerdict, reference: String): Handling {
+    private fun settle(inquiry: Inquiry, verdict: InquiryVerdict, reference: String): Handling {
         if (!settings.autoResolve) return Handling(true, emptyList(), "자동 처리가 꺼져 있어요")
+        if (withContents && verdict.autoCommands.isEmpty() &&
+            verdict.category in setOf(InquiryVerdict.Category.REWARD, InquiryVerdict.Category.SHOP)) {
+            val activeServer = server ?: return Handling(true, emptyList(), "서버 확인이 필요해요")
+            val result = InquiryCompensation.attempt(activeServer, inquiry, verdict.category, settings.minutesBefore, settings.minutesAfter)
+            return Handling(!result.handled, emptyList(), result.message, result.message, result.changed)
+        }
         return when (val plan = InquiryAutoResolve.plan(verdict, reference)) {
             is InquiryAutoResolve.Plan.HandOver -> Handling(true, emptyList(), plan.why)
             InquiryAutoResolve.Plan.Explain -> Handling(false, emptyList(), "서버 자료에 근거한 답변으로 마무리했어요")

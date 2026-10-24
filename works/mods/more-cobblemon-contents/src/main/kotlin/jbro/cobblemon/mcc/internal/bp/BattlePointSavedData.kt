@@ -19,6 +19,10 @@ internal class BattlePointSavedData(
     fun history(playerId: UUID, limit: Int): List<BattlePointTransaction> =
         if (isAvailable) store.history(playerId, limit) else emptyList()
 
+    fun transaction(playerId: UUID, transactionId: UUID) = if (isAvailable) store.transaction(playerId, transactionId) else null
+    fun operatorChanged(playerId: UUID, anchor: UUID?, baselineKnown: Boolean) =
+        !isAvailable || store.operatorChanged(playerId, anchor, baselineKnown)
+
     fun apply(request: BattlePointRequest): BattlePointApplyResult {
         if (!isAvailable) return BattlePointApplyResult(BattlePointApplyStatus.UNAVAILABLE, 0L)
         return store.apply(request).also { result ->
@@ -73,7 +77,20 @@ object BattlePointService {
     fun history(server: MinecraftServer, playerId: UUID, limit: Int): List<BattlePointTransaction> =
         data(server).history(playerId, limit)
 
-    fun apply(server: MinecraftServer, request: BattlePointRequest): BattlePointApplyResult = data(server).apply(request)
+    fun transaction(server: MinecraftServer, playerId: UUID, transactionId: UUID): BattlePointTransaction? =
+        data(server).transaction(playerId, transactionId)
+
+    fun operatorChanged(server: MinecraftServer, playerId: UUID, anchor: UUID?, baselineKnown: Boolean) =
+        data(server).operatorChanged(playerId, anchor, baselineKnown)
+
+    fun apply(server: MinecraftServer, request: BattlePointRequest): BattlePointApplyResult {
+        check(server.isSameThread) { "BP mutations require the server thread" }
+        return if (request.operation is BattlePointOperation.ContentReward && request.sourceId.value != "jbro_policy:discord_admin")
+            jbro.cobblemon.mcc.internal.bp.recovery.CompensationRuntime.reward(server, request)
+        else applyDirect(server, request)
+    }
+
+    internal fun applyDirect(server: MinecraftServer, request: BattlePointRequest): BattlePointApplyResult = data(server).apply(request)
 
     fun applyAtomically(
         server: MinecraftServer,

@@ -37,9 +37,24 @@ internal object BattlePointCommands {
                 ),
         )
         .then(history())
+        .then(recoveryHold())
         .then(adminMutation("add", minimum = 1L) { BattlePointOperation.AdminAdd(it) })
         .then(adminMutation("remove", minimum = 1L) { BattlePointOperation.AdminRemove(it) })
         .then(adminMutation("set", minimum = 0L) { BattlePointOperation.AdminSet(it) })
+
+    private fun recoveryHold() = Commands.literal("recoveryhold")
+        .requires { source -> source.hasPermission(ADMIN_PERMISSION_LEVEL) }
+        .then(Commands.argument("player_uuid", StringArgumentType.word())
+            .then(Commands.argument("transaction_uuid", StringArgumentType.word()).executes { command ->
+                val held = try {
+                    jbro.cobblemon.mcc.api.support.MccCompensation.hold(command.source.server,
+                        UUID.fromString(StringArgumentType.getString(command, "player_uuid")),
+                        UUID.fromString(StringArgumentType.getString(command, "transaction_uuid")))
+                } catch (_: Exception) { false }
+                command.source.sendSuccess({ Component.translatable(
+                    if (held) "message.more_cobblemon_contents.recovery.held" else "message.more_cobblemon_contents.recovery.hold_failed") }, false)
+                if (held) 1 else 0
+            }))
 
     private fun history() = Commands.literal("history")
         .executes { command -> showHistory(command.source, command.source.playerOrException, DEFAULT_HISTORY_COUNT) }

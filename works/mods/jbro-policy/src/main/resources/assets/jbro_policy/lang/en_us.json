@@ -236,8 +236,8 @@
   "message.jbro_policy.inquiry.followup_failed": "Could not add your follow-up. Check your open inquiry ID and message (up to 100 characters, three follow-ups per inquiry).",
   "config.jbro_policy.inquiry.title": "Pichu Inquiry Settings",
   "config.jbro_policy.inquiry.enabled": "AI inquiry review",
-  "config.jbro_policy.inquiry.automatic": "Automatically close supported questions",
+  "config.jbro_policy.inquiry.automatic": "Automatically handle verified inquiries",
   "config.jbro_policy.inquiry.local": "Local settings only. Takes effect after a server restart.",
-  "config.jbro_policy.inquiry.rewards": "Automatic answers never execute compensation or recovery commands.",
+  "config.jbro_policy.inquiry.rewards": "Reward and shop recovery require the original server transaction record.",
   "config.jbro_policy.inquiry.failed": "Could not read or save the settings."
 }

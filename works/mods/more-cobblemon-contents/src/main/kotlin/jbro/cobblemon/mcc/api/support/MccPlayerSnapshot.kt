@@ -19,10 +19,12 @@ object MccPlayerSnapshot {
 
     fun of(server: MinecraftServer, playerId: UUID, bpHistory: Int = 20): JsonObject = WikiServer.dashboard(server, playerId).apply {
         remove("updated")
+        add("compensation_records", MccCompensation.snapshot(server, playerId))
         add("bp_history", JsonArray().also { history ->
             if (!BattlePointService.isAvailable(server)) return@also
             // Newest first.
             for (entry in BattlePointService.history(server, playerId, bpHistory.coerceIn(1, 100))) history.add(JsonObject().apply {
+                addProperty("transaction_id", entry.transactionId.toString())
                 addProperty("at", TIME.format(Instant.ofEpochMilli(entry.recordedAtEpochMillis)) + " KST")
                 addProperty("kind", entry.kind.name)
                 addProperty("amount", entry.requestedValue)

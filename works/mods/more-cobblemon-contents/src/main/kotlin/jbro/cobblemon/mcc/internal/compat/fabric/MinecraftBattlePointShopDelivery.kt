@@ -15,6 +15,7 @@ internal class MinecraftBattlePointShopDelivery(
 ) : BattlePointShopDelivery {
     override fun prepare(playerId: UUID, grants: List<BattlePointShopGrant>): BattlePointShopDeliveryPlan? {
         val player = server.playerList.getPlayer(playerId) ?: return null
+        if (!player.isAlive || player.isRemoved) return null
         val inventory = player.inventory
         val resolved = grants.map { grant ->
             val id = ResourceLocation.tryParse(grant.itemId) ?: return null
