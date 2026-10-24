@@ -36,7 +36,8 @@
       <table class="dex-table learn-table"><colgroup><col class="learn-level"><col class="learn-name"><col class="learn-type"><col class="learn-category"><col class="learn-stat"><col class="learn-stat"><col class="learn-pp"></colgroup><thead id="pk-learn-head"></thead><tbody id="pk-learn"></tbody></table>
     </div>
 
-    <h2>야생 출현</h2>
+    <h2>야생 출현 · 모든 모습</h2>
+    <p>아래 표는 모든 모습의 출현 장소를 함께 보여 줍니다. 위에서 모습을 바꿔도 이 표는 바뀌지 않으니 각 행의 모습 조건을 확인하세요.</p>
     <div id="pk-spawns"></div>
   </div>
 </main>
@@ -238,7 +239,9 @@
         legend.innerHTML = "<strong>전설 포켓몬</strong>나타나는 장소, 잡을 수 있는 등급, 파티에 필요한 포켓몬은 <a href=\"legends.html\">전설 스폰 가이드</a>에서 확인하세요.";
         box.appendChild(legend);
       }
-      if (!data.spawns.length) { box.appendChild(el("p", "", "야생에서는 나오지 않습니다. 진화나 다른 방법으로 얻어야 합니다.")); return; }
+      if (!data.spawns.length) { box.appendChild(el("p", "", "등록된 직접 야생 출현 장소가 없습니다. 진화나 다른 획득 방법을 확인하세요.")); return; }
+      var levelNote = el("div", "note", "장소와 조건이 맞아도 지역의 강함과 내 레벨캡에 따라 만나는 포켓몬이 달라집니다. 진화한 포켓몬은 낮은 레벨에서 진화 전 모습으로 나타날 수 있습니다.");
+      box.appendChild(levelNote);
       function spawnTable(list) {
         var table = el("table", "spawn-table"); var head = el("thead"); var hr = el("tr");
         ["희귀도", "장소", "바이옴", "조건"].forEach(function (h) { hr.appendChild(el("th", "", h)); });
@@ -246,15 +249,17 @@
         var body = el("tbody");
         list.forEach(function (s) {
           var tr = el("tr");
-          tr.appendChild(el("td", "", s.bucket + (s.herd ? " · 무리" : "")));
-          tr.appendChild(el("td", "", s.position));
+          tr.appendChild(el("td", "", (s.alpha ? "우두머리" : s.bucket) + (s.herd && s.bucket !== "우두머리 무리" ? " · 무리" : "") + (s.role ? " · " + s.role : "")));
+          tr.appendChild(el("td", "", (s.dimensions && s.dimensions.length ? s.dimensions.join(" 또는 ") + " · " : "") + s.position));
           var biomes = el("td");
           s.biomes.forEach(function (b) { biomes.appendChild(el("span", b.group ? "chip group" : "chip", b.group ? b.name + " 계열" : b.name)); });
+          if (!s.biomes.length) biomes.appendChild(el("span", "wiki-crumbs", "별도 바이옴 제한 없음"));
           (s.except || []).forEach(function (b) { biomes.appendChild(el("span", "chip no", b + " 제외")); });
           tr.appendChild(biomes);
           var cond = el("td");
           (s.notes || []).forEach(function (n) { cond.appendChild(el("span", "chip", window.WikiPokemonText.condition(n))); });
           s.conditions.forEach(function (c) { cond.appendChild(el("span", "chip cond", window.WikiPokemonText.condition(c))); });
+          (s.exclusions || []).forEach(function (c) { cond.appendChild(el("p", "", "제외: 다음 조건이 모두 맞는 곳 — " + window.WikiPokemonText.condition(c))); });
           (s.boosts || []).forEach(function (b) { cond.appendChild(el("span", "chip", window.WikiPokemonText.condition(b))); });
           tr.appendChild(cond);
           body.appendChild(tr);
@@ -263,18 +268,18 @@
         var wrap = el("div", "table-wrap"); wrap.appendChild(table);
         return wrap;
       }
-      var normal = data.spawns.filter(function (s) { return s.bucket !== "알파"; });
-      var alpha = data.spawns.filter(function (s) { return s.bucket === "알파"; });
+      var normal = data.spawns.filter(function (s) { return !s.alpha; });
+      var alpha = data.spawns.filter(function (s) { return s.alpha; });
       if (normal.length) box.appendChild(spawnTable(normal));
-      else box.appendChild(el("p", "", "일반 개체는 야생에서 나오지 않고, 알파 포켓몬으로만 나옵니다."));
+      else box.appendChild(el("p", "", "등록된 직접 출현 항목은 우두머리 개체입니다."));
       if (alpha.length) {
         var details = el("details"); var summary = el("summary", "", "알파 포켓몬 출현 " + alpha.length + "곳");
         details.appendChild(summary);
-        details.appendChild(el("p", "wiki-crumbs", "우두머리(알파) 포켓몬은 크고 강한 개체로, 타입 주얼을 지니고 아주 드물게 나옵니다. 새로 출현하는 개체는 최소 2V(능력치 개체값 31이 2개 이상)를 보장합니다. 이미 잡은 포켓몬의 개체값은 바뀌지 않습니다."));
+        details.appendChild(el("p", "wiki-crumbs", "우두머리(알파)는 크고 강한 개체입니다. 같은 무리의 동행 포켓몬은 일반 개체일 수 있으며, 지닌 도구와 모습은 각 행에 표시됩니다. 새로 출현하는 우두머리는 최소 2V(능력치 개체값 31이 2개 이상)를 보장합니다."));
         details.appendChild(spawnTable(alpha));
         box.appendChild(details);
       }
-      box.appendChild(el("p", "wiki-crumbs", "희귀도는 흔함 · 보통 · 드묾 · 매우 드묾 순서로 드뭅니다. 점선 바이옴은 그 계열의 바이옴이면 어디든 된다는 뜻입니다. 야생 레벨은 장소와 내 레벨캡에 맞춰 조절됩니다. 강한 지역은 성장한 뒤 다시 찾아가 보세요."));
+      box.appendChild(el("p", "wiki-crumbs", "한 행의 바이옴은 하나만 맞으면 되고, 나머지 조건은 모두 맞아야 합니다. 제외 조건은 한 묶음 안의 조건이 모두 맞을 때 적용됩니다. 흔함 · 보통 · 드묾 · 매우 드묾 순서이며, 우두머리 무리는 별도로 표시합니다. 배수는 해당 조건에서 더 잘 나타나는 정도이며 확정 출현 확률은 아닙니다. 강한 지역은 성장한 뒤 다시 찾아가 보세요."));
     }
   })();
 </script>

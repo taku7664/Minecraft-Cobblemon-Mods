@@ -31,7 +31,7 @@ test('도감의 모든 알 그룹과 구조물 조건을 내부 ID 없이 표시
       const groups = text.eggGroups(data.eggGroups || []);
       assert.doesNotMatch(groups, /[a-z_]|확인 중/, file);
       for (const spawn of data.spawns) {
-        for (const condition of [...(spawn.conditions || []), ...(spawn.notes || []), ...(spawn.boosts || [])]) {
+        for (const condition of [...(spawn.conditions || []), ...(spawn.notes || []), ...(spawn.boosts || []), ...(spawn.exclusions || []), ...(spawn.dimensions || []), ...(spawn.biomes || []).map(b => b.name)]) {
           const visible = text.condition(condition);
           assert.doesNotMatch(visible, /#?[a-z][a-z_]+:[a-z_./]+|확인 중/, `${file}: ${condition}`);
           if (condition.includes('근처')) assert.ok(visible.includes('근처'), `${file}: ${condition}`);
@@ -41,4 +41,21 @@ test('도감의 모든 알 그룹과 구조물 조건을 내부 ID 없이 표시
     }
   }
   assert.equal(speciesCount, 1025);
+});
+
+test('누락 종·차원·포케스낵·무리 속성 회귀 사례가 배포 데이터에 반영된다', () => {
+  function species(id) {
+    const c = {window: {}};
+    vm.runInNewContext(fs.readFileSync(path.join(wiki, 'assets/data/dex/species', id+'.js'), 'utf8'), c);
+    return c.window.WIKI_SPECIES[id];
+  }
+  for (const id of ['frigibax','arctibax','baxcalibur','poipole','gulpin','pawmi']) assert.ok(species(id).spawns.length, id);
+  assert.ok(species('walkingwake').spawns.some(s => s.dimensions.includes('고대 차원') && s.biomes.some(b => b.name === '고대 바다')));
+  assert.ok(species('ironleaves').spawns.some(s => s.dimensions.includes('미래 차원') && s.biomes.some(b => b.name === '네온 숲')));
+  const ralts = species('ralts').spawns.find(s => s.sources.some(o => o.id === 'ralts-1'));
+  assert.ok(ralts.conditions.includes('포케스낵으로만 출현'));
+  const follower = species('bulbasaur').spawns.find(s => s.sources.some(o => o.id === 'venusaur-alpha-1'));
+  assert.equal(follower.alpha, false);
+  assert.equal(follower.role, '동행');
+  assert.equal(follower.notes.some(n => n.includes('풀주얼')), false);
 });
