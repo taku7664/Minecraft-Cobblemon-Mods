@@ -13,7 +13,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "80",
             "weight": 0.2,
             "condition": {
@@ -36,7 +36,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-60",
             "weight": 0.3,
             "condition": {
@@ -64,7 +64,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-60",
             "weight": 0.3,
             "condition": {
@@ -88,7 +88,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50",
             "weight": 0.3,
             "condition": {
@@ -108,7 +108,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.15,
             "condition": {
@@ -125,7 +125,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "30-70",
             "weight": 0.2,
             "condition": {
@@ -156,7 +156,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.3,
             "condition": {
@@ -177,7 +177,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.3,
             "condition": {
@@ -195,7 +195,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.3,
             "condition": {
@@ -218,7 +218,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "43-55",
             "weight": 0.15,
             "condition": {
@@ -237,7 +237,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "15",
             "weight": 0.15,
             "condition": {
@@ -262,7 +262,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-70",
             "weight": 0.3,
             "condition": {
@@ -282,7 +282,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "40-50",
             "weight": 0.2,
             "condition": {
@@ -302,7 +302,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "75",
             "weight": 0.2,
             "condition": {
@@ -324,7 +324,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "47-70",
             "weight": 0.15,
             "condition": {
@@ -349,7 +349,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.2,
             "condition": {
@@ -370,7 +370,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-70",
             "weight": 0.3,
             "condition": {
@@ -390,7 +390,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-60",
             "weight": 0.3,
             "condition": {
@@ -415,7 +415,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.15,
             "condition": {
@@ -436,7 +436,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.3,
             "condition": {
@@ -460,7 +460,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.2,
             "condition": {
@@ -485,7 +485,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "47-70",
             "weight": 0.15,
             "condition": {
@@ -504,7 +504,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.3,
             "condition": {
@@ -528,7 +528,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-80",
             "weight": 0.15,
             "condition": {
@@ -548,7 +548,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "45-70",
             "weight": 0.15,
             "condition": {
@@ -571,7 +571,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-70",
             "weight": 0.3,
             "condition": {
@@ -590,7 +590,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "40-70",
             "weight": 0.15,
             "condition": {
@@ -610,7 +610,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50",
             "weight": 0.2,
             "condition": {
@@ -631,7 +631,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-80",
             "weight": 0.15,
             "condition": {
@@ -651,7 +651,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-80",
             "weight": 0.15,
             "condition": {
@@ -671,7 +671,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-80",
             "weight": 0.15,
             "condition": {
@@ -691,7 +691,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "5-70",
             "weight": 0.2,
             "condition": {
@@ -710,7 +710,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.2,
             "condition": {
@@ -733,7 +733,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "68-72",
             "weight": 0.15,
             "condition": {
@@ -754,7 +754,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "15",
             "weight": 0.3,
             "condition": {
@@ -777,7 +777,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "submerged",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "45-70",
             "weight": 0.15,
             "condition": {
@@ -799,7 +799,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "75",
             "weight": 0.15,
             "condition": {
@@ -821,7 +821,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-70",
             "weight": 0.3,
             "condition": {
@@ -841,7 +841,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "30-50",
             "weight": 0.3,
             "condition": {
@@ -867,7 +867,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "30-50",
             "weight": 0.3,
             "condition": {
@@ -892,7 +892,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "submerged",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "40-70",
             "weight": 0.15,
             "condition": {
@@ -913,7 +913,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-80",
             "weight": 0.15,
             "condition": {
@@ -937,7 +937,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50",
             "weight": 0.2,
             "condition": {
@@ -962,7 +962,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "45-60",
             "weight": 0.2,
             "condition": {
@@ -982,7 +982,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.2,
             "condition": {
@@ -1002,7 +1002,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.2,
             "condition": {
@@ -1023,7 +1023,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50",
             "weight": 0.2,
             "condition": {
@@ -1043,7 +1043,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "20-40",
             "weight": 0.2,
             "condition": {
@@ -1064,7 +1064,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50",
             "weight": 0.3,
             "condition": {
@@ -1084,7 +1084,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "30-70",
             "weight": 0.2,
             "condition": {
@@ -1105,7 +1105,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-75",
             "weight": 0.15,
             "condition": {
@@ -1127,7 +1127,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "68-72",
             "weight": 0.15,
             "condition": {
@@ -1148,7 +1148,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-60",
             "weight": 0.3,
             "condition": {
@@ -1169,7 +1169,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-60",
             "weight": 0.3,
             "condition": {
@@ -1193,7 +1193,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.3,
             "condition": {
@@ -1212,7 +1212,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.15,
             "condition": {
@@ -1234,7 +1234,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "40-60",
             "weight": 0.3,
             "condition": {
@@ -1259,7 +1259,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.3,
             "condition": {
@@ -1278,7 +1278,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "47-70",
             "weight": 0.15,
             "condition": {
@@ -1300,7 +1300,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.2,
             "condition": {
@@ -1320,7 +1320,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "20-35",
             "weight": 0.2,
             "condition": {
@@ -1340,7 +1340,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-80",
             "weight": 0.15,
             "condition": {
@@ -1360,7 +1360,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-60",
             "weight": 0.3,
             "condition": {
@@ -1387,7 +1387,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-70",
             "weight": 0.15,
             "condition": {
@@ -1413,7 +1413,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.3,
             "condition": {
@@ -1441,7 +1441,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "40",
             "weight": 0.3,
             "condition": {
@@ -1464,7 +1464,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.3,
             "condition": {
@@ -1481,7 +1481,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.3,
             "condition": {
@@ -1500,7 +1500,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.3,
             "condition": {
@@ -1525,7 +1525,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "40",
             "weight": 0.3,
             "condition": {
@@ -1548,7 +1548,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "60-70",
             "weight": 0.15,
             "condition": {
@@ -1569,7 +1569,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.2,
             "condition": {
@@ -1591,7 +1591,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.3,
             "condition": {
@@ -1615,7 +1615,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-80",
             "weight": 0.15,
             "condition": {
@@ -1634,7 +1634,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.3,
             "condition": {
@@ -1658,7 +1658,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-60",
             "weight": 0.3,
             "condition": {
@@ -1678,7 +1678,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "60",
             "weight": 0.3,
             "condition": {
@@ -1703,7 +1703,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "60",
             "weight": 0.3,
             "condition": {
@@ -1723,7 +1723,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "60",
             "weight": 0.3,
             "condition": {
@@ -1748,7 +1748,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "60",
             "weight": 0.3,
             "condition": {
@@ -1773,7 +1773,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "75",
             "weight": 0.15,
             "condition": {
@@ -1798,7 +1798,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.3,
             "condition": {
@@ -1821,7 +1821,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-70",
             "weight": 0.3,
             "condition": {
@@ -1840,7 +1840,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.3,
             "condition": {
@@ -1864,7 +1864,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-70",
             "weight": 0.3,
             "condition": {
@@ -1883,7 +1883,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "60",
             "weight": 0.3,
             "condition": {
@@ -1905,7 +1905,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.3,
             "condition": {
@@ -1929,7 +1929,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50",
             "weight": 0.3,
             "condition": {
@@ -1949,7 +1949,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-100",
             "weight": 0.2,
             "condition": {
@@ -1971,7 +1971,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.3,
             "condition": {
@@ -1994,7 +1994,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.2,
             "condition": {
@@ -2012,7 +2012,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70-80",
             "weight": 0.15,
             "condition": {
@@ -2032,7 +2032,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "55-70",
             "weight": 0.3,
             "condition": {
@@ -2052,7 +2052,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50",
             "weight": 0.15,
             "condition": {
@@ -2074,7 +2074,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50",
             "weight": 0.15,
             "condition": {
@@ -2094,7 +2094,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.15,
             "condition": {
@@ -2115,7 +2115,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.15,
             "condition": {
@@ -2141,7 +2141,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-60",
             "weight": 0.3,
             "condition": {
@@ -2166,7 +2166,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "50-60",
             "weight": 0.3,
             "condition": {
@@ -2190,7 +2190,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.2,
             "condition": {
@@ -2208,7 +2208,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "60-70",
             "weight": 0.15,
             "condition": {
@@ -2228,7 +2228,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.2,
             "condition": {
@@ -2251,7 +2251,7 @@
             ],
             "type": "pokemon",
             "spawnablePositionType": "grounded",
-            "bucket": "ultra-rare",
+            "bucket": "legendary",
             "level": "70",
             "weight": 0.15,
             "condition": {

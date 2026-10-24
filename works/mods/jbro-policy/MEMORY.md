@@ -1,5 +1,13 @@
 # jbro-policy MEMORY
 
+## [2026-10-25 01:07] 전설 전용 legendary 버킷(0.002)·엔드 스폰표 보충 (구현만, 빌드·배치·실게임 안 함)
+
+- **빡대리님 제보·결정:** "엔더 스폰표 너무 없어서 전설이 잘떠" → 전설 비율제(legendary 버킷)와 엔드 스폰표 보충 둘 다 진행. 비율은 "전설 스폰율이 너무 낮긴 해, 일단 두 배로" → 제안한 0.001의 두 배인 0.002.
+- **원인(바이트코드·데이터로 확인):** Cobblemon 1.8.1은 `Spawner.chooseBucket`이 버킷을 먼저 가중 추첨하고(풀에 있는 버킷만), 그 버킷 안에서만 후보를 고른다. 엔드의 ultra-rare 후보는 이 모드 전설뿐(가중치 합 2.65)이어서 ultra-rare(0.2/100)가 걸리면 무조건 전설 → 스폰 약 1/500. 오버월드는 일반 ultra-rare 200~1000과 경쟁해 약 1/10만~1/34만(넓은 태그 제외 추정). 엔드 common은 안농 무리(1000)뿐이었다.
+- **구현:** 버킷 가중치는 `BestSpawnerConfig.load`가 Cobblemon JAR 리소스(`exportSpawnConfig` 켜면 `config/cobblemon/spawning/`)에서 읽어 데이터팩으로 못 바꾼다. `LegendSpawnBucket`이 기존 `BestSpawnerBucketOrderMixin`(`loadConfig` RETURN)에서 월드 버킷에 `legendary` 0.002를 넣고(내보낸 설정에 있으면 그 값 유지), 이어 `SpawnBucketOrder`가 boss 뒤에 둔다. `PlayerSpawner`가 접속 시 `worldBuckets` 맵을 받아 가므로 시작 시 교체로 충분하다. 전설 103종 `bucket`을 `legendary`로 바꿨고, 포켓내비 표시용 `bucket.cobblenav.legendary`(전설) 번역을 넣었다. 새 내장팩 `end_spawns`(`end_wild_spawns.json`, `#cobblemon:is_end`, 25종, 레벨은 각 종 Cobblemon 원본)를 등록했다. 종 선택은 직접 고른 목록이다.
+- **영향 확인(코드 읽기):** 리그 `WildSpeciesRarity`는 모르는 버킷을 건너뛰고 전설은 원래 제외, `WildNpcSpawns`는 자체 데이터라 무관. 포케스낵은 전설을 이미 막는다.
+- **미확인:** 빌드·테스트(`PolicyDataTest`, `LegendSpawnBucketTest` 추가) 안 돌림. 기존 월드에서 새 내장팩 `end_spawns`가 자동으로 켜지는지(`/datapack list`로 확인 필요), 포켓내비에 legendary 행이 제대로 뜨는지, 실제 출현 빈도 모두 미확인.
+
 ## [2026-10-25 00:00] 1.4.1 서버 전용 배포 — 배틀 렉 개선 (클라 필수 아님, VPS 23:54 오픈)
 
 - **빡대리님 지시:** 배틀 렉 개선을 1.4.1로 빠르게 배포, 클라가 꼭 받아야 하는지 확인. VPS 종료 시각 "40분"(23:40), 이어서 "서버부터 키고 해".
