@@ -1,5 +1,12 @@
 # jbro-policy MEMORY
 
+## [2026-10-25 03:20] legendary 버킷·엔드 스폰 — 개발 서버 기동 확인 (실게임 안 함)
+
+- **빡대리님 지시:** "개발 서버 켜서 로그랑 /datapack list로 end_spawns 확인해줘". 시작 훅(`server-startup-hooks.ps1`, 종료 코드 0)을 돌린 뒤, 콘솔 명령을 보내려고 명령 파일을 표준 입력으로 연결해 java를 직접 띄웠다(이 세션의 백그라운드 작업).
+- **기동:** 모드 147개, `jbro_policy 0.1.8`, `Done (1.780s)`. 믹스인 오류 없음. ERROR/경고 줄을 10-24 기동 로그와 비교하니 새로 생긴 건 `Missing data pack file/ppakemon-dev-galar` 하나뿐(이번 변경과 무관한 월드 데이터팩 파일).
+- **데이터팩:** 기존 월드에서 `Found new data pack jbro_policy:end_spawns, loading it automatically`로 자동 활성화. `datapack list` 결과 32개 중 `jbro_policy:end_spawns (built-in: jbro Policy)` 켜짐.
+- **미확인:** `legendary` 버킷이 실제 추첨에 들어가는지(접속자가 없어 `/checkspawn` 등 못 함), 포켓내비 `전설` 행, 엔드 실제 출현. 단위 테스트도 아직 안 돌림.
+
 ## [2026-10-25 03:03] 전설 스폰표 103종 검수·프리져 차원 누출·수상 9종 차단 수정 (빌드·단위 검사 확인, 설치·실게임 미실행)
 
 - **빡대리님 지시:** 가이오가가 챔피언·미포획인데 포켓내비에 없다는 캡처, 프리져가 엔드에 뜬다는 제보를 받아 전설 스폰표 전체를 검수하고 수정. 빌드 중단 지시 뒤 재개 지시를 받아 빌드·검증을 마쳤다.
