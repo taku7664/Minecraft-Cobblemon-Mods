@@ -53,11 +53,13 @@ internal object LocalFoeDynamaxThreat {
         user: BattlePokemonStateView,
         foe: BattlePokemonStateView,
         cache: LocalProjectedActionCalculationCache,
+        firstHitOnly: Boolean = false,
     ): List<LocalMatchupScoreCalculator.ScoredMove> {
         if (!possible(context, foe)) return emptyList()
         val dynamaxed = LocalDynamax.start(foe)
         val state = board.state.copyState(pokemon = board.state.pokemon.map { if (it.battlePokemonId == foe.battlePokemonId) dynamaxed else it })
         val faced = LocalMatchupPosition.face(board.copy(state = state), user, dynamaxed, cache) ?: return emptyList()
-        return LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, cache)
+        return if (firstHitOnly) LocalMatchupScoreCalculator.firstHitMatchups(faced, foe.battlePokemonId, user.battlePokemonId, cache)
+            else LocalMatchupScoreCalculator.moveMatchups(faced, foe.battlePokemonId, user.battlePokemonId, cache)
     }
 }

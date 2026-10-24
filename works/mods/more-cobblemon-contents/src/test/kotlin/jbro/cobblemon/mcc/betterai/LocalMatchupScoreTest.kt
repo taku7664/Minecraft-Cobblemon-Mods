@@ -21,6 +21,68 @@ import org.junit.jupiter.api.Test
 
 class LocalMatchupScoreTest {
     @Test
+    fun `first hit reader keeps the full path at a self-stage zero-grid boundary`() {
+        val move = BattlePublicMoveOptionView("superpower", BattleMoveCandidateView("normal", BattleMoveDamageCategory.PHYSICAL,
+            1.0, 73.0, 0, 10, effects = BattleShowdownMoveEffects.resolve("superpower")), BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+        val base = context(100, 120, allyPower = 65.0, foePower = 0.01, foeExtra = listOf(move))
+        val board = base.copy(state = base.state.derive(pokemon = base.state.pokemon.map {
+            if (it.battlePokemonId == ALLY) it.copyState(combatStats = it.combatStats!!.copy(maxHp = BattleIntegerRange(1_000_000, 1_000_000))) else it
+        }))
+        val cache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+        val audit = jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit
+        audit.begin()
+        val first = try { LocalMatchupScoreCalculator.firstHitMatchups(board, FOE, ALLY, cache) }
+            finally { assertTrue(audit.take().firstHitFallbacks > 0) }
+        assertSame(first, LocalMatchupScoreCalculator.moveMatchups(board, FOE, ALLY, cache))
+        assertTrue(first.all { it.score.survivalByUses.size == LocalMatchupScoreCalculator.MAXIMUM_USES + 1 })
+    }
+
+    @Test
+    fun `first hit reader preserves damage accuracy KO and mechanics without follow-up stage recalculation`() {
+        val audit = jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit
+        var oldStageReads = 0
+        val cases = listOf(Triple("tackle", null, null), Triple("superpower", null, null),
+            Triple("dracometeor", null, null), Triple("poweruppunch", null, null), Triple("doublehit", null, null),
+            Triple("tackle", "sturdy", null), Triple("tackle", "disguise", null), Triple("tackle", null, "focussash"))
+        for (format in BattleFormat.entries) for (dynamax in listOf(false, true)) for ((id, ability, item) in cases) {
+            val details = BattleMoveCandidateView("normal", if (id == "dracometeor") BattleMoveDamageCategory.SPECIAL else BattleMoveDamageCategory.PHYSICAL,
+                90.0, 73.0, 0, 10, effects = BattleShowdownMoveEffects.resolve(id))
+            val option = BattlePublicMoveOptionView(id, details, BattlePublicMoveKnowledge.PUBLICLY_REVEALED)
+            val original = context(100, 120, allyPower = 65.0, foePower = 65.0, foeExtra = listOf(option),
+                format = format, benchActive = format == BattleFormat.DOUBLE, secondFoe = true, secondFoeActive = format == BattleFormat.DOUBLE)
+            val board = original.copy(state = original.state.derive(pokemon = original.state.pokemon.map {
+                when (it.battlePokemonId) {
+                    ALLY -> it.copyState(knownAbilityId = ability, knownHeldItemId = item)
+                    FOE -> if (dynamax) jbro.cobblemon.mcc.betterai.mechanics.LocalDynamax.start(it) else it
+                    else -> it
+                }
+            }))
+            val oldCache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+            audit.begin()
+            val full = try { LocalMatchupScoreCalculator.moveMatchups(board, FOE, ALLY, oldCache) }
+                finally { oldStageReads += audit.take().ownStageReads }
+            val firstCache = jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache()
+            audit.begin()
+            val first = try { LocalMatchupScoreCalculator.firstHitMatchups(board, FOE, ALLY, firstCache) }
+                finally { assertEquals(0, audit.take().ownStageReads, "$format/$id/max=$dynamax") }
+            assertEquals(full.map { it.score.moveId }.toSet(), first.map { it.score.moveId }.toSet())
+            for (hit in first) {
+                val before = full.single { it.score.moveId == hit.score.moveId }
+                val a = before.score; val b = hit.score
+                assertEquals(listOf(a.minimumDamageFraction.toBits(), a.maximumDamageFraction.toBits(), a.accuracy.toBits(),
+                    a.knockoutChanceWithin(1).toBits(), a.priority.toLong(), a.selfKnockoutChance.toBits()),
+                    listOf(b.minimumDamageFraction.toBits(), b.maximumDamageFraction.toBits(), b.accuracy.toBits(),
+                        b.knockoutChanceWithin(1).toBits(), b.priority.toLong(), b.selfKnockoutChance.toBits()), "$format/$id/max=$dynamax")
+                assertEquals(oldCache.actionInputKey(before.action), oldCache.actionInputKey(hit.action))
+            }
+            assertSame(full, LocalMatchupScoreCalculator.firstHitMatchups(board, FOE, ALLY, oldCache))
+            assertEquals(full.map { it.score }, LocalMatchupScoreCalculator.moveMatchups(board, FOE, ALLY, firstCache).map { it.score },
+                "a first-use table must not replace the later full table")
+        }
+        assertTrue(oldStageReads > 0, "the baseline must actually recalculate self-stage damage")
+    }
+
+    @Test
     fun `unused status exchanges are skipped with identical supported scores in singles and doubles`() {
         val tuning = jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning.CURRENT
         val audit = jbro.cobblemon.mcc.betterai.matchup.LocalHpMatchupAudit

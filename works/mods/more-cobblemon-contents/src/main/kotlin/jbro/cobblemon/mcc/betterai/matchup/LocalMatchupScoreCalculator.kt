@@ -416,11 +416,23 @@ internal object LocalMatchupScoreCalculator {
         calculateMoveMatchups(position, userId, targetId, cache)
     }
 
+    /** Only for this-turn incoming damage; long-term ordering still uses moveMatchups. */
+    internal fun firstHitMatchups(position: BattleDecisionContext, userId: UUID, targetId: UUID,
+        cache: LocalProjectedActionCalculationCache): List<ScoredMove> {
+        if (jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().evolvingMatchups)
+            return moveMatchups(position, userId, targetId, cache)
+        return cache.firstHitMoves(position, userId, targetId) {
+            LocalHpMatchupAudit.firstHitBuild()
+            calculateMoveMatchups(position, userId, targetId, cache, firstHitOnly = true)
+        }
+    }
+
     private fun calculateMoveMatchups(
         position: BattleDecisionContext,
         userId: UUID,
         targetId: UUID,
         cache: LocalProjectedActionCalculationCache,
+        firstHitOnly: Boolean = false,
     ): List<ScoredMove> {
         val state = position.state
         val user = state.pokemon.firstOrNull { it.battlePokemonId == userId && it.activeSlot != null } ?: return emptyList()
@@ -437,7 +449,8 @@ internal object LocalMatchupScoreCalculator {
         val hpIndependent = hpMode && hpSafe(user, true) && hpSafe(target, false)
         // The opponent's unrevealed slots count at the strength this tier believes in; the AI's own moves are exact.
         val hypotheses = side == BattleSide.OPPONENT
-        return cache.slotActions(state, side, position.publicActionCatalog, hypotheses) {
+        var needsFull = false
+        val readings = cache.slotActions(state, side, position.publicActionCatalog, hypotheses) {
             PublicFutureActionFactory.slotActions(state, side, position.publicActionCatalog, includeMoveHypotheses = hypotheses)
         }
             .asSequence()
@@ -510,7 +523,17 @@ internal object LocalMatchupScoreCalculator {
                     val oneHp = 1.0 / (target.combatStats?.maxHp?.maximum ?: LocalKnockoutProfile.MAXIMUM_CELLS)
                     (target.hpFraction - oneHp).coerceAtLeast(0.0)
                 } else null
-                val profile = LocalRepeatedMoveMechanics.profile(position, action, userId, targetId, rolls, accuracy, cache)
+                // A self-stage profile and a plain profile accumulate zero-grid rolls in different orders.
+                // Keep the original path at that numerical boundary instead of changing the first KO's bits.
+                if (firstHitOnly && rolls.any { it < target.hpFraction / LocalKnockoutProfile.MAXIMUM_CELLS } &&
+                    original.moveDetails?.effects?.effects.orEmpty().any {
+                        it.kind == BattleMoveEffectKind.STAT_STAGE && it.target == BattleMoveEffectTarget.USER &&
+                            it.statStages.isNotEmpty() && (it.probability ?: 1.0) >= CERTAIN }) {
+                    needsFull = true
+                    return@mapNotNull null
+                }
+                val profile = if (firstHitOnly) LocalKnockoutProfile.of(rolls, accuracy, target.hpFraction, 1, firstHitLimit)
+                    else LocalRepeatedMoveMechanics.profile(position, action, userId, targetId, rolls, accuracy, cache)
                     ?: if (selfCostRank(original) == SELF_KNOCKOUT_RANK) LocalKnockoutProfile.once(rolls, accuracy, target.hpFraction, MAXIMUM_USES, firstHitLimit)
                     else ownStageRolls(position, action, user, rolls, side, cache)?.let {
                         LocalKnockoutProfile.byHits(it, accuracy, target.hpFraction, MAXIMUM_USES, firstHitLimit)
@@ -540,8 +563,16 @@ internal object LocalMatchupScoreCalculator {
                     priority = LocalPublicTurnOrder.effectivePriority(state, side, action),
                 ), original)
             }
-            .groupBy { it.score.moveId }.values.map { same -> same.minWith(BEST_FIRST) }
-            .sortedWith(BEST_FIRST)
+        if (firstHitOnly) {
+            val first = readings.toList()
+            // Several candidates under one move ID need the original long-term tie-break, even for this turn.
+            if (needsFull || first.groupingBy { it.score.moveId }.eachCount().values.any { it > 1 }) {
+                LocalHpMatchupAudit.firstHitFallback()
+                return moveMatchups(position, userId, targetId, cache)
+            }
+            return first
+        }
+        return readings.groupBy { it.score.moveId }.values.map { same -> same.minWith(BEST_FIRST) }.sortedWith(BEST_FIRST)
     }
 
 
@@ -570,6 +601,7 @@ internal object LocalMatchupScoreCalculator {
         val byHits = arrayListOf(first)
         var state = position.state
         for (landed in 1 until MAXIMUM_USES) {
+            LocalHpMatchupAudit.ownStageRead()
             val itemBefore = state.pokemon.firstOrNull { it.battlePokemonId == user.battlePokemonId }?.knownHeldItemId
             // The whole transition: Contrary, Simple, and a White Herb undoing the drop once.
             changes.forEach { effect ->

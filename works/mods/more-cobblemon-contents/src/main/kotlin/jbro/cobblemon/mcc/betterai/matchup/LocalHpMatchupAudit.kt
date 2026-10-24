@@ -7,6 +7,9 @@ internal object LocalHpMatchupAudit {
         var seedRollCalculations: Int = 0, var seeds: Int = 0, var simpleExchanges: Int = 0,
         var statusVisits: Int = 0, var statusPreparations: Int = 0, var statusExchanges: Int = 0,
         var statusTacticalCalls: Int = 0, var statusRollCalculations: Int = 0,
+        var firstHitBuilds: Int = 0, var firstHitFullCacheHits: Int = 0, var firstHitFallbacks: Int = 0,
+        var ownStageReads: Int = 0, var fullProfileComputations: Int = 0, var oneHitProfileComputations: Int = 0,
+        var actingTacticalCalls: Int = 0, var actingRollCalculations: Int = 0,
         @Transient var futureDepth: Int = 0, @Transient var seedDepth: Int = 0)
     private val active = ThreadLocal<Counts?>()
     fun begin() { active.set(Counts()) }
@@ -37,4 +40,18 @@ internal object LocalHpMatchupAudit {
         }
     }
     fun reused() { active.get()?.let { it.hpHits++ } }
+    fun firstHitBuild() { active.get()?.let { it.firstHitBuilds++ } }
+    fun firstHitFullCacheHit() { active.get()?.let { it.firstHitFullCacheHits++ } }
+    fun firstHitFallback() { active.get()?.let { it.firstHitFallbacks++ } }
+    fun ownStageRead() { active.get()?.let { it.ownStageReads++ } }
+    fun profileComputed(uses: Int) { active.get()?.let { if (uses == 1) it.oneHitProfileComputations++ else it.fullProfileComputations++ } }
+    fun <T> actingRead(block: () -> T): T {
+        val counts = active.get() ?: return block()
+        val tactical = counts.tacticalCalls
+        val rolls = counts.rollCalculations
+        try { return block() } finally {
+            counts.actingTacticalCalls += counts.tacticalCalls - tactical
+            counts.actingRollCalculations += counts.rollCalculations - rolls
+        }
+    }
 }

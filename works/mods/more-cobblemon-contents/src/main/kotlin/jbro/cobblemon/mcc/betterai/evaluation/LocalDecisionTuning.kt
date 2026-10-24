@@ -206,6 +206,8 @@ internal data class LocalDecisionTuning(
     val simpleForecastMatchups: Boolean = false,
     /** Skip baseline exchanges when no status effect is evaluated; formulas stay unchanged. */
     val skipUnusedStatusMatchups: Boolean = false,
+    /** Resolved incoming attacks need only their first-use profile. */
+    val firstHitActingChance: Boolean = false,
     /** Poison-only HP/KO horizon; null retains the evolving team-exchange evaluation for ablation. */
     val poisonEvaluationTurns: Int? = null,
     /**
