@@ -6,6 +6,12 @@
 
 
 
+## [2026-10-24 16:35] 변화기 대면 생략 옵션 포함 MCC 본체 개발 서버 배포
+
+- **요청/소스:** 빡대리의 "일단 이거 개발섭에 배포"에 따라 커밋된main 1957d740b 소스로 :more-cobblemon-contents:remapJar를 실행했다. 모든 Gradle 캐시/프로젝트 캐시/빌드 출력/임시 경로는 F:/AI/builds/cobblemon-mods-main 및 F:/AI/caches/gradle이다. 이전 증분 캐시의 F/C 소스 루트 불일치로 도구가 전체 컴파일로 자동 전환한 뒤 빌드가 성공했다. 테스트는 직전 검수 결과를 유지하고 재실행하지 않았다.
+- **설치/검증:** 개발 서버 develop-product/server/mods/more-cobblemon-contents-0.1.0.jar 한 개만 교체했다. 빌드본/설치본 SHA-256은 둘 다 295c8fac104120b6d7799544d135826ee88664d2243faf061f97781c00b59f6b다. ZIP 무결성, fabric.mod.json의본체ID/버전, 새 skipUnusedStatusMatchups 키가 실제 클래스에 포함됐음을 확인했다. 다른MCC 애드온JAR 해시는 유지했다. F의 status-deploy-20261024/build-paths.json·build.log·deployment.json이 근거다.
+- **설정/미실행:** 기존 betterai-optimizations.json의 SHA-256 2067753be6626b8b00c6ed3b153123eebb1941dbfbc316481d9dad5ea20279c4가 배포 전후 같다. 기존false와 누락키 기본false에 따라 싱글/더블 최적화는 모두OFF다. 서버는 종료 상태였고 기동/재시작하지 않았다. 다음 기동 시 새JAR을 읽으며 게임 실행/로그상 로드/실게임 확인은 하지 않았다. 개발 클라이언트·운영/VPS·공용runner·기타제품/설정은 변경하지 않았다. 배포 기록 커밋은 문서만 바꾸며 빌드 소스와 실행 관련 소스/리소스/설정은 같다.
+
 ## [2026-10-24 16:21] 평가 대상 없는 변화기 대면 재계산 생략 — 점수 유지·더블 평균 관측 0.95% 감소
 
 - **승인/범위:** 빡대리가 추가 병목 후보 1번만 구현하고 실제 무거운 호출 제거·전후 점수/선택·더블 시간을 비교하라고 지시했다. 기준5fb9fe3d5, 1b39/codex/betterai-entry-healblock이다. 후보2~4, 앞선 F 교체 HP 근사, 현재 행동 랭크 평가, 점수식·고정값·순위 뒤 보정은 변경하지 않았다.
