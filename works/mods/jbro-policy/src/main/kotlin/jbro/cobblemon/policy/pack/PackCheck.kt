@@ -21,7 +21,7 @@ import java.util.function.Consumer
  */
 object PackCheck {
     /** The modpack release this jar ships in. Bump it with every release. */
-    const val PACK_VERSION = "1.4.0"
+    const val PACK_VERSION = "1.4.1"
 
     /** Download hint for the refusal, the Discord invite; blank leaves it out. */
     var inviteUrl: String = ""
