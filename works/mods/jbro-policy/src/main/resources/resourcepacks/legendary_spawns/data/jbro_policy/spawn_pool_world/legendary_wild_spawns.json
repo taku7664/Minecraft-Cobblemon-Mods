@@ -25,6 +25,10 @@
                     "minecraft:small_end_islands",
                     "minecraft:dark_forest",
                     "#cobblemon:is_end"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -53,6 +57,9 @@
                     "#cobblemon:is_snowy_forest",
                     "#cobblemon:is_glacial",
                     "#cobblemon:is_frozen_ocean"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -72,6 +79,9 @@
                     "#cobblemon:is_magical",
                     "#cobblemon:is_floral",
                     "#cobblemon:is_cherry_blossom"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -84,7 +94,7 @@
             "id": "jbro-legendary-azelf",
             "pokemon": "azelf",
             "presets": [
-                "natural"
+                "water"
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
@@ -97,6 +107,9 @@
                     "minecraft:swamp",
                     "#cobblemon:is_river",
                     "#cobblemon:is_freshwater"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -114,6 +127,9 @@
             "condition": {
                 "biomes": [
                     "minecraft:flower_forest"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -145,6 +161,9 @@
                     "#cobblemon:is_magical",
                     "#cobblemon:is_lush",
                     "minecraft:cherry_grove"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -166,14 +185,17 @@
                 ],
                 "maxY": 180,
                 "canSeeSky": true,
-                "minY": 90
+                "minY": 90,
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
             "id": "jbro-legendary-chiyu",
             "pokemon": "chiyu",
             "presets": [
-                "natural"
+                "lava"
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
@@ -184,6 +206,9 @@
                 "biomes": [
                     "#cobblemon:nether/is_basalt",
                     "#cobblemon:nether/is_wasteland"
+                ],
+                "dimensions": [
+                    "minecraft:the_nether"
                 ]
             }
         },
@@ -202,6 +227,9 @@
                 "biomes": [
                     "#cobblemon:is_highlands",
                     "#cobblemon:is_hills"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -226,7 +254,10 @@
                     "#cobblemon:is_end"
                 ],
                 "canSeeSky": true,
-                "timeRange": "night"
+                "timeRange": "night",
+                "dimensions": [
+                    "minecraft:the_end"
+                ]
             }
         },
         {
@@ -251,6 +282,10 @@
                     "minecraft:end_highlands",
                     "minecraft:end_midlands",
                     "minecraft:small_end_islands"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -271,7 +306,10 @@
                 ],
                 "moonPhase": 1,
                 "canSeeSky": true,
-                "timeRange": "night"
+                "timeRange": "night",
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
@@ -291,6 +329,9 @@
                     "minecraft:swamp",
                     "#cobblemon:is_spooky",
                     "#cobblemon:is_deep_dark"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -313,6 +354,9 @@
                     "minecraft:end_midlands",
                     "minecraft:small_end_islands",
                     "#cobblemon:is_end"
+                ],
+                "dimensions": [
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -333,6 +377,9 @@
                     "#cobblemon:is_highlands",
                     "#cobblemon:is_peak",
                     "#cobblemon:is_mountain"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -359,6 +406,9 @@
                     "#cobblemon:is_cave",
                     "minecraft:dripstone_caves",
                     "minecraft:lush_caves"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -379,6 +429,9 @@
                     "minecraft:flower_forest",
                     "minecraft:meadow",
                     "minecraft:cherry_grove"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -404,6 +457,10 @@
                     "#cobblemon:is_volcanic",
                     "#cobblemon:is_thermal",
                     "#cobblemon:is_badlands"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_nether"
                 ]
             }
         },
@@ -425,6 +482,9 @@
                     "minecraft:end_highlands",
                     "minecraft:end_midlands",
                     "minecraft:small_end_islands"
+                ],
+                "dimensions": [
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -444,7 +504,10 @@
                     "#cobblemon:is_cherry_blossom",
                     "#cobblemon:is_floral"
                 ],
-                "canSeeSky": true
+                "canSeeSky": true,
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             },
             "anticondition": {
                 "biomes": [
@@ -474,6 +537,10 @@
                 ],
                 "neededNearbyBlocks": [
                     "minecraft:iron_block"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -493,6 +560,11 @@
                     "minecraft:soul_sand_valley",
                     "minecraft:the_end",
                     "#cobblemon:is_spooky"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_nether",
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -512,6 +584,9 @@
                     "#cobblemon:is_snowy_forest",
                     "#cobblemon:is_taiga",
                     "#cobblemon:is_mountain"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -560,6 +635,9 @@
                     "#cobblemon:is_desert",
                     "#cobblemon:is_arid",
                     "#cobblemon:is_thermal"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -579,6 +657,9 @@
                     "minecraft:nether_wastes",
                     "minecraft:basalt_deltas",
                     "minecraft:crimson_forest"
+                ],
+                "dimensions": [
+                    "minecraft:the_nether"
                 ]
             }
         },
@@ -599,6 +680,9 @@
                     "minecraft:sunflower_plains",
                     "minecraft:flower_forest",
                     "#cobblemon:is_sky"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -620,6 +704,9 @@
                     "minecraft:end_highlands",
                     "minecraft:end_midlands",
                     "minecraft:small_end_islands"
+                ],
+                "dimensions": [
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -699,6 +786,9 @@
                     "minecraft:mushroom_fields",
                     "minecraft:windswept_gravelly_hills",
                     "#cobblemon:is_magical"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -717,6 +807,9 @@
                 "biomes": [
                     "#cobblemon:is_highlands",
                     "#cobblemon:is_hills"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -761,6 +854,9 @@
                 "biomes": [
                     "#cobblemon:is_mountain",
                     "#cobblemon:is_bamboo"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -773,7 +869,7 @@
             "id": "jbro-legendary-kyogre",
             "pokemon": "kyogre",
             "presets": [
-                "natural"
+                "water"
             ],
             "type": "pokemon",
             "spawnablePositionType": "submerged",
@@ -788,6 +884,9 @@
                     "minecraft:deep_ocean",
                     "minecraft:ocean",
                     "#cobblemon:is_deep_ocean"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -810,6 +909,9 @@
                     "#cobblemon:is_freezing",
                     "#cobblemon:is_glacial",
                     "#cobblemon:is_snowy_forest"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -830,6 +932,9 @@
                     "minecraft:savanna",
                     "minecraft:sunflower_plains",
                     "minecraft:desert"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -851,6 +956,9 @@
                     "#cobblemon:is_coast",
                     "#cobblemon:is_temperate",
                     "#cobblemon:is_beach"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -876,6 +984,9 @@
                     "#cobblemon:is_coast",
                     "#cobblemon:is_temperate",
                     "#cobblemon:is_beach"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -888,7 +999,7 @@
             "id": "jbro-legendary-lugia",
             "pokemon": "lugia",
             "presets": [
-                "natural"
+                "water"
             ],
             "type": "pokemon",
             "spawnablePositionType": "submerged",
@@ -902,6 +1013,9 @@
                     "#cobblemon:is_deep_ocean",
                     "#cobblemon:is_ocean",
                     "#cobblemon:is_cold_ocean"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -921,7 +1035,10 @@
                     "minecraft:dark_forest",
                     "#cobblemon:is_hills"
                 ],
-                "timeRange": "night"
+                "timeRange": "night",
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             },
             "anticondition": {
                 "biomes": [
@@ -951,6 +1068,10 @@
                 ],
                 "neededNearbyBlocks": [
                     "minecraft:iron_block"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -958,7 +1079,7 @@
             "id": "jbro-legendary-manaphy",
             "pokemon": "manaphy",
             "presets": [
-                "natural"
+                "water"
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
@@ -971,7 +1092,10 @@
                 ],
                 "timeRange": "night",
                 "isRaining": true,
-                "canSeeSky": true
+                "canSeeSky": true,
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
@@ -991,6 +1115,9 @@
                     "minecraft:swamp",
                     "#cobblemon:is_spooky",
                     "#cobblemon:is_deep_dark"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1012,6 +1139,9 @@
                 ],
                 "neededNearbyBlocks": [
                     "minecraft:iron_block"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1032,6 +1162,9 @@
                     "minecraft:flower_forest",
                     "minecraft:meadow",
                     "minecraft:sunflower_plains"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1053,6 +1186,9 @@
                 ],
                 "neededNearbyBlocks": [
                     "minecraft:iron_block"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1060,7 +1196,7 @@
             "id": "jbro-legendary-mesprit",
             "pokemon": "mesprit",
             "presets": [
-                "natural"
+                "water"
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
@@ -1073,6 +1209,9 @@
                     "minecraft:swamp",
                     "#cobblemon:is_river",
                     "#cobblemon:is_freshwater"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1094,6 +1233,9 @@
                     "minecraft:jungle",
                     "#cobblemon:is_lush",
                     "#cobblemon:is_bamboo"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1116,6 +1258,9 @@
                     "#cobblemon:is_cave",
                     "#cobblemon:is_deep_dark",
                     "#cobblemon:is_spooky"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1158,6 +1303,9 @@
                     "#cobblemon:is_volcanic",
                     "#cobblemon:is_thermal",
                     "#cobblemon:is_sky"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1177,7 +1325,10 @@
                     "minecraft:dark_forest",
                     "#cobblemon:is_spooky"
                 ],
-                "timeRange": "night"
+                "timeRange": "night",
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             },
             "anticondition": {
                 "biomes": [
@@ -1201,7 +1352,10 @@
                     "#cobblemon:is_jungle",
                     "#cobblemon:is_spooky"
                 ],
-                "timeRange": "night"
+                "timeRange": "night",
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
@@ -1223,6 +1377,10 @@
                     "minecraft:end_highlands",
                     "minecraft:end_midlands",
                     "minecraft:small_end_islands"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -1243,7 +1401,10 @@
                     "#cobblemon:is_bamboo",
                     "#cobblemon:is_jungle"
                 ],
-                "moonPhase": 1
+                "moonPhase": 1,
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             },
             "anticondition": {
                 "biomes": [
@@ -1267,7 +1428,10 @@
                     "#cobblemon:is_swamp",
                     "#cobblemon:is_forest"
                 ],
-                "timeRange": "night"
+                "timeRange": "night",
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
@@ -1289,6 +1453,9 @@
                     "minecraft:end_midlands",
                     "minecraft:small_end_islands",
                     "#cobblemon:is_end"
+                ],
+                "dimensions": [
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -1309,6 +1476,9 @@
                     "minecraft:swamp",
                     "#cobblemon:is_spooky",
                     "#cobblemon:is_swamp"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1316,7 +1486,7 @@
             "id": "jbro-legendary-phione",
             "pokemon": "phione",
             "presets": [
-                "natural"
+                "water"
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
@@ -1329,7 +1499,10 @@
                     "#cobblemon:is_lukewarm_ocean"
                 ],
                 "canSeeSky": true,
-                "timeRange": "day"
+                "timeRange": "day",
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
@@ -1371,6 +1544,9 @@
                     "#cobblemon:is_plains",
                     "#cobblemon:is_grassland",
                     "#cobblemon:is_arid"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -1397,6 +1573,10 @@
                     "#cobblemon:is_highlands",
                     "minecraft:end_highlands",
                     "#cobblemon:is_end"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_end"
                 ]
             },
             "anticondition": {
@@ -1430,6 +1610,9 @@
                     "#cobblemon:is_peak",
                     "#cobblemon:is_taiga",
                     "#cobblemon:is_tundra"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1453,6 +1636,10 @@
                     "minecraft:end_highlands",
                     "minecraft:end_midlands",
                     "minecraft:small_end_islands"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -1470,6 +1657,9 @@
             "condition": {
                 "biomes": [
                     "#cobblemon:is_deep_dark"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1489,6 +1679,9 @@
                     "#cobblemon:is_deep_dark",
                     "minecraft:savanna_plateau",
                     "#cobblemon:is_savanna"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1509,6 +1702,9 @@
                     "minecraft:desert",
                     "#cobblemon:is_badlands",
                     "#cobblemon:is_mountain"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -1537,6 +1733,9 @@
                 ],
                 "neededNearbyBlocks": [
                     "minecraft:iron_block"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1558,7 +1757,10 @@
                     "minecraft:desert"
                 ],
                 "minLight": 8,
-                "maxLight": 15
+                "maxLight": 15,
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
@@ -1580,6 +1782,9 @@
                     "#cobblemon:is_floral",
                     "#cobblemon:is_grassland",
                     "#cobblemon:is_lush"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1599,7 +1804,10 @@
                     "#cobblemon:is_plains",
                     "#cobblemon:is_highlands"
                 ],
-                "canSeeSky": true
+                "canSeeSky": true,
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             },
             "anticondition": {
                 "biomes": [
@@ -1623,7 +1831,10 @@
                     "#cobblemon:is_plateau",
                     "minecraft:desert"
                 ],
-                "timeRange": "day"
+                "timeRange": "day",
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
@@ -1642,6 +1853,9 @@
                     "#cobblemon:is_forest",
                     "#cobblemon:is_plains",
                     "#cobblemon:is_spooky"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -1667,6 +1881,9 @@
                     "minecraft:river",
                     "#cobblemon:is_freshwater",
                     "#cobblemon:is_cold_ocean"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1687,6 +1904,9 @@
                     "#cobblemon:is_floral",
                     "minecraft:stony_shore",
                     "#cobblemon:is_beach"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -1712,6 +1932,9 @@
                     "#cobblemon:is_warm_ocean",
                     "minecraft:stony_shore",
                     "#cobblemon:is_beach"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1732,6 +1955,9 @@
                     "#cobblemon:is_highlands",
                     "minecraft:stony_shore",
                     "#cobblemon:is_beach"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -1757,6 +1983,9 @@
                     "#cobblemon:is_magical",
                     "minecraft:stony_shore",
                     "#cobblemon:is_beach"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -1782,6 +2011,9 @@
                     "#cobblemon:is_magical",
                     "#cobblemon:is_river",
                     "#cobblemon:is_jungle"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -1805,6 +2037,9 @@
                 "biomes": [
                     "#cobblemon:is_highlands",
                     "#cobblemon:is_hills"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -1829,6 +2064,9 @@
                 "biomes": [
                     "minecraft:plains",
                     "minecraft:badlands"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1848,7 +2086,10 @@
                     "#cobblemon:is_badlands",
                     "#cobblemon:is_mountain"
                 ],
-                "maxY": 90
+                "maxY": 90,
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             },
             "anticondition": {
                 "biomes": [
@@ -1872,6 +2113,9 @@
                 "biomes": [
                     "minecraft:jungle",
                     "minecraft:bamboo_jungle"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1894,6 +2138,10 @@
                     "minecraft:end_highlands",
                     "minecraft:end_midlands",
                     "minecraft:small_end_islands"
+                ],
+                "dimensions": [
+                    "minecraft:overworld",
+                    "minecraft:the_end"
                 ]
             }
         },
@@ -1913,7 +2161,10 @@
                     "#cobblemon:is_mountain",
                     "#cobblemon:is_bamboo"
                 ],
-                "canSeeSky": true
+                "canSeeSky": true,
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             },
             "anticondition": {
                 "biomes": [
@@ -1925,7 +2176,7 @@
             "id": "jbro-legendary-uxie",
             "pokemon": "uxie",
             "presets": [
-                "natural"
+                "water"
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
@@ -1938,6 +2189,9 @@
                     "minecraft:swamp",
                     "#cobblemon:is_river",
                     "#cobblemon:is_freshwater"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1960,6 +2214,9 @@
                     "#cobblemon:is_volcanic",
                     "#cobblemon:is_thermal",
                     "#cobblemon:is_savanna"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -1978,6 +2235,9 @@
                 "biomes": [
                     "#cobblemon:is_highlands",
                     "#cobblemon:is_hills"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -2001,6 +2261,9 @@
                 "biomes": [
                     "#cobblemon:is_volcanic",
                     "#cobblemon:is_thermal"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -2008,7 +2271,7 @@
             "id": "jbro-legendary-walkingwake",
             "pokemon": "walkingwake",
             "presets": [
-                "natural"
+                "water"
             ],
             "type": "pokemon",
             "spawnablePositionType": "surface",
@@ -2041,7 +2304,10 @@
                     "#cobblemon:is_spooky"
                 ],
                 "canSeeSky": true,
-                "timeRange": "night"
+                "timeRange": "night",
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
@@ -2063,6 +2329,9 @@
                     "#cobblemon:is_forest",
                     "#cobblemon:is_magical",
                     "#cobblemon:is_floral"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -2083,6 +2352,9 @@
                     "minecraft:swamp",
                     "#cobblemon:is_spooky",
                     "#cobblemon:is_tundra"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -2104,6 +2376,9 @@
                     "#cobblemon:is_magical",
                     "#cobblemon:is_forest",
                     "#cobblemon:is_highlands"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -2125,6 +2400,9 @@
                     "#cobblemon:is_plateau",
                     "#cobblemon:is_savanna",
                     "#cobblemon:is_highlands"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -2150,6 +2428,9 @@
                     "minecraft:savanna",
                     "#cobblemon:is_sky",
                     "#cobblemon:is_mountain"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -2174,6 +2455,9 @@
                     "#cobblemon:is_forest",
                     "#cobblemon:is_jungle",
                     "#cobblemon:is_shrubland"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -2197,6 +2481,9 @@
                 "biomes": [
                     "#cobblemon:is_jungle",
                     "#cobblemon:is_bamboo"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         },
@@ -2217,7 +2504,10 @@
                     "minecraft:dark_forest"
                 ],
                 "minLight": 0,
-                "maxLight": 7
+                "maxLight": 7,
+                "dimensions": [
+                    "minecraft:overworld"
+                ]
             }
         },
         {
@@ -2235,6 +2525,9 @@
                 "biomes": [
                     "#cobblemon:is_savanna",
                     "#cobblemon:is_highlands"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             },
             "anticondition": {
@@ -2264,6 +2557,9 @@
                     "#cobblemon:is_forest",
                     "#cobblemon:is_cave",
                     "#cobblemon:is_swamp"
+                ],
+                "dimensions": [
+                    "minecraft:overworld"
                 ]
             }
         }
