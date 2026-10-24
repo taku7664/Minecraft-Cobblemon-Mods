@@ -1,5 +1,13 @@
 # jbro-policy MEMORY
 
+## [2026-10-25 02:56] legendary 버킷·엔드 스폰 — main 병합·개발 서버/클라 배치 (서버 기동·실게임 안 함)
+
+- **빡대리님 지시:** "main에 병합하고 빌드해서 개발 서버·클라에 배포해". 첫 빌드(assemble+test)는 다른 세션 빌드와 겹쳐 10분 넘게 걸려 지시("빌드 끊어")로 중단·폴더 삭제, "이어서 빌드"로 assemble만 다시 돌렸다.
+- **병합:** `fix/legend-bucket-end-spawns`(`d45f6cef`) → main `3239fbc6`, `origin/main` 동일 확인.
+- **빌드:** `origin/main` `3239fbc6` 스냅숏, `:jbro-policy:assemble`만(테스트 안 돌림), `jar --validate` 통과. JAR에 `LegendSpawnBucket.class`, `end_spawns` 팩, 전설 103종 `legendary` 확인. SHA-256 `1c570d4e78e27cefb6a5faddb53b57bd586d65cdfb79dc598bde7e8cd9faae3d`(버전 0.1.8 그대로).
+- **배치:** 개발 서버·클라 `mods/jbro-policy-0.1.8.jar` 교체, 세 곳 해시 일치. 이전 JAR(`b8e430a6…`)과 위키 페이지는 `develop-product/deployment-backups/legend-bucket-20261025-025518`. 개발 서버 위키 `legends.html`도 갱신(차이는 추가한 한 줄뿐). 서버·게임은 꺼진 상태에서 복사했고 켜지 않았다.
+- **미확인:** 단위 테스트, 서버 기동 로그(믹스인 적용), `/datapack list`에서 `end_spawns` 활성 여부, 포켓내비 `전설` 행, 실제 출현. PPakemon 프로필·운영 서버·VPS·deploy-product는 손대지 않았다.
+
 ## [2026-10-25 01:07] 전설 전용 legendary 버킷(0.002)·엔드 스폰표 보충 (구현만, 빌드·배치·실게임 안 함)
 
 - **빡대리님 제보·결정:** "엔더 스폰표 너무 없어서 전설이 잘떠" → 전설 비율제(legendary 버킷)와 엔드 스폰표 보충 둘 다 진행. 비율은 "전설 스폰율이 너무 낮긴 해, 일단 두 배로" → 제안한 0.001의 두 배인 0.002.
