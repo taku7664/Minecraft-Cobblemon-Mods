@@ -1,5 +1,9 @@
 package jbro.cobblemon.mcc.betterai
 
+import jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope
+import jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals
+import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
+import jbro.cobblemon.mcc.betterai.mechanics.copyState
 import jbro.cobblemon.mcc.betterai.evaluation.LocalDecisionTuning
 import jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth
 import jbro.cobblemon.mcc.betterai.matchup.*
@@ -9,6 +13,55 @@ import org.junit.jupiter.api.Test
 import java.util.UUID
 
 class LocalActingChanceTest {
+    @Test
+    fun `joint turns reuse an identical part while replaying each candidates evidence`() {
+        val f = fixture()
+        val partner = mon(BattleSide.ALLY, 100).copyState(activeSlot = 1)
+        val state = BattleStateView(f.context.state.battleId, BattleFormat.DOUBLE, 4,
+            listOf(f.user, partner, f.foe), BattleFieldStateView.empty(),
+            mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 1), emptyList(), emptyList())
+        val context = f.context.copy(state = state)
+        fun turn(id: String) = BattleActionCandidate(id, BattleActionKind.COMPOSITE,
+            componentActionIds = listOf(f.action.actionId, "partner:$id"),
+            componentActions = listOf(f.action, BattleActionCandidate("partner:$id", BattleActionKind.WAIT, actorSlot = 1)))
+        val intents = listOf(OpponentIntent(f.foe.battlePokemonId, 0, listOf(f.option(IntentKind.ATTACK, 1.0))))
+        val cache = LocalProjectedActionCalculationCache()
+        fun read(id: String, ignoring: Set<UUID> = emptySet()): Pair<Double, Map<String, Map<String, Double>>> {
+            LocalDecisionInternals.begin()
+            try {
+                val value = LocalActingChance.of(turn(id), context, scores, 0, ignoring, intents, cache)
+                return value to LocalDecisionInternals.take()
+            } finally { LocalDecisionInternals.clear() }
+        }
+        LocalDecisionCalculationScope.with { scope ->
+            val first = read("turn:a")
+            val hits = scope.hits
+            val second = read("turn:b")
+            assertEquals(first.first, second.first)
+            assertEquals(hits + 1, scope.hits)
+            assertEquals(first.second.mapKeys { (key, _) -> key.replace("turn:a", "turn:b") }, second.second)
+            assertEquals(1.0, read("turn:c", setOf(f.foe.battlePokemonId)).first)
+            val fast = BattleActionCandidate(f.action.actionId, BattleActionKind.USE_MOVE, 0, 0,
+                f.action.moveId, moveDetails = f.action.moveDetails!!.copy(priority = 1))
+            assertEquals(1.0, LocalActingChance.of(fast, context, scores, 0, intents = intents, calculationCache = cache))
+            val partnerMax = BattleActionCandidate("partner:max", BattleActionKind.USE_MOVE, 1, 0,
+                "swordsdance", moveDetails = f.action.moveDetails, mechanic = BattleMechanicCandidate("dynamax", null, 1))
+            val maxTurn = BattleActionCandidate("turn:max", BattleActionKind.COMPOSITE,
+                componentActionIds = listOf(f.action.actionId, partnerMax.actionId), componentActions = listOf(f.action, partnerMax))
+            val priorMisses = scope.misses
+            assertEquals(0.0, LocalActingChance.of(maxTurn, context, scores, 0, intents = intents, calculationCache = cache))
+            org.junit.jupiter.api.Assertions.assertTrue(scope.misses > priorMisses)
+
+            val miss = scope.misses
+            val changed = context.copy(state = context.state.copyState(pokemon = context.state.pokemon.map {
+                if (it.battlePokemonId == f.foe.battlePokemonId) it.copyState(statusId = "par") else it }))
+            assertEquals(0.25, LocalActingChance.of(turn("turn:d"), changed, scores, 0, intents = intents, calculationCache = cache), 1e-9)
+            org.junit.jupiter.api.Assertions.assertTrue(scope.misses > miss)
+            val otherIntent = listOf(OpponentIntent(f.foe.battlePokemonId, 0, listOf(f.option(IntentKind.SWITCH, 1.0))))
+            assertEquals(1.0, LocalActingChance.of(turn("turn:e"), context, scores, 0, intents = otherIntent, calculationCache = cache))
+        }
+    }
+
     @Test
     fun `a certain faster knockout remains zero when that attack is certain`() {
         val f = fixture()

@@ -82,8 +82,40 @@ internal object PublicFutureActionFactory {
                 bySlot.flatten().distinctBy(BattleActionCandidate::actionId) else emptyList()
         }
         if (state.format == BattleFormat.SINGLE || bySlot.size == 1) return bySlot.single().distinctBy(BattleActionCandidate::actionId)
+        return flattenLegalSlotActions(bySlot)
+    }
+
+    /** Same first-appearance order as flattening legal joint turns, without enumerating doubles pairs. */
+    internal fun flattenLegalSlotActions(bySlot: List<List<BattleActionCandidate>>): List<BattleActionCandidate> {
         val seen = HashSet<String>()
         val out = ArrayList<BattleActionCandidate>()
+        if (bySlot.size == 2) {
+            val (first, second) = bySlot
+            if (second.isEmpty()) return emptyList()
+            val secondSwitchCounts = second.groupingBy { it.switchPokemonId }.eachCount()
+            fun hasPartner(action: BattleActionCandidate) = action.switchPokemonId == null ||
+                secondSwitchCounts[action.switchPokemonId] != second.size
+            val firstIndex = first.indexOfFirst(::hasPartner)
+            if (firstIndex < 0) return emptyList()
+            fun add(action: BattleActionCandidate) { if (seen.add(action.actionId)) out += action }
+            val initial = first[firstIndex]
+            add(initial)
+            val withheld = ArrayList<BattleActionCandidate>()
+            second.forEach { action ->
+                if (initial.switchPokemonId != null && initial.switchPokemonId == action.switchPokemonId) withheld += action
+                else add(action)
+            }
+            for (index in firstIndex + 1 until first.size) {
+                val action = first[index]
+                if (!hasPartner(action)) continue
+                add(action)
+                if (withheld.isNotEmpty() && action.switchPokemonId != initial.switchPokemonId) {
+                    withheld.forEach(::add)
+                    withheld.clear()
+                }
+            }
+            return out
+        }
         fun visit(combination: List<BattleActionCandidate>, slot: Int) {
             if (slot == bySlot.size) {
                 // combine() drops turns that switch two slots to the same Pokemon.

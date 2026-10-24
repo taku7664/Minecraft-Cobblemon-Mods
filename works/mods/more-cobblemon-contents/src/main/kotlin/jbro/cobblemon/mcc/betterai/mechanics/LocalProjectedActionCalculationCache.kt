@@ -187,6 +187,10 @@ internal class LocalProjectedActionCalculationCache(
      * An action's calculation inputs, compared field by field but hashed once: the hash used to walk the move's
      * details and the whole catalog on every lookup, a few percent of a doubles search.
      */
+    /** Full structural action inputs; shared scope keys must not rely on the action id alone. */
+    internal fun actionInputKey(action: BattleActionCandidate): Any = ActionKey(action, BattleSide.ALLY, null,
+        actionHashes.getOrPut(action) { actionHash(action) })
+
     private class ActionKey(
         val action: BattleActionCandidate,
         val side: BattleSide,

@@ -1,6 +1,9 @@
 package jbro.cobblemon.mcc.betterai.matchup
 
 import jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals
+import jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope
+import jbro.cobblemon.mcc.betterai.calculation.LocalDecisionCalculationScope.Identity
+import jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning
 import jbro.cobblemon.mcc.betterai.mechanics.LocalMechanicActivationProjector
 import jbro.cobblemon.mcc.betterai.mechanics.LocalProjectedActionCalculationCache
 import jbro.cobblemon.mcc.betterai.mechanics.LocalPublicTurnOrder
@@ -37,13 +40,41 @@ internal object LocalActingChance {
         val state = board.state
         val part = if (candidate.kind == BattleActionKind.COMPOSITE)
             candidate.componentActions.firstOrNull { it.actorSlot == actorSlot } ?: return 1.0 else candidate
+        val trace = "${candidate.actionId}:${part.actorSlot}" + if (ignoring.isEmpty()) "" else
+            ":ignoring=" + ignoring.sortedBy { it.toString() }.joinToString(",")
+        if (LocalActiveTuning.current().evolvingMatchups) {
+            return calculate(context, board, part, ignoring, intents, calculationCache, trace)
+        }
+        val reading = LocalDecisionCalculationScope.reuse("actingChance", Identity(context),
+            calculationCache.fingerprints.of(state), calculationCache.actionInputKey(part),
+            ignoring.toSet(), intents?.let(::Identity)) {
+            LocalDecisionInternals.capture {
+                calculate(context, board, part, ignoring, intents, calculationCache, CACHED_TRACE)
+            }
+        }
+        reading.entries.forEach { (key, value) ->
+            LocalDecisionInternals.record(key.replace(CACHED_TRACE, trace), value)
+        }
+        return reading.value
+    }
+
+    private const val CACHED_TRACE = "\u0000actingChance\u0000"
+
+    private fun calculate(
+        context: BattleDecisionContext,
+        board: BattleDecisionContext,
+        part: BattleActionCandidate,
+        ignoring: Set<java.util.UUID>,
+        intents: List<OpponentIntent>?,
+        calculationCache: LocalProjectedActionCalculationCache,
+        trace: String,
+    ): Double {
+        val state = board.state
         val user = state.pokemon.firstOrNull {
             it.side == BattleSide.ALLY && it.activeSlot == part.actorSlot && !it.fainted && it.hpFraction > 0.0
         } ?: return 1.0
         val allies = state.pokemon.count { it.side == BattleSide.ALLY && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0 }
             .coerceAtLeast(1)
-        val trace = "${candidate.actionId}:${part.actorSlot}" + if (ignoring.isEmpty()) "" else
-            ":ignoring=" + ignoring.sortedBy { it.toString() }.joinToString(",")
         var fallbackFoes = 0
         var predictedFoes = 0
         val choices = state.pokemon.filter {
