@@ -42,12 +42,12 @@ private class BetterAiOptimizationScreen(private val parent: Screen?) : Screen(t
             addRenderableWidget(CycleButton.onOffBuilder(settings.simpleForecastMatchups)
                 .create(x, 134, 146, 20, text("forecast")) { _, enabled -> update { it.copy(simpleForecastMatchups = enabled) } }
                 .also { it.setTooltip(Tooltip.create(text("forecast_help").copy().append("\n\n").append(text("scope")))) })
-            addRenderableWidget(CycleButton.onOffBuilder(settings.skipUnusedStatusMatchups)
-                .create(x, 158, 146, 20, text("unused_status")) { _, enabled -> update { it.copy(skipUnusedStatusMatchups = enabled) } }
-                .also { it.setTooltip(Tooltip.create(text("unused_status_help"))) })
-            addRenderableWidget(CycleButton.onOffBuilder(settings.firstHitActingChance)
-                .create(x, 182, 146, 20, text("first_hit")) { _, enabled -> update { it.copy(firstHitActingChance = enabled) } }
-                .also { it.setTooltip(Tooltip.create(text("first_hit_help"))) })
+            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleStatusMatchups)
+                .create(x, 158, 146, 20, text("simple_status")) { _, enabled -> update { it.copy(simpleStatusMatchups = enabled) } }
+                .also { it.setTooltip(Tooltip.create(text("simple_status_help"))) })
+            addRenderableWidget(CycleButton.onOffBuilder(settings.simpleActingChance)
+                .create(x, 182, 146, 20, text("simple_acting")) { _, enabled -> update { it.copy(simpleActingChance = enabled) } }
+                .also { it.setTooltip(Tooltip.create(text("simple_acting_help"))) })
         }
         addRenderableWidget(Button.builder(Component.translatable("gui.done")) {
             try { LocalOptimizationConfigStore.save(path, config); onClose() } catch (_: Exception) { failed = true }

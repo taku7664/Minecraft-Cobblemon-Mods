@@ -54,20 +54,26 @@ internal object LocalTurnCostScoreCalculator {
         val partner = if (state.format != BattleFormat.DOUBLE || target.side == user.side) null else state.pokemon.firstOrNull {
             it.side == user.side && it.battlePokemonId != user.battlePokemonId && it.activeSlot != null && !it.fainted && it.hpFraction > 0.0
         }
+        val simple = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.current().simpleStatusMatchups
+        fun continuation(next: BattleStateView, subject: java.util.UUID): Double? {
+            return if (simple) pairs.pokemon(subject, target.battlePokemonId)?.let {
+                LocalSimpleMatchup.exchange(position, position.copy(state = next), it)
+            } else LocalHpMatchupAudit.statusExchange {
+                exchange(position, next, subject, target.battlePokemonId, cache)
+            }
+        }
         var prepared = false
+        var before = base.score
         var afterMiss: Double? = null
         var partnerBefore: Double? = null
         fun prepareExchanges(): Boolean {
             if (!prepared) {
                 prepared = true
                 LocalHpMatchupAudit.statusPrepared()
-                afterMiss = LocalHpMatchupAudit.statusExchange {
-                    exchange(position, worn, user.battlePokemonId, target.battlePokemonId, cache)
-                }
+                if (simple) before = LocalSimpleMatchup.exchange(position, position, base)
+                afterMiss = continuation(worn, user.battlePokemonId)
                 if (afterMiss != null) partnerBefore = partner?.let {
-                    LocalHpMatchupAudit.statusExchange {
-                        exchange(position, state, it.battlePokemonId, target.battlePokemonId, cache)
-                    }
+                    continuation(state, it.battlePokemonId)
                 }
             }
             return afterMiss != null
@@ -105,22 +111,27 @@ internal object LocalTurnCostScoreCalculator {
                 val nullified = LocalPublicMechanicsKernel.projectMove(candidate, calculated, side).publiclyNullified
                 val landed = if (nullified) worn else applied
                 val afterLanding = if (landed === worn) missed
-                    else exchange(position, landed, user.battlePokemonId, target.battlePokemonId, cache) ?: return@mapNotNull null
+                    else continuation(landed, user.battlePokemonId) ?: return@mapNotNull null
                 val partnerGain = if (partner == null || partnerBase == null || landed === worn) 0.0
-                    else (exchange(position, landed, partner.battlePokemonId, target.battlePokemonId, cache) ?: partnerBase) - partnerBase
+                    else (continuation(landed, partner.battlePokemonId) ?: partnerBase) - partnerBase
                 val accuracy = (details.accuracy / 100.0).coerceIn(0.0, 1.0).takeIf { it > 0.0 } ?: 1.0
                 val expected = survives * (accuracy * afterLanding + (1.0 - accuracy) * missed) - (1.0 - survives) +
                     accuracy * partnerGain
+                if (simple) jbro.cobblemon.mcc.betterai.brain.LocalDecisionInternals.record(
+                    "simpleStatusMove:${user.battlePokemonId}:${target.battlePokemonId}:${action.moveId}", mapOf(
+                        "survives" to survives, "accuracy" to accuracy, "landed" to afterLanding, "missed" to missed,
+                        "partnerGain" to partnerGain, "before" to before, "expected" to expected,
+                        "score" to (expected - before).coerceIn(-1.0, 1.0)))
                 StatusMoveMatchupScore(
                     userId = user.battlePokemonId,
                     moveId = PublicIds.canonical(action.moveId ?: action.actionId),
                     targetId = target.battlePokemonId,
                     accuracy = accuracy,
                     survivesTurn = survives,
-                    before = base.score,
+                    before = before,
                     afterLanding = afterLanding,
                     afterMiss = missed,
-                    score = (expected - base.score).coerceIn(-1.0, 1.0),
+                    score = (expected - before).coerceIn(-1.0, 1.0),
                     partnerGain = partnerGain,
                 )
             }

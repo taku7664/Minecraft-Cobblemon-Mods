@@ -9,6 +9,7 @@ import jbro.cobblemon.mcc.betterai.evaluation.LocalPokemonWorth
 import jbro.cobblemon.mcc.betterai.matchup.*
 import jbro.cobblemon.mcc.internal.ai.*
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.util.UUID
 
@@ -194,6 +195,112 @@ class LocalActingChanceTest {
             assertEquals(200.0, LocalPokemonWorth.knockoutScore(target, LocalDecisionTuning.CURRENT, f.action,
                 f.context.state, 0.0), 1e-9)
         } finally { LocalPokemonWorth.clear() }
+    }
+
+    @Test
+    fun `simple model eliminates tactical roll and intent product work with status and priority retained`() {
+        val audit = LocalHpMatchupAudit
+        for (f in listOf(fixture(), fixture(ownPriority = 1), fixture(foeMove = "suckerpunch", foePriority = 1), fixture(accuracy = 73.0))) {
+            val table = LocalMatchupScoreCalculator.calculate(f.context)
+            for (kind in listOf(IntentKind.ATTACK, IntentKind.STATUS, IntentKind.SWITCH)) {
+                val intents = listOf(OpponentIntent(f.foe.battlePokemonId, 0, listOf(f.option(kind, 0.7), f.option(IntentKind.PROTECT, 0.3))))
+                val expected = LocalActingChance.of(f.action, f.context, table, intents = intents)
+                audit.begin()
+                val actual = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(LocalDecisionTuning.CURRENT.copy(simpleActingChance = true)) {
+                    LocalActingChance.of(f.action, f.context, table, intents = intents)
+                }
+                val work = audit.take()
+                assertEquals(expected, actual, 1e-9, "$kind/${f.foeMove}")
+                assertEquals(0, work.tacticalCalls); assertEquals(0, work.rollCalculations)
+                assertEquals(0, work.actingChoiceProducts); assertEquals(1, work.simpleActingModels)
+            }
+        }
+    }
+
+    @Test
+    fun `simple max interval retains known first hit shields without full damage calculation`() {
+        val f = fixture()
+        for ((ability, item) in listOf("sturdy" to "", "disguise" to "", "" to "focussash")) {
+            val context = f.context.copy(state = f.context.state.copyState(pokemon = f.context.state.pokemon.map {
+                if (it.battlePokemonId == f.user.battlePokemonId) it.copyState(knownAbilityId = ability, knownHeldItemId = item) else it
+            }))
+            val table = LocalMatchupScoreCalculator.calculate(context)
+            val move = table.moves(f.foe.battlePokemonId, f.user.battlePokemonId).single()
+            LocalHpMatchupAudit.begin()
+            val hit = LocalSimpleMatchup.hit(context, context, move, max = true)
+            val work = LocalHpMatchupAudit.take()
+            assertEquals(0.0, hit.move.knockoutChanceWithin(1), 1e-12, "$ability/$item")
+            assertTrue(hit.move.maximumDamageFraction < 1.0)
+            assertEquals(0, work.tacticalCalls); assertEquals(0, work.rollCalculations)
+        }
+    }
+
+    @Test
+    fun `simple joint hit retains two nonlethal attacks misses and HP-setting exclusion`() {
+        val a = LocalSimpleActingChance.Interval(0.7, 0.6, 0.6, 0.0)
+        val b = LocalSimpleActingChance.Interval(0.6, 0.6, 0.6, 0.0)
+        assertEquals(0.42, LocalSimpleActingChance.knockout(listOf(a, b), 1.0), 1e-12)
+        assertEquals(0.0, LocalSimpleActingChance.knockout(listOf(a.copy(combines = false), b), 1.0), 1e-12)
+        assertEquals(0.0, LocalSimpleActingChance.knockout(listOf(a.copy(low = 0.1, high = 0.1), b.copy(low = 0.1, high = 0.1)), 1.0), 1e-12)
+        assertEquals(0.7, LocalSimpleActingChance.knockout(listOf(a.copy(ko = 0.7)), 1.0), 1e-12)
+    }
+
+    @Test
+    fun `inferred and pool move metadata retain spread targeting without rebuilding attacks`() {
+        val f = fixture(foeMove = "earthquake")
+        val partner = mon(BattleSide.ALLY, 100).copyState(activeSlot = 1)
+        val state = BattleStateView(f.context.state.battleId, BattleFormat.DOUBLE, 4, listOf(f.user, partner, f.foe),
+            BattleFieldStateView.empty(), mapOf(BattleSide.ALLY to 2, BattleSide.OPPONENT to 1), emptyList(), emptyList())
+        val details = f.context.publicActionCatalog.forPokemon(f.foe.battlePokemonId).single().details.copy(targetPattern = BattleMoveTargetPattern.ALL_ADJACENT)
+        val own = f.context.publicActionCatalog.entries.filter { it.battlePokemonId != f.foe.battlePokemonId }
+        val known = BattlePublicActionCatalogView(own + BattlePokemonActionCatalogView(f.foe.battlePokemonId,
+            listOf(BattlePublicMoveOptionView("earthquake", details, BattlePublicMoveKnowledge.PUBLICLY_REVEALED)), true))
+        val context = f.context.copy(state = state, publicActionCatalog = known)
+        val table = LocalMatchupScoreCalculator.calculate(context)
+        val inferred = BattleOpponentMoveInferenceView(f.foe.battlePokemonId, listOf(BattleOpponentMoveSlotView(0,
+            "earthquake", BattleOpponentMoveGroup.COVERAGE_ATTACK, BattleOpponentMoveKnowledge.EXPECTED,
+            BattleOpponentMoveSource.LEARNSET_EXPECTATION, details)))
+        val pool = BattlePublicMoveCandidatePoolView(f.foe.battlePokemonId, f.foe.speciesId, f.foe.formId,
+            setOf("earthquake"), "test", mapOf("earthquake" to details))
+        for (catalog in listOf(BattlePublicActionCatalogView(own, opponentMoveInferences = listOf(inferred)),
+            BattlePublicActionCatalogView(own, candidatePools = listOf(pool)))) {
+            val board = context.copy(publicActionCatalog = catalog)
+            val intents = listOf(OpponentIntent(f.foe.battlePokemonId, 0,
+                listOf(IntentOption(IntentKind.ATTACK, "earthquake", null, null, 0.0, 1.0))))
+            LocalHpMatchupAudit.begin()
+            val value = jbro.cobblemon.mcc.betterai.evaluation.LocalActiveTuning.with(LocalDecisionTuning.CURRENT.copy(simpleActingChance = true)) {
+                LocalActingChance.of(f.action, board, table, intents = intents)
+            }
+            val work = LocalHpMatchupAudit.take()
+            assertEquals(0.0, value, 1e-12, "spread attack reaches this slot with probability one")
+            assertEquals(0, work.tacticalCalls); assertEquals(0, work.rollCalculations)
+        }
+    }
+
+    @Test
+    fun `two representative bins retain dangerous choices hidden by their mean`() {
+        val steady = listOf(LocalSimpleActingChance.Interval(1.0, .6, .6, 0.0))
+        val mixture = listOf(LocalSimpleActingChance.Interval(.5, .1, .1, 0.0),
+            LocalSimpleActingChance.Interval(.5, .6, .6, 0.0))
+        assertEquals(.5, LocalSimpleActingChance.groupedKnockout(listOf(steady, mixture), 1.0), 1e-12)
+        assertEquals(.35, LocalSimpleActingChance.groupedKnockout(listOf(steady.map { it.copy(lands = .7) }, mixture), 1.0), 1e-12)
+        assertEquals(0.0, LocalSimpleActingChance.knockout(listOf(steady.single(),
+            LocalSimpleActingChance.Interval(1.0, .35, .35, 0.0)), 1.0), 1e-12)
+    }
+
+    @Test
+    fun `constant uniform convolution agrees with independent numerical integration`() {
+        for ((a, b, c, d) in listOf(listOf(0.1, 0.6, 0.2, 0.8), listOf(0.4, 0.5, 0.1, 0.9))) {
+            for (hp in listOf(0.1, 0.4, 0.7, 1.0, 1.4)) {
+                val numerical = (0 until 10000).sumOf { step ->
+                    val first = a + (b - a) * (step + .5) / 10000
+                    ((hp - first - c) / (d - c)).coerceIn(0.0, 1.0)
+                } / 10000
+                assertEquals(numerical, LocalSimpleMatchup.sumBelow(a, b, c, d, hp), 1e-7)
+            }
+        }
+        assertEquals(0.0, LocalSimpleMatchup.sumBelow(.6, .6, .4, .4, 1.0))
+        assertEquals(1.0, LocalSimpleMatchup.sumBelow(.6, .6, .4, .4, 1.01))
     }
 
     private data class Fixture(val user: BattlePokemonStateView, val foe: BattlePokemonStateView,

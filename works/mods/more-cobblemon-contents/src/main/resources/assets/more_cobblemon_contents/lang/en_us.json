@@ -172,5 +172,9 @@
   "screen.more_cobblemon_contents.versus.tournament": "Champion Cup",
   "message.more_cobblemon_contents.shop.recovery": "Check the purchase result. If goods are missing, use /inquiry shop delivery failed %s. Another purchase is a separate charge.",
   "message.more_cobblemon_contents.recovery.held": "Automatic recovery is held for this original transaction. Automatic retries remain blocked after manual handling.",
-  "message.more_cobblemon_contents.recovery.hold_failed": "Could not hold recovery. Check both UUIDs and the journal. Confirm a successful hold before manual grants."
+  "message.more_cobblemon_contents.recovery.hold_failed": "Could not hold recovery. Check both UUIDs and the journal. Confirm a successful hold before manual grants.",
+  "config.more_cobblemon_contents.betterai.simple_status": "Simple status matchups",
+  "config.more_cobblemon_contents.betterai.simple_status_help": "Hold each existing representative attack and use scaled mean damage and hit counts. Skips attack reselection and long KO distributions; scores and choices may change.",
+  "config.more_cobblemon_contents.betterai.simple_acting": "Simple acting chance",
+  "config.more_cobblemon_contents.betterai.simple_acting_help": "Keep two representative damage intervals per opposing slot. Skips repeated attack calculations and intent products while retaining joint-hit KO. Scores and choices may change."
 }
