@@ -7,6 +7,12 @@
 
 
 
+## [2026-10-24 23:34] 주 스레드 준비 분리·애크러뱃 수정본 개발 서버 JAR 배치
+
+- **요청/빌드:** 빡대리의 개발 서버 배포 지시로 origin/main과 동기화된1db9e2cd142c96a0bb00541cf4b138d641598941 소스에서 :more-cobblemon-contents:remapJar를 실행해 성공했다. Gradle 캐시/프로젝트 캐시/모든 빌드 출력/TEMP/TMP/JVM 임시 경로는 F다. 빌드 전후 추적works 입력4726개 해시 차이0을 확인했다. 이번에는 단위 검사를 재실행하지 않았으며 직전264/264 결과와 구분한다.
+- **설치/일치:** develop-product/server/mods/more-cobblemon-contents-0.1.0.jar 한 개를 교체했다. F 빌드본과 설치본 SHA-256 모두 4cbd81f1b0934a46400a36254992431091e4866c98ffbad41df31a65c5a5fe95다. ZIP CRC/fabric ID·버전과 준비 함수/도구 판정 클래스 포함을 확인했다. 최적화설정 해시2067753be6626b8b00c6ed3b153123eebb1941dbfbc316481d9dad5ea20279c4 및 기존OFF/누락키기본OFF, 다른MCC애드온JAR4개 해시는 유지됐다. F:/AI/builds/cobblemon-mods-main/thread-fix-deploy-20261024의 build-paths.json/build.log/source-manifest.json/deployment.json이 근거다.
+- **기동/범위:** 파일 교체 직전 개발 서버 프로세스 및25566 LISTEN이 없음을 확인했다. 서버 기동/재시작/실게임 검증은 하지 않았다. 다음 개발 서버 기동 때 새JAR을 읽는다. 개발 클라이언트/운영/VPS/릴리스 폴더/공용아레나는 변경하지 않았다. 기록 커밋은 문서만 바꾸며 빌드에 사용한 소스·리소스·설정은 같다.
+
 ## [2026-10-24 23:11] 애크러뱃의 상대 도구 미확인을 무도구로 읽던 오류 수정
 
 - **확인된 오류/수정:** LocalPublicMoveDamageInputs가 canonicalKnownHeldItemId=null을 모두 무도구로 읽었다. 상대 원본값null은 미확인인데도 위력2배였다. 이제 자기의 정확한 무도구 또는 상대의 관측된 빈문자열일 때만2배, 상대 미확인은 기본 위력이다. 기술 데이터의 기본위력을 사용하며 점수 감점/순위 뒤 보정/강제제외를 추가하지 않았다. 실제 보유도구와 도구효과 무효는 기존대로 기본위력을 유지한다.
