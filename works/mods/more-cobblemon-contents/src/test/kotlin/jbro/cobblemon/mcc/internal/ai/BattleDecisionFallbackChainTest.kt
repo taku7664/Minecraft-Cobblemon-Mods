@@ -27,11 +27,108 @@ import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
+import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 
 class BattleDecisionFallbackChainTest {
+    @Test
+    fun `context preparation runs on the worker before the brain without blocking the caller`() {
+        val queued = mutableListOf<Runnable>()
+        val caller = Thread.currentThread()
+        val preparedThread = AtomicReference<Thread>()
+        val received = AtomicReference<BattleDecisionContext>()
+        val input = context(6_000L)
+        val prepared = input.copy(publicActionCatalog = BattlePublicActionCatalogView(emptyList()))
+        val endpoint = endpointWithContext {
+            received.set(it)
+            CompletableFuture.completedFuture(decision(it, "move:0"))
+        }.withPreparedContext {
+            assertSame(input, it)
+            preparedThread.set(Thread.currentThread())
+            prepared
+        }
+        val coordinator = BattleBrainDecisionCoordinator(
+            scheduler = scheduler,
+            brainExecutor = Executor { queued += it },
+            nowEpochMillis = { 1_000L },
+        )
+        val pending = coordinator.decide(endpoint, input).toCompletableFuture()
+        assertNull(preparedThread.get())
+        assertNull(received.get())
+        assertFalse(pending.isDone)
+        val worker = Thread(queued.single(), "context-preparation-test")
+        worker.start()
+        val result = pending.get(2, TimeUnit.SECONDS)
+        worker.join(2_000)
+        assertTrue(result.succeeded)
+        assertTrue(preparedThread.get() !== caller)
+        assertSame(prepared, received.get())
+    }
+
+    @Test
+    fun `cancelled queued decision does not run its context preparation`() {
+        val queued = mutableListOf<Runnable>()
+        var prepared = false
+        val endpoint = endpoint { error("cancelled brain must not run") }.withPreparedContext {
+            prepared = true
+            it
+        }
+        val coordinator = BattleBrainDecisionCoordinator(
+            scheduler = scheduler,
+            brainExecutor = Executor { queued += it },
+            nowEpochMillis = { 1_000L },
+        )
+        val pending = coordinator.decide(endpoint, context(6_000L)).toCompletableFuture()
+        pending.cancel(true)
+        queued.single().run()
+        assertFalse(prepared)
+        assertTrue(pending.isCancelled)
+    }
+
+    @Test
+    fun `preparation failure is reported and never invokes the brain`() {
+        val endpoint = endpoint { error("failed preparation must not invoke brain") }
+            .withPreparedContext { throw IllegalArgumentException("preparation failed") }
+        val result = chain(1_000L).decide(null, endpoint, context(6_000L))
+            .toCompletableFuture().get(2, TimeUnit.SECONDS)
+        assertEquals(BattleDecisionSource.BASELINE_REQUIRED, result.source)
+        assertEquals(BattleDecisionFailureReason.BRAIN_FAILURE, result.failures.single().reason)
+    }
+
+    @Test
+    fun `timeout during context preparation does not start the brain afterwards`() {
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val finished = CountDownLatch(1)
+        val invoked = java.util.concurrent.atomic.AtomicBoolean()
+        val endpoint = endpoint {
+            invoked.set(true)
+            error("expired preparation must not start a brain")
+        }.withPreparedContext {
+            started.countDown()
+            check(release.await(2, TimeUnit.SECONDS))
+            it
+        }
+        val observingExecutor = Executor { task ->
+            brainExecutor.execute {
+                try { task.run() } finally { finished.countDown() }
+            }
+        }
+        val coordinator = BattleBrainDecisionCoordinator(scheduler, observingExecutor, maximumDecisionMillis = 100L)
+        try {
+            val pending = coordinator.decide(endpoint, context(System.currentTimeMillis() + 2_000L)).toCompletableFuture()
+            assertTrue(started.await(1, TimeUnit.SECONDS))
+            assertEquals(BattleDecisionFailureReason.TIMEOUT, pending.get(1, TimeUnit.SECONDS).failureReason)
+            release.countDown()
+            assertTrue(finished.await(1, TimeUnit.SECONDS))
+            assertFalse(invoked.get())
+        } finally {
+            release.countDown()
+        }
+    }
+
     @Test
     fun `cyclic brain failure causes terminate at the deepest distinct throwable`() {
         val outer = IllegalStateException("outer")

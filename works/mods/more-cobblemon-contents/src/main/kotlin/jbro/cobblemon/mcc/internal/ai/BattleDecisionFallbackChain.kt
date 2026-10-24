@@ -91,7 +91,10 @@ internal class BattleBrainDecisionCoordinator(
         try {
             brainExecutor.execute {
                 try {
-                    val decisionFuture = endpoint.brain.decide(endpoint.session(), context).toCompletableFuture()
+                    if (result.isDone) return@execute
+                    val preparedContext = endpoint.prepareContext(context)
+                    if (result.isDone) return@execute
+                    val decisionFuture = endpoint.brain.decide(endpoint.session(), preparedContext).toCompletableFuture()
                     pendingDecision.set(decisionFuture)
                     if (result.isDone) {
                         cancelPendingDecisionSafely()
@@ -104,7 +107,7 @@ internal class BattleBrainDecisionCoordinator(
                             val attempt = if (failed) {
                                 BattleBrainAttempt.failed(BattleDecisionFailureReason.BRAIN_FAILURE)
                             } else {
-                                validate(context, decision)
+                                validate(preparedContext, decision)
                             }
                             if (result.complete(attempt)) timeout?.cancel(false)
                             if (failed) throwable?.let { reportBrainFailureSafely(context, it) }
@@ -193,13 +196,21 @@ internal class BattleBrainDecisionCoordinator(
         }
 }
 
-internal class BattleBrainEndpoint(
+internal class BattleBrainEndpoint private constructor(
     val brain: BattleBrain,
     private val sessionProvider: () -> BattleBrainSession,
+    private val contextPreparer: (BattleDecisionContext) -> BattleDecisionContext,
 ) {
-    constructor(brain: BattleBrain, session: BattleBrainSession) : this(brain, { session })
+    constructor(brain: BattleBrain, sessionProvider: () -> BattleBrainSession) : this(brain, sessionProvider, { it })
+    constructor(brain: BattleBrain, session: BattleBrainSession) : this(brain, { session }, { it })
 
     fun session(): BattleBrainSession = sessionProvider()
+
+    /** Runs on the coordinator's bounded worker, with captured values only; never read live game objects here. */
+    fun withPreparedContext(prepare: (BattleDecisionContext) -> BattleDecisionContext): BattleBrainEndpoint =
+        BattleBrainEndpoint(brain, sessionProvider) { prepare(contextPreparer(it)) }
+
+    fun prepareContext(context: BattleDecisionContext): BattleDecisionContext = contextPreparer(context)
 }
 
 internal class BattleBrainAttempt private constructor(
