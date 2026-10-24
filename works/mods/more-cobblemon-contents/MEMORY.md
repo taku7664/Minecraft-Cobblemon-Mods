@@ -2,6 +2,12 @@
 
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 
+## [2026-10-24 09:08] 두 근사 최적화 OFF — main 게임용 JAR 빌드·개발 배치
+
+- **요청/소스:** 사용자의 최적화 OFF 빌드·개발 배포 지시로, canonical main `22c810c0aa3db7c3ba48e869a8a21c53d5cd5f76`과 origin/main 일치를 확인하고 `:more-cobblemon-contents:remapJar`를 실행했다. Gradle 캐시·프로젝트 캐시·출력·임시 경로는 F 드라이브이며 빌드는 성공했다. 추가 테스트는 실행하지 않았다.
+- **배치/설정:** canonical 체크아웃 `develop-product/server` 및 `develop-product/client`의 `mods/more-cobblemon-contents-0.1.0.jar`만 교체했다. 양쪽 `config/more-cobblemon-contents/betterai-optimizations.json`에 `simpleFixedHpReactions: false`, `simplePoisonEvaluation: false`, 비활성 기간 `poisonEvaluationTurns: 2`를 저장하고 다시 읽어 확인했다. 점수를 유지하는 공통 계산 캐시는 기존대로이며, 근사식 선택 옵션 두 개를 끈 배포다. 다른 애드온은 교체하지 않았다.
+- **일치/미수행:** F 빌드본과 두 설치본 SHA-256은 모두 `5E2D407955DC5EEBD93CCAD0A3CFB1CD99F86B2FCE1F1885050F2DEDF014CDE8`이다. JAR의 core ID/버전·설정 클래스·내장 cobblemon-ui를 확인했다. 배치 전 실행 중인 Java 프로세스는 없었다. 서버·클라이언트 기동, 실게임 확인, 운영/VPS 배포는 하지 않았다.
+
 ## [2026-10-24 07:43] 공통 대면 계산 결과 재사용 — 과거 구현 대조·여러 시도·최종 검수
 
 - **범위/사용자 결정:** 기준 `afc77908f`, `1b39`/`codex/betterai-entry-healblock`. 개별 맹독이 아닌 전체 공통 계산을 줄이며, 리팩토링 이전 구현은 근거 있는 값/방식만 참고한다. 앞선 생구/독2턴 실험은 옛 식 복원이 아니었다는 사용자 정정을 확인했다. 랭크·피해·KO 식/기준값·순위/추첨 정책·시간 제한은 바꾸지 않았다. 기존 두 근사 옵션은 OFF로 검증했다.
