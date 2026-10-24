@@ -1,5 +1,11 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-10-24 15:10] 개발 서버·클라이언트 배포 (0.1.5, 실게임 미확인)
+
+- **배치:** 사용자 요청으로 `develop-product/server/mods`와 `develop-product/client/mods`(cobblemon-dev 정션)에 아이템화 0.1.5·사이드바 0.2.3·포켓퓨전 1.4.2를 함께 설치했다. 기존 각 모드 JAR은 대상 폴더에서 교체했으며 백업은 `F:\AI\builds\cobblemon-mods-sidebar-fusion-20261024\deployment-backups\20261024-151020`에 보관했다.
+- **빌드·일치:** 소스 main `e373592df`를 origin/main에 푸시하고 0/0 동기화 뒤 `transfer-log-main-jars.log`에서 remapJar 성공(동일 소스 UP-TO-DATE)을 확인했다. 이번 모듈 양쪽 설치본 SHA-256은 빌드본 `4922098cc43b4a950585df7bba86c427c15afaf1f0f86d31bf64e8ad881c355e`와 같다. 단위 검증은 아이템화 21/21·포켓퓨전 37/37 성공이며, 사이드바 자체 테스트는 없다.
+- **보존·미확인:** 배치 전 Minecraft 실행 프로세스·실행 인수 파일과 개발 포트 25566 미수신을 확인했다. 교체 대상 외 서버 46개·클라이언트 82개 파일의 해시를 보존했다. config/world, 운영/VPS/릴리스는 변경하지 않았다. 서버·게임 기동, 실제 클릭·합성·복원 및 서버 로그 출력은 미실행이다. 배포 상세 근거는 `F:/AI/builds/cobblemon-mods-sidebar-fusion-20261024/transfer-log-deployment.json`에 남겼다.
+
 ## [2026-10-24 15:08] 분실 문의 추적용 서버 이동 로그 (0.1.5, 배포 전)
 
 - **구현:** 실제 아이템화·복원·커서 교환의 결과를 기존 서버 INFO 로그에 `[pokemon-transfer]`로 남긴다. 플레이어 이름/UUID, 포켓몬 UUID·종, 출발/도착(파티·인벤·커서·PC·명령 드롭), 성공/실패와 차원·블록 좌표를 포함한다. 교환은 양쪽 포켓몬을 각각 기록한다. 거부는 플레이어·사유를 기록하고 예외는 기존 오류 로그를 따른다.

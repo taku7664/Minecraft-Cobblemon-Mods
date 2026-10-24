@@ -1,5 +1,11 @@
 # cobblemon-party-sidebar 작업 기록
 
+## [2026-10-24 15:10] 개발 서버·클라이언트 배포 (0.2.3, 실게임 미확인)
+
+- **배치:** 사용자 요청으로 `develop-product/server/mods`와 `develop-product/client/mods`(cobblemon-dev 정션)에 아이템화 0.1.5·사이드바 0.2.3·포켓퓨전 1.4.2를 함께 설치했다. 기존 각 모드 JAR은 대상 폴더에서 교체했으며 백업은 `F:\AI\builds\cobblemon-mods-sidebar-fusion-20261024\deployment-backups\20261024-151020`에 보관했다.
+- **빌드·일치:** 소스 main `e373592df`를 origin/main에 푸시하고 0/0 동기화 뒤 `transfer-log-main-jars.log`에서 remapJar 성공(동일 소스 UP-TO-DATE)을 확인했다. 이번 모듈 양쪽 설치본 SHA-256은 빌드본 `859822a201fa29197a47e92ff1cbbe74ed6c09137c5267e569e2302f20088701`와 같다. 단위 검증은 아이템화 21/21·포켓퓨전 37/37 성공이며, 사이드바 자체 테스트는 없다.
+- **보존·미확인:** 배치 전 Minecraft 실행 프로세스·실행 인수 파일과 개발 포트 25566 미수신을 확인했다. 교체 대상 외 서버 46개·클라이언트 82개 파일의 해시를 보존했다. config/world, 운영/VPS/릴리스는 변경하지 않았다. 서버·게임 기동, 실제 클릭·합성·복원 및 서버 로그 출력은 미실행이다. 배포 상세 근거는 `F:/AI/builds/cobblemon-mods-sidebar-fusion-20261024/transfer-log-deployment.json`에 남겼다.
+
 ## [2026-10-24 15:01] Shift 아이템화 공간 부족 요청 차단 (0.2.3, 미배포)
 
 - **요청·구현:** 포켓몬 모델 Shift+클릭은 인벤토리·퀵슬롯에 빈칸이 없으면 클라이언트에서 패킷을 보내지 않고 기존 한영 inventory_full 메시지를 표시한다. 일반 클릭은 기존대로 빈 커서에 집는다. 인벤토리 화면·포켓퓨전 화면이 같은 경로를 사용한다.
