@@ -1,5 +1,14 @@
 # jbro-policy MEMORY
 
+## [2026-10-25 16:06] 가이오가 빈 목록 런타임 원인 확인 — 요구 폭 10, 조회 구역 8 (미수정)
+
+- **사용자 반증:** 전설 버킷을 골라도 깊고 미지근한 바다에서 목록이 비었다. 번역도 내부 키로 보였다. 정적 103종 검수와 natural→water 수정만으로 해결된 것으로 취급하면 안 된다.
+- **실행 중 조회:** Java 277928에 클래스 재정의·변환 없이 읽기 전용 임시 진단을 연결하고 서버 스레드에서 조회했다. Park_JH의 실제 등급 CHAMPION, mayMeet(kyogre)=true, 개인/전역 버킷 모두 legendary=0.004. live pool은 water·overworld·legendary이고 제외 조건은 없다.
+- **동일 좌표 비교:** 오버월드 `(-2161.8423, -1.8239, -773.3743)`에서 폭 8 조회는 물속 위치 896개·조건 통과 896개·최종 공간 검사 통과 0개. live spawn detail의 요구 크기는 폭 10×높이 3이다. 같은 좌표에서 **전역 설정 변경 없이** 진단 입력의 폭만 16으로 계산하니 물속 위치 3584개·최종 후보 300개, legendary 후보에 kyogre가 등록됐다. 이는 실제 자연 출현·포획 성공이나 스폰율 100%라는 뜻이 아니다.
+- **코드 원인:** PokemonSpawnDetail.autoLabel은 합쳐진 실제 FormData.hitbox×baseScale에서 스폰 폭·높이를 계산한다. AreaSpawnablePosition.hasSpace는 여유 공간까지 검사하며 SpawningZone.getBlockState는 구역 밖을 stoneState로 반환한다. 따라서 넓은 실제 바다라도 폭 8의 조회 영역에서는 폭 10의 가이오가가 탈락한다. 앞선 레지스트리·필드 검수는 실제 크기와 조회 범위 관계를 누락했다. 서버의 자연 스폰 구역도 같은 설정을 사용한다.
+- **번역 원인:** 실행 중인 PPakemon 클라이언트 jbro-policy-0.1.8.jar SHA `e2c51ae20c200ff330d906b29d5de8389caad7871d1983ddda902e763329b8dd`에는 `bucket.cobblenav.legendary` 키가 없다. 운영 JAR에는 전설 번역이 있다. 클라이언트 게임이 실행 중이므로 JAR 교체·게임 종료는 하지 않았다.
+- **증거·범위:** 임시 진단 소스·JAR은 `F:/AI/Temp/legend-runtime-probe-20261025/`, VPS 출력은 `/home/ubuntu/.local/share/ppakemon-diagnostics/legend-20261025/probe-current3.txt`·`probe-current16.txt`. 첫 진단의 잘못된 getter 이름은 javap로 확인 후 getBuckets로 정정했다. 서버 설정·모드·월드·플레이어 저장 자료는 바꾸지 않았고, 서버 재시작·스폰 강제 생성도 하지 않았다. 진단 결과만 기록하며 실제 수정은 아직 안 했다.
+
 ## [2026-10-25 15:36] 전설 스폰 가중치 두 배·VPS 무중단 리로드·개발/로컬 운영 설정 동기화
 
 - **빡대리님 지시:** 전설 스폰율을 두 배로 올려 리로드하고, 서버는 재시작하지 않으며 개발과 운영을 같은 값으로 맞춘다.
