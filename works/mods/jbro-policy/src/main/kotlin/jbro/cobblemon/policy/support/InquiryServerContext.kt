@@ -131,11 +131,20 @@ internal object InquiryServerContext {
                             if (stack.item is PokemonItem && stack.count == 1 && tag?.getInt("version") == 1) {
                                 val saved = tag.getCompound("pokemon")
                                 addProperty("pokemon_species", saved.getString("Species"))
+                                addProperty("pokemon_form_id", saved.getString("FormId"))
+                                val features = saved.getList("Features", 10)
+                                for (index in 0 until features.size) {
+                                    val feature = features.getCompound(index)
+                                    if (feature.getString("cobblemon:feature_id") == "region_bias") {
+                                        addProperty("pokemon_region_bias", feature.getString("region_bias"))
+                                    }
+                                }
                                 if (saved.hasUUID("UUID")) addProperty("pokemon_uuid", saved.getUUID("UUID").toString())
                             }
                         })
                     }
                 })
+                addProperty("inventory_scope", "inventory에는 소지품·방어구·보조손·엔더상자만 포함. 커서·열린 합성창 입력·바닥 아이템은 미조회이며 앞선 합성 성공은 현재 보관 위치의 증명이 아님")
                 add("nearby_pokemon", JsonArray().apply {
                     val entities = player.serverLevel().getEntitiesOfClass(PokemonEntity::class.java, player.boundingBox.inflate(96.0))
                     entities.filter { it.pokemon.getOwnerUUID() == null }.sortedBy { it.distanceToSqr(player) }.take(32).forEach { entity ->
@@ -153,6 +162,7 @@ internal object InquiryServerContext {
     private fun pokemon(pokemon: Pokemon) = JsonObject().apply {
         addProperty("uuid", pokemon.uuid.toString())
         addProperty("species", pokemon.species.resourceIdentifier.toString())
+        addProperty("form", pokemon.form.name)
         addProperty("level", pokemon.level)
         addProperty("shiny", pokemon.shiny)
     }

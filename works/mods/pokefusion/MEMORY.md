@@ -1,5 +1,10 @@
 # PokemonFusion MEMORY
 
+## [2026-10-25 21:28] 윤쑤 피카츄 합성 거절 조사 — 폼 정책 유지
+
+- **확인:** 문의 25adf61c의 원문·관리자 검토 카드·VPS latest.log와 문의자 PC 저장본을 읽었다. 결과 UUID 4b8b83db-a11a-40c8-b1d5-46e388d9043c(normal, Box15/Slot20)와 9e968af0-1445-44aa-9cf3-a98d4262d1ac(alolabias, region_bias=alola, Box15/Slot21)의 저장 폼이 다르다. PokeFusionService.compatibilityFailure는 같은 종이라도 evolutionNode의 폼이 다르면 DIFFERENT_FORM으로 거절하며 결과 barrier의 한국어 이름은 '같은 폼끼리만 합성할 수 있습니다'다. 재료 1/9는 1개를 넣었다는 뜻이며 9개 필수 조건이 아니다. 캡처는 UUID를 보여주지 않으므로 이미지의 두 입력과 이 UUID들의 일대일 대응까지 입증한 것은 아니다.
+- **조치 범위:** 합성 규칙·모드 소스·개체·월드 데이터는 수정하지 않는다. jbro-policy 쪽에서 과거 성공 로그를 다른 조합의 정상 근거로 사용해 실패 문의를 자동 종결하는 문제를 방어하고 조회 폼 정보를 보강한다. 20:35:18·20:36:50 성공 로그는 사실이나 to=cursor이며 현재 조합 정상/인벤토리 보관을 증명하지 않는다. VPS 서버를 끄거나 재시작하지 않았고 어떤 환경에도 JAR을 배치하지 않았다. 실게임 재현은 미실행이다.
+
 ## [2026-10-24 15:10] 개발 서버·클라이언트 배포 (1.4.2, 실게임 미확인)
 
 - **배치:** 사용자 요청으로 `develop-product/server/mods`와 `develop-product/client/mods`(cobblemon-dev 정션)에 아이템화 0.1.5·사이드바 0.2.3·포켓퓨전 1.4.2를 함께 설치했다. 기존 각 모드 JAR은 대상 폴더에서 교체했으며 백업은 `F:\AI\builds\cobblemon-mods-sidebar-fusion-20261024\deployment-backups\20261024-151020`에 보관했다.
