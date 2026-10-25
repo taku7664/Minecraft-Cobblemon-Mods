@@ -152,7 +152,7 @@
 | 포푸니라 | 96 | pressure / jolly / life_orb | HP 4, 공격 252, 스피드 252 | tripleaxel, knockoff, iceshard, lowkick |
 | 삼삼드래 | 96 | levitate / timid / choice_specs | HP 4, 특공 252, 스피드 252 | dracometeor, darkpulse, flamethrower, uturn |
 | 대도각참 | 96 | supremeoverlord / adamant / black_glasses | HP 252, 공격 252, 특방 4 | swordsdance, kowtowcleave, suckerpunch, ironhead |
-| 우라오스 | 99 | unseenfist / jolly / choice_band | HP 4, 공격 252, 스피드 252 | wickedblow, closecombat, suckerpunch, uturn |
+| 우라오스 (일격의 태세) | 99 | unseenfist / jolly / choice_band | HP 4, 공격 252, 스피드 252 | wickedblow, closecombat, suckerpunch, uturn |
 | 오롱털 (거다이맥스 에이스) | 99 | prankster / careful / light_clay | HP 252, 방어 4, 특방 252 | spiritbreak, suckerpunch, reflect, lightscreen |
 
 ### 호브 (컵)

@@ -1,5 +1,11 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-10-25 17:35] 마리 하드 우라오스 일격의 태세 고정 (VPS 적용 전)
+
+- **원인·지시:** 빡대리님이 마리가 물라오스를 사용한다고 지적하고 즉시 악라오스로 고정하도록 지시했다. 기존 팀은 암흑강타를 넣었지만 폼 지정이 없었다. VPS Cobblemon 1.8.1의 `species_features/wushu_style.json`은 키 `wushu_style`, 선택지 `single_strike`/`rapid_strike`, 기본값 `random`이므로 폼을 무작위로 생성할 수 있었다.
+- **변경·확인:** `teams/galar/cup_marnie_hard.json`의 우라오스 한 마리에 `wushu_style=single_strike`만 추가하고 팀 문서에 일격의 태세를 명시했다. JSON 파싱과 이 토큰을 제외한 팀 원문 불변을 확인했다. 레벨·기술·다이맥스 설정은 변경하지 않는다. Gradle/JUnit·실게임 검증은 실행하지 않았다.
+- **배포 계획:** main 반영·푸시 후 운영 중인 `ppakemon-hard-league-levels.zip`에서 마리 팀 JSON 한 개만 갱신하고 `/reload`한다. 서버를 종료·재시작하지 않으며 이미 시작한 연전의 팀은 유지한다.
+
 ## [2026-10-25 17:30] 하드 연전 95~100 데이터팩 VPS 무중단 적용
 
 - **소스:** `e8caeacbc`를 main에 fast-forward 반영하고 origin/main에 푸시·0/0 동기화를 확인했다. 이 main의 Git 객체에서 팀 JSON 11개를 읽어 서버 데이터팩 `ppakemon-hard-league-levels.zip`을 생성했다. 소스 JSON과 압축 내부 바이트 일치·ZIP 무결성을 확인했으며, Gradle/JAR 빌드는 필요 없어 실행하지 않았다. Kotlin/JUnit은 실행하지 않았다.
