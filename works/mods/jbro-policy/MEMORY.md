@@ -1,5 +1,14 @@
 # jbro-policy MEMORY
 
+## [2026-10-25 15:36] 전설 스폰 가중치 두 배·VPS 무중단 리로드·개발/로컬 운영 설정 동기화
+
+- **빡대리님 지시:** 전설 스폰율을 두 배로 올려 리로드하고, 서버는 재시작하지 않으며 개발과 운영을 같은 값으로 맞춘다.
+- **설정:** 개발 서버(`Cobblemon-Mods/develop-product/server`), 로컬 운영(`MinecraftPPakemonServer`), VPS(`/srv/MinecraftPPakemonServer`) 세 곳에 `config/cobblemon/main.json`의 `exportSpawnConfig: true`와 `config/cobblemon/spawning/best-spawner-config.json`의 `worldBuckets.legendary: 0.004`를 적용했다. 변경 전 외부 설정은 세 곳 모두 없고 플래그는 false였다. Cobblemon 1.8.1 JAR 기본 스폰 설정에서 해당 버킷만 더했으며 일반/보스·낚시·포케스낵·서식지·위치 타입·버전 정책은 유지했다. 주 설정은 다른 필드가 모두 이전과 같음을 확인했다. JAR 기본 상수 0.002는 바꾸지 않았고, 명시 외부 설정이 이를 우선한다. 모드 빌드·JAR 배치는 하지 않았다.
+- **VPS 리로드:** 실제 설치 JAR에 LegendSpawnBucket과 legendary 풀을 확인한 뒤 15:34:01에 `cobblemonconfig reload`만 tmux Java 콘솔에 전달했다. 로그 `Reloading Cobblemon settings.`와 이후 외부 스폰 설정 로드 오류 0을 확인했다. Java PID 277928과 `/proc`의 시작 시각이 전후 동일하며 최종 조회에서도 살아 있다. 서버 종료·재시작·재기동·강제 퇴장은 하지 않았다.
+- **반영 시점:** CobblemonConfigCommand → Cobblemon.reloadConfig → BestSpawner.reloadConfig 경로와 외부 파일 로딩을 바이트코드로 확인했다. PlayerSpawner는 생성 시 가중치 맵을 보관하므로 이미 접속한 플레이어는 재접속해야 새 가중치를 사용한다. 리로드 성공을 모든 기존 접속자의 즉시 갱신으로 쓰지 않는다. 실제 출현 빈도·플레이어 재접속 후 포켓내비 확률은 확인하지 않았다.
+- **로컬 동기화:** 세 곳의 best-spawner-config.json SHA-256 `14ae3f64feeec945ec65dde4595713de7fe01427245e1591ac6b6fdf8c05f2d4` 일치. 로컬 두 서버는 실행 중인 Java 서버 프로세스가 없어 리로드/기동하지 않았고 다음 기동부터 설정을 읽는다. 클라이언트 설정과 deploy-product는 변경하지 않았다.
+- **백업·커밋:** VPS `/home/ubuntu/.local/share/ppakemon-backups/manual/20261025-153401-legend-rate-double/`, 로컬 `%LOCALAPPDATA%/MinecraftServerDeploy/20261025-153428-legend-rate-double/`에 변경 전 주 설정 및 외부 파일 부재를 기록했다. 로컬 운영 저장소는 두 설정 파일만 커밋·푸시 `d40470c`(origin/main 동일). VPS의 실행 파일·HEAD·월드·플레이어 자료는 변경하지 않았다. 개발 설치본은 기존 git-ignore 범위를 유지한다.
+
 ## [2026-10-25 15:35] 1.4.2 서버 전용 긴급 배포 — 더블 메모리 완화·전설 스폰 (클라 필수 아님, VPS 15:26 기동)
 
 - **빡대리님 지시:** "긴급 1.4.2 패치로 다시 올려, 더블 배틀 메모리 문제 완화로", jbro-policy 전설 스폰 변경도 포함, "빌드 끝나면 VPS 바로 내리고 교체해서 켜", "agy도 켜줘".
