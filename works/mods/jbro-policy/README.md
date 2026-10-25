@@ -243,6 +243,12 @@ AI는 전용 `jbro-inquiry-review` 프로필에서 전달된 자료만 읽으며
 - **`jbro_policy:no_stat_candy_l_xl`:** 경험사탕 제작과 분할을 허용합니다. 모닥불 냄비에서 스컬크 1개와 벌집 조각 1개로 경험사탕 XS 6개를 만듭니다. Create가 설치된 경우 경험치 조각과 벌집 조각을 쓰는 XS 레시피도 6개를 만듭니다. 경험사탕 S·M·L·XL 합성과 조합대 분할은 Cobblemon 기본 레시피를 사용합니다. 개체값 사탕 6종(체력·공격·방어·특수공격·특수방어·스피드)은 경험사탕 L·XL을 재료로 쓰는 냄비 조합법 12개를 모두 차단합니다. 상점 구매 등 다른 획득 경로와 이미 보유한 사탕의 사용은 유지합니다. 기존 월드의 팩 활성화 설정을 유지하기 위해 팩 ID는 보존했습니다.
   - 실행 중인 서버에 JAR 교체 없이 적용하려면 이 팩의 `pack.mcmeta`와 `data/`를 월드 데이터팩 `world/datapacks/jbro-policy-xs-candy-six.zip`으로 배치하고 `/reload`로 인식시킵니다. 자동 활성화되지 않으면 `/datapack enable "file/jbro-policy-xs-candy-six.zip" last`로 활성화합니다. 같은 레시피 ID를 가장 높은 우선순위에서 덮어쓰므로 서버 재시작 없이 반영됩니다. 활성화 후 내용만 갱신할 때는 `/reload`를 사용합니다.
 
+## 전설 버킷 가중치 변경
+
+JAR의 기본 가중치는 `0.002`입니다. 서버별로 바꾸려면 `config/cobblemon/main.json`의 `exportSpawnConfig`를 `true`로 설정하고, `config/cobblemon/spawning/best-spawner-config.json`의 `worldBuckets.legendary`에 원하는 값을 지정합니다. `0.004`는 기본 가중치의 두 배입니다. 다른 버킷과 스폰 설정은 유지합니다.
+
+`/cobblemonconfig reload`로 재시작 없이 설정을 다시 읽을 수 있습니다. 이미 접속한 플레이어의 스포너는 기존 가중치 맵을 보관하므로 재접속 후 반영됩니다. JAR 기본값을 바꿔도 명시된 외부 설정값을 덮어쓰지 않습니다.
+
 ## 설정
 
 `config/jbro-policy.json`이 없으면 기본값으로 만듭니다. 파일 내용이 잘못되었다면 파일은 그대로 두고 그 실행에서만 기본값을 씁니다.
