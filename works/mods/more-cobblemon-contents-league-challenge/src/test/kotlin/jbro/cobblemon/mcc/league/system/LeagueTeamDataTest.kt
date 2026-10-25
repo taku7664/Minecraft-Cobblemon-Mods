@@ -188,7 +188,7 @@ class LeagueTeamDataTest {
             }
         }
         assertEquals(85, gyms.maxOf { team("${it}_hard").maxOf(::level) })
-        assertEquals(95, finals.dropLast(1).maxOf { team("${it}_hard").maxOf(::level) })
+        assertEquals(99, finals.dropLast(1).maxOf { team("${it}_hard").maxOf(::level) })
         // The hard Champion outlevels a party capped at 100 (user decision 2026-10-13): MCC builds it above Cobblemon's
         // maximum, within its own limit.
         assertEquals(105, level(team("cynthia_hard").last()))
