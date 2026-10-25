@@ -248,7 +248,7 @@ internal object InquiryReview {
             save(record.copy(reviewed = true))
             return
         }
-        val verdict = answer.verdict
+        val verdict = InquiryAutoResolve.guard(inquiry.reason, answer.verdict)
         if (!save(record.copy(conversationId = answer.conversationId, reviewed = true,
             suggestedActions = verdict.suggestedActions, suggestedCommands = verdict.suggestedCommands))) return
         val handling = settle(inquiry, verdict, reference)

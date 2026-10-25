@@ -79,6 +79,8 @@ class InquiryReviewTest {
         assertEquals(1, Regex("</inquiry>").findAll(prompt).count())
         assertTrue("관리자에게 넘겼다는 말은 쓰지 마라" in prompt)
         assertTrue("autoCommands: 항상 빈 배열" in prompt)
+        assertTrue("앞선 성공은 그 조합·개체·시각의 성공일 뿐" in prompt)
+        assertTrue("from=fusion to=cursor" in prompt)
         assertTrue(prompt.endsWith("[12:03:15] line\n</logs>\n"))
         val input = JsonParser.parseString(InquiryReviewer.input(prompt)).asJsonObject
         assertEquals("user", input.get("event").asString)
@@ -161,6 +163,26 @@ class InquiryReviewTest {
             assertTrue(InquiryAutoResolve.plan(unsafe, reference) is InquiryAutoResolve.Plan.HandOver)
         }
         assertTrue(InquiryAutoResolve.plan(v, "") is InquiryAutoResolve.Plan.HandOver)
+    }
+
+    @Test
+    fun `a prior Pikachu fusion and a rule quotation cannot automatically close a failure report`() {
+        val rule = "재료는 기준 포켓몬과 같은 진화 계보이고 같은 폼이어야 합니다."
+        val earlier = "[20:36:50] species=cobblemon:pikachu from=fusion to=cursor outcome=success"
+        val v = verdict(category = InquiryVerdict.Category.QUESTION, commands = emptyList())
+            .copy(evidence = listOf(earlier, rule), playerSummary = "합성은 완료되어 인벤토리에 있어요.")
+        assertTrue(InquiryAutoResolve.plan(v, rule) is InquiryAutoResolve.Plan.HandOver)
+        val guarded = InquiryAutoResolve.guard("피카츄끼리 합성이 안돼요", v.copy(evidence = listOf(rule)))
+        assertEquals(InquiryVerdict.Verdict.UNKNOWN, guarded.verdict)
+        assertEquals(InquiryVerdict.Resolution.OPERATOR, guarded.resolution)
+        assertFalse(guarded.playerSummary.contains("인벤토리에 있어요"))
+        assertTrue(InquiryAutoResolve.plan(guarded, rule) is InquiryAutoResolve.Plan.HandOver)
+        for (reason in listOf("합성이 안 돼요", "결과가 안 나와요", "아이템 못 받아요", "창 오류예요", "피카츄가 사라졌어요")) {
+            assertEquals(InquiryVerdict.Resolution.OPERATOR, InquiryAutoResolve.guard(reason, v).resolution, reason)
+        }
+        assertEquals(v, InquiryAutoResolve.guard("피카츄 합성 조건을 알려주세요", v))
+        val reward = verdict(commands = emptyList())
+        assertEquals(reward, InquiryAutoResolve.guard("BP 미지급이에요", reward))
     }
 
     @Test
