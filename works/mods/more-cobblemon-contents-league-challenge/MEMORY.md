@@ -1,10 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
-## [2026-10-25 17:35] 마리 하드 우라오스 일격의 태세 고정 (VPS 적용 전)
+## [2026-10-25 17:49] 마리 하드 우라오스 일격의 태세 고정·VPS 무중단 리로드
 
 - **원인·지시:** 빡대리님이 마리가 물라오스를 사용한다고 지적하고 즉시 악라오스로 고정하도록 지시했다. 기존 팀은 암흑강타를 넣었지만 폼 지정이 없었다. VPS Cobblemon 1.8.1의 `species_features/wushu_style.json`은 키 `wushu_style`, 선택지 `single_strike`/`rapid_strike`, 기본값 `random`이므로 폼을 무작위로 생성할 수 있었다.
 - **변경·확인:** `teams/galar/cup_marnie_hard.json`의 우라오스 한 마리에 `wushu_style=single_strike`만 추가하고 팀 문서에 일격의 태세를 명시했다. JSON 파싱과 이 토큰을 제외한 팀 원문 불변을 확인했다. 레벨·기술·다이맥스 설정은 변경하지 않는다. Gradle/JUnit·실게임 검증은 실행하지 않았다.
 - **배포 계획:** main 반영·푸시 후 운영 중인 `ppakemon-hard-league-levels.zip`에서 마리 팀 JSON 한 개만 갱신하고 `/reload`한다. 서버를 종료·재시작하지 않으며 이미 시작한 연전의 팀은 유지한다.
+- **적용 결과:** 소스 `8d262709b` main 반영·origin/main 동기화 후 Git 객체의 마리 팀 JSON을 사용했다. VPS 데이터팩에서 이 JSON 한 개만 갱신하고 나머지 엔트리 바이트 일치를 확인했다. 팀 SHA-256 `d805699106c2681119579e49e887a4faf432576bcdf26c607636b8c94603e7b7`, 갱신 ZIP SHA-256 `0d48393ffd326edf23ca705d5e7070700a95d579d08b0977a382f0b797e39d10`. 이전 ZIP은 서버 밖 `/home/ubuntu/.local/share/ppakemon-backups/manual/marnie-single-strike-20261025-174934/previous-datapack.zip`에 보관했다.
+- **가동·미확인:** 17:49:38 `Loaded League ...:sinnoh at revision 3` 성공. 전후 Java PID `277928`·`pane_dead=0` 동일이며 종료·재시작·JAR 교체는 없었다. 리로드 중 기존 underwater 오류가 다시 나왔고 6.217초 처리 지연 경고가 있었으나 리그 갱신은 수락됐다. 새로 시작하는 연전부터 반영하며, 기존 연전의 팀이나 현재 배틀 중인 우라오스를 교체하지 않았다. 새 전투 화면의 폼은 아직 확인하지 않았다.
 
 ## [2026-10-25 17:30] 하드 연전 95~100 데이터팩 VPS 무중단 적용
 
