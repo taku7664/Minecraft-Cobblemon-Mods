@@ -51,6 +51,7 @@
 - **VPS:** 업데이트 시작(15:16) 전에 서버가 이미 죽어 있었다. 마지막 로그 15:13:54(배틀 진행 중), 정상 종료 기록 없음, `dmesg`에 `Out of memory: Killed process (java) anon-rss 7,594,740kB`(머신 7.9GB, `-Xmx4G`). 그래서 업데이트는 재기동하지 않았다(시작 시 꺼져 있으면 다시 켜지 않음). 15:17:58 `d8e84d28` 교체, 두 JAR 해시 일치 확인 뒤 `tmux respawn-pane`으로 직접 시작, 15:26:17 `Done`, `end_spawns` 자동 활성화. VPS `mods` 49 = `deploy-product/server` 차이 0. 드라이브 백업 업로드는 15:35 기준 진행 중.
 - **agy:** 피츄 문의 때마다 서버가 띄우는 일회성 프로세스(`PichuQuestionAI`·`InquiryReviewer`, stream-json)라 상주 프로그램이 아니다. 모니터링의 agy(포트 44643·44811)는 14:31 문의 때 뜬 것이었고 java OOM 종료와 함께 사라졌다. `agy --version` 1.4.7, `agy models` 목록 받음(로그인 정상). 다음 문의 때 다시 뜬다.
 - **모드팩·패치노트:** `Downloads/PPakemon 1.4.2.mrpack` 248,468,602바이트(1.4.0 대비 MCC·jbro만 다름). 📝┃패치-노트에 1.4.2 노트 게시(`1563801650332827710`).
+- **PPakemon(빡대리님 지시 "포켓내비 번역 1.4.2 덮어씌워"):** 1.4.0 jbro에는 포켓내비 `bucket.cobblenav.legendary`(전설 행) 번역이 없어서, 게임 종료 뒤 `F:/AI/build/release-1.4.2/client-stage`(1.4.0 스테이지 + 1.4.2 MCC·jbro)로 패치: 4건(두 JAR + 위키 legends 2개), 재계획 0, 새 JAR에 키 있음. `deploy-product/client` 18 = PPakemon, 두 JAR은 서버본과 같다. 1.4.0 클라는 전설 행 이름만 키 그대로 보인다.
 - **남은 위험:** RSS 7.5GB는 4G 힙보다 훨씬 크다(힙 밖 메모리). 이번 완화는 할당량 위주라 OOM 재발 여부는 실서버에서 지켜봐야 한다.
 
 ## [2026-10-25 03:20] legendary 버킷·엔드 스폰 — 개발 서버 기동 확인 (실게임 안 함)
