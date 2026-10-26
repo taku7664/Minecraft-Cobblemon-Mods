@@ -1,5 +1,12 @@
 # MEMORY
 
+## [2026-10-26 22:05] `f11b0f73` 개발 서버·클라 배포: PvP 결과 전체채팅 알림 (빌드·해시 확인, 서버 기동·실게임 미확인)
+
+- main `f11b0f738`(병합 커밋, origin/main 동기화)을 `git archive`로 F에 꺼내 `:more-cobblemon-contents-pvp:unitTest`·`remapJar` 빌드(EXIT 0, 244/244 통과). `unzip -t`·JDK 21 `jar --validate` 통과, JAR 안 문구가 승자 기준(`…승리했습니다!`)인 것을 확인했다.
+- 개발 서버·클라이언트의 PvP JAR만 교체했고 빌드본과 SHA-256이 같다(3CE90EE7…). 백업 `develop-product/deployment-backups/20261026-2205-f11b0f73-pvp-result-broadcast`. 개발 서버와 게임은 꺼져 있었고 서버는 켜지 않았다.
+- main이 Codex 워크트리 `.codex/worktrees/5c87`에 체크아웃돼 있어 공용 체크아웃에서 main으로 못 바꾼다. 그 워크트리가 깨끗하고 origin/main과 같은 것을 확인한 뒤 거기서 병합·푸시했다.
+- PPakemon 프로필·운영(VPS)·deploy-product에는 넣지 않았다. 새 번역 키라 클라·서버 JAR이 같이 바뀌어야 한다(클라가 옛 JAR이면 키 문자열이 그대로 보인다).
+
 ## [2026-10-26 21:20] PvP 결과 전체채팅 알림 (컴파일·단위 테스트 확인, 빌드 배치·실게임 미확인)
 
 - **빡대리님 요청:** PvP 결과를 전체채팅에 "player1이(가) player2에게 싱글(더블)배틀 1:1에서 패배했습니다"처럼 띄우고, 이름은 닉네임 모드(Styled Nicknames) 것을 쓴다. 이어서 승자 기준 문장으로 바꾸고 끝에 `!`를 붙이라고 했다("A이(가) B에게 싱글배틀 1:1에서 승리했습니다!").
