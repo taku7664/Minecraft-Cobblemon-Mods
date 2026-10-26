@@ -6,6 +6,7 @@ import java.util.function.Consumer;
 
 public final class FadingMusicPlayer {
     private static final double STARTUP_GRACE_SECONDS = 0.1;
+    private static final double FAILED_START_RETRY_SECONDS = 5.0;
     private static final double MUFFLE_TRANSITION_SECONDS = 0.75;
     private static final double UNDERWATER_TRANSITION_SECONDS = 0.75;
 
@@ -14,6 +15,7 @@ public final class FadingMusicPlayer {
     private Optional<TrackSource> desiredSource = Optional.empty();
     private ActiveTrack active;
     private ActiveTrack outgoing;
+    private Track retryTrack;
     private double restartAtSeconds = Double.POSITIVE_INFINITY;
     private double lastTimeSeconds = Double.NEGATIVE_INFINITY;
     private double lastEffectUpdateSeconds = Double.NaN;
@@ -48,12 +50,13 @@ public final class FadingMusicPlayer {
             if (fadeOutSeconds > 0.0 && active.currentVolume > 0.0) {
                 outgoing = active.fadeToZero(nowSeconds, fadeOutSeconds);
             } else {
-                backend.stop(active.handle);
+                stopTrack(active);
             }
             active = null;
         }
 
         desiredSource = target;
+        retryTrack = null;
         restartAtSeconds = Double.POSITIVE_INFINITY;
         target.ifPresent(source -> startTrack(source.nextTrack(), nowSeconds, fadeInSeconds));
     }
@@ -64,18 +67,26 @@ public final class FadingMusicPlayer {
         backend.setEffects(muffleAmount, underwaterAmount);
         updateEnvelopes(nowSeconds);
 
+        if (active != null && backend.isPlaying(active.handle)) {
+            announceStarted(active);
+        }
         if (active != null
             && nowSeconds - active.startedAtSeconds >= STARTUP_GRACE_SECONDS
             && !backend.isPlaying(active.handle)) {
-            backend.stop(active.handle);
+            boolean failedStart = !active.announced;
+            retryTrack = failedStart ? active.track : null;
+            stopTrack(active);
             active = null;
             restartAtSeconds = desiredSource.isPresent()
-                ? nowSeconds + desiredSource.orElseThrow().betweenTracksSeconds()
+                ? nowSeconds + Math.max(desiredSource.orElseThrow().betweenTracksSeconds(),
+                    failedStart ? FAILED_START_RETRY_SECONDS : 0.0)
                 : Double.POSITIVE_INFINITY;
         }
 
         if (active == null && desiredSource.isPresent() && nowSeconds >= restartAtSeconds) {
-            startTrack(desiredSource.orElseThrow().nextTrack(), nowSeconds, 0.0);
+            Track next = retryTrack != null ? retryTrack : desiredSource.orElseThrow().nextTrack();
+            retryTrack = null;
+            startTrack(next, nowSeconds, 0.0);
         }
     }
 
@@ -119,14 +130,29 @@ public final class FadingMusicPlayer {
             initialVolume
         );
         restartAtSeconds = Double.POSITIVE_INFINITY;
-        trackStarted.accept(track);
+        if (backend.isPlaying(handle)) {
+            announceStarted(active);
+        }
+    }
+
+    private void announceStarted(ActiveTrack track) {
+        if (!track.announced) {
+            track.announced = true;
+            trackStarted.accept(track.track);
+        }
+    }
+
+    private void stopTrack(ActiveTrack track) {
+        // A pending audio load can finish after stop; leave the abandoned instance silent.
+        backend.setVolume(track.handle, 0.0);
+        backend.stop(track.handle);
     }
 
     private void updateEnvelopes(double nowSeconds) {
         if (outgoing != null) {
             updateVolume(outgoing, nowSeconds);
             if (outgoing.fadeComplete(nowSeconds) || !backend.isPlaying(outgoing.handle)) {
-                backend.stop(outgoing.handle);
+                stopTrack(outgoing);
                 outgoing = null;
             }
         }
@@ -164,7 +190,7 @@ public final class FadingMusicPlayer {
 
     private void stopOutgoing() {
         if (outgoing != null) {
-            backend.stop(outgoing.handle);
+            stopTrack(outgoing);
             outgoing = null;
         }
     }
@@ -231,6 +257,7 @@ public final class FadingMusicPlayer {
         private final double startVolume;
         private final double targetVolume;
         private double currentVolume;
+        private boolean announced;
 
         private ActiveTrack(
             Handle handle,

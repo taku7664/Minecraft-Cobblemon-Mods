@@ -18,6 +18,16 @@ import org.junit.jupiter.api.Test;
 
 final class FadingMusicSoundInstanceTest {
     @Test
+    void cancelledMusicStaysSilentAndCannotBePlayedAgain() {
+        var sound = new FadingMusicSoundInstance(
+            ResourceLocation.parse("example:music"), 1.0);
+        sound.cancelMusic();
+        assertTrue(sound.isStopped());
+        assertFalse(sound.canPlaySound());
+        assertEquals(0.0F, sound.getVolume());
+    }
+
+    @Test
     void zeroVolumeFadeInIsAllowedToStartWithoutLoopingTheFirstSelectedSongForever() {
         var sound = new FadingMusicSoundInstance(ResourceLocation.parse("example:bgm"), 0.0);
         assertTrue(sound.canStartSilent(), "Minecraft otherwise discards a fade-in before it starts");
