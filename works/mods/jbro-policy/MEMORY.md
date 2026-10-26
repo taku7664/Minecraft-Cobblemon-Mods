@@ -1,5 +1,13 @@
 # jbro-policy MEMORY
 
+## [2026-10-26 21:41] 복귀 위치 보존 수정 — main 소스 최종 빌드·개발 설치
+
+- **main:** 코드 `6527d6831`을 `8d0862784`로 병합·푸시하고 `origin/main` 및 원격 main SHA 일치를 확인했다. SimpleMyRoom은 병합 `65ac87a`와 ID 정규화 `363cdfb`까지 main에 푸시했다.
+- **최종 빌드:** 두 저장소의 위 커밋된 main을 F 소스 사본에 `git archive`로 추출한 후 assemble 성공. 앞선 검증은 jbro-policy JUnit 124/124, Simple MyRoom 최종 44/44 성공이며, 최종 assemble에서 테스트를 다시 돌리지는 않았다. 두 배포 JAR의 `jar --validate`를 통과했다. 마이룸 JAR 클래스에 광장·PvP 차원 ID가 없으며, jbro-policy JAR에 범용 제공자와 Fabric 등록이 들어 있는 것을 확인했다.
+- **개발 설치:** 실제 개발 루트 `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product`의 서버에 `jbro-policy-0.1.8.jar`와 `simple-myroom-1.0.3.jar`를, 클라이언트(`cobblemon-dev` 정션)에 jbro-policy만 설치했다. 서버의 이전 마이룸 1.0.2는 교체했다. 개발 서버·클라이언트가 실행 중이지 않으며 25566 리스너가 없는 상태에서 수행했다. 다른 모드·설정·월드·사용자 데이터는 교체 대상에 넣지 않았다.
+- **SHA-256:** jbro-policy 빌드본·개발 서버·개발 클라이언트 모두 `78ae4b551ce5dbf40024cabf2592f63381853d344947c6e3ce4bee92c6a22542`; 마이룸 빌드본·개발 서버 모두 `feae1cb237c91ef546c977f672ae4fadd9ea62b11604cdde6771574f182decc0`. 이전 JAR은 제품 밖 `F:/AI/build/hub-pvp-return-5c87/installed-before/`에 보관했다.
+- **미수행:** 서버 기동·실게임 대전/관전·중도 퇴장·재접속 왕복은 확인하지 않았다. VPS·로컬 운영·실사용 PPakemon·deploy-product는 수정하지 않았다. 이미 삭제된 복귀 좌표를 복구하지 않는다. 이후 main 변경이 이 배포 기록뿐이면 빌드 소스와 기능 코드는 같다.
+
 ## [2026-10-26 21:37] PvP 방문 중 광장·마이룸 복귀 위치 보존 — 연동 소유권 분리
 
 - **사용자 결정:** 마이룸은 광장·PvP를 몰라야 한다. 서버 기능 간 연동은 `jbro-policy`가 소유하며, 수정 후 개발 서버·클라이언트에 배포한다. VPS·운영 저장소·실사용 PPakemon·릴리스 제품은 이번 배포 대상이 아니다.
