@@ -1,5 +1,12 @@
 # MEMORY
 
+## [2026-10-26 21:20] PvP 결과 전체채팅 알림 (컴파일·단위 테스트 확인, 빌드 배치·실게임 미확인)
+
+- **빡대리님 요청:** PvP 결과를 전체채팅에 "player1이(가) player2에게 싱글(더블)배틀 1:1에서 패배했습니다"처럼 띄우고, 이름은 닉네임 모드(Styled Nicknames) 것을 쓴다.
+- **구현:** `settleCompletion`이 결과를 받아들인 뒤 `broadcastResult`가 `playerList.broadcastSystemMessage`로 보낸다. 키 `chat.more_cobblemon_contents.pvp.result`(패자·승자·형식), 형식은 기존 `pvp.format.single/double`. 무승부·취소(`pending.cancelled`)와 이미 정산된 재시도는 보내지 않는다.
+- **닉네임:** Styled Nicknames(`changeDisplayName: true`)가 `Player.getDisplayName`을 바꾸므로 의존성 없이 `displayName`을 쓴다. 로그아웃 기권이면 정산 시점에 패자가 플레이어 목록에 없어서, 배틀 런타임이 종료 콜백에서 시작 때 잡아 둔 `ServerPlayer`로 이름을 뽑아 `PendingPvpCompletion.displayNames`에 실어 보낸다. 끊긴 플레이어의 옛 객체에서도 닉네임이 나오는지는 확인하지 않았다(안 나오면 계정 이름).
+- **확인:** F 복사본에서 `:more-cobblemon-contents-pvp:unitTest` 244/244 통과. 처음엔 `displayName`이 nullable이라 컴파일이 깨져 `?: name`을 붙였다. 결과 알림 전용 단위 테스트는 없다. 빌드 배치·서버 기동·실제 두 사람 대전은 하지 않았다. 브랜치 `feature/pvp-result-broadcast`에만 커밋했고 main에는 넣지 않았다.
+
 ## [2026-10-18 13:50] `6bc4fd51` 개발 서버·클라 배포: MCC 애드온 피드백 수정 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
 - `origin/main` `6bc4fd51`을 워크트리 `.claude/worktrees/mcc-addon-feedback`에서 `remapJar`로 빌드했다(EXIT 0, Kotlin in-process, 빌드 출력 `F:/AI/builds/mcc-addon-feedback`). 세 모듈을 한 번에 `assemble`하면 2G 힙에서 GC 과부하로 데몬이 멈춰, 모듈별 `remapJar`로 나눴다. `unzip -t`와 JDK 21 `jar --validate`를 통과했다.

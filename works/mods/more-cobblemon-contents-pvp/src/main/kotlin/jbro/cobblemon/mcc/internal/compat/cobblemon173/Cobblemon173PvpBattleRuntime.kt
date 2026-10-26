@@ -18,12 +18,13 @@ import jbro.cobblemon.mcc.api.battle.ManagedBattleForfeits
 import jbro.cobblemon.mcc.api.battle.MccBattleTag
 import jbro.cobblemon.mcc.api.battle.MccBattleTags
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
+import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
 internal class Cobblemon173PvpBattleRuntime(
     private val playerResolver: (UUID) -> ServerPlayer?,
-    private val completion: (MinecraftServer, UUID, UUID, UUID, UUID) -> Unit,
+    private val completion: (MinecraftServer, UUID, UUID, UUID, UUID, Map<UUID, Component>) -> Unit,
     private val cancellation: (MinecraftServer, UUID, UUID) -> Unit,
 ) : PvpBattleRuntime<BattlePokemon> {
     override fun start(prepared: PvpPreparedBattle<BattlePokemon>): PvpBattleLaunchResult {
@@ -192,7 +193,19 @@ internal class Cobblemon173PvpBattleRuntime(
                                 forfeits = ManagedBattleForfeits.of(ended.battleId),
                             )
                             if (outcome != null) {
-                                completion(first.server, request.matchId, outcome.winnerId, outcome.loserId, ended.battleId)
+                                // A player who logged out is no longer resolvable; their battle-start body still names them.
+                                val displayNames = listOf(first, second).associate { player ->
+                                    val body = playerResolver(player.uuid) ?: player
+                                    player.uuid to (body.displayName ?: body.name)
+                                }
+                                completion(
+                                    first.server,
+                                    request.matchId,
+                                    outcome.winnerId,
+                                    outcome.loserId,
+                                    ended.battleId,
+                                    displayNames,
+                                )
                             } else {
                                 cancellation(first.server, request.matchId, ended.battleId)
                             }

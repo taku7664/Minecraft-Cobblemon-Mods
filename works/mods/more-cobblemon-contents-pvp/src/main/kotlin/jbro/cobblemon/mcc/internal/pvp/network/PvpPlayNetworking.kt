@@ -92,8 +92,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     private val runtime: Cobblemon173PvpBattleRuntime by lazy {
         Cobblemon173PvpBattleRuntime(
             playerResolver = ::livePlayer,
-            completion = { server, matchId, winnerId, loserId, battleId ->
-                val pending = PendingPvpCompletion(matchId, battleId, winnerId, loserId)
+            completion = { server, matchId, winnerId, loserId, battleId, displayNames ->
+                val pending = PendingPvpCompletion(matchId, battleId, winnerId, loserId, displayNames)
                 pendingCompletions.submit(pending) { completion -> settleCompletion(server, completion) }
             },
             cancellation = { server, matchId, battleId ->
@@ -1321,6 +1321,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         attemptPvpCompletionSettlement(
             settle = {
                 if (sessions.isLaunchPending(pending.matchId)) return@attemptPvpCompletionSettlement false
+                var recordedFormat: PvpBattleFormat? = null
                 val accepted = transitionPvpBattleLifecycle(
                     transition = {
                         if (pending.cancelled) {
@@ -1332,6 +1333,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                                 checkNotNull(pending.winnerId),
                                 checkNotNull(pending.loserId),
                                 PvpBattleCompletionSink { winnerId, loserId, format ->
+                                    recordedFormat = format
                                     PvpBattleRecordService { completions ->
                                         BattleRecordService.recordCompletedBattles(server, completions)
                                     }.recordResult(winnerId, loserId, format)
@@ -1352,6 +1354,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                     fun name(id: UUID) = Component.literal(jbro.cobblemon.mcc.internal.command.MccAdminArguments.name(server, id))
                     winner?.let { jbro.cobblemon.mcc.api.presentation.BattleResultNotices.victory(it, name(pending.loserId)) }
                     loser?.let { jbro.cobblemon.mcc.api.presentation.BattleResultNotices.defeat(it, name(pending.winnerId)) }
+                    recordedFormat?.let { format -> broadcastResult(server, pending, format) }
                 }
                 if (!accepted) {
                     MoreCobblemonContents.LOGGER.warn(
@@ -1372,6 +1375,22 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 )
             },
         )
+
+    /** Tells the whole server who lost to whom, by display name so Styled Nicknames' nicknames show. */
+    private fun broadcastResult(server: MinecraftServer, pending: PendingPvpCompletion, format: PvpBattleFormat) {
+        fun name(id: UUID): Component = pending.displayNames[id]
+            ?: server.playerList.getPlayer(id)?.displayName
+            ?: Component.literal(jbro.cobblemon.mcc.internal.command.MccAdminArguments.name(server, id))
+        server.playerList.broadcastSystemMessage(
+            Component.translatable(
+                "chat.${MoreCobblemonContents.MOD_ID}.pvp.result",
+                name(checkNotNull(pending.loserId)),
+                name(checkNotNull(pending.winnerId)),
+                Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.pvp.format.${format.recordId}"),
+            ),
+            false,
+        )
+    }
 
     private fun pushActiveRoomToSpectators(matchId: UUID) {
         rooms.get(matchId)

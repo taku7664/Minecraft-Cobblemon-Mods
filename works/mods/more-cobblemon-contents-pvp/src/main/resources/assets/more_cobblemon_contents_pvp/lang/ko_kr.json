@@ -119,6 +119,7 @@
   "screen.more_cobblemon_contents.pvp.matchup": "상대: %s · %s",
   "screen.more_cobblemon_contents.pvp.format.single": "싱글배틀",
   "screen.more_cobblemon_contents.pvp.format.double": "더블배틀",
+  "chat.more_cobblemon_contents.pvp.result": "%1$s이(가) %2$s에게 %3$s 1:1에서 패배했습니다",
   "screen.more_cobblemon_contents.pvp.opponent_team": "상대 등록 파티",
   "screen.more_cobblemon_contents.pvp.your_team": "내 선출",
   "screen.more_cobblemon_contents.pvp.selection_summary": "선출 %s/%s · 남은 시간 %s초",
