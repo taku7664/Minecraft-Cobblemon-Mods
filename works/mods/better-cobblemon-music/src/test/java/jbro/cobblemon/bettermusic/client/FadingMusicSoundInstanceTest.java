@@ -18,13 +18,16 @@ import org.junit.jupiter.api.Test;
 
 final class FadingMusicSoundInstanceTest {
     @Test
-    void cancelledMusicStaysSilentAndCannotBePlayedAgain() {
+    void cancelledMusicStaysSilentAndCannotBePlayedAgain() throws ReflectiveOperationException {
         var sound = new FadingMusicSoundInstance(
             ResourceLocation.parse("example:music"), 1.0);
         sound.cancelMusic();
         assertTrue(sound.isStopped());
         assertFalse(sound.canPlaySound());
-        assertEquals(0.0F, sound.getVolume());
+        // getVolume() needs a resolved resource-pack Sound; inspect the instance gain before loading.
+        var volume = net.minecraft.client.resources.sounds.AbstractSoundInstance.class.getDeclaredField("volume");
+        volume.setAccessible(true);
+        assertEquals(0.0F, volume.getFloat(sound));
     }
 
     @Test
