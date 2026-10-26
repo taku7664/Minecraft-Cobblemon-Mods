@@ -1,5 +1,11 @@
 # PokemonFusion MEMORY
 
+## [2026-10-26 21:47] Park_JH 우두머리 에이스번 원본 복구·결과 로더 Alpha 누락 확인
+
+- **베이스 확인:** 21:36:39 합성 로그 결과 UUID 40d00c87-c525-48ea-bb27-a2ddfb204e68(에이스번)가 첫 입력과 같고 재료 UUID 4개는 별도로 소모됐다. 사용자가 잘못된 베이스를 넣었다고 볼 근거가 없다. 이후 이 UUID의 원본은 인벤토리 Slot31에 66레벨로 남았고 Alpha 필드는 없었으나 mark_alpha·mark_jumbo와 아이템 alpha_eyes·bucket-boss 표시가 남았다. 사용자 추가 캡처에서도 베이스는 우두머리이고 결과 미리보기는 우두머리 표시가 빠진 것을 실제 비교했다.
+- **설치본 원인:** 운영 PokemonFusion-fabric-1.4.2.jar의 PokeFusionCobblemonBridge.loadPokemon은 new Pokemon().loadFromNBT(registries,tag) 인스턴스 메서드를 호출한다. 운영 Cobblemon 1.8.1의 이 경로는 copyFrom을 거치며, 설치된 Pokemon.class의 copyFrom에 isAlpha/setAlpha 복사가 없다. 일반 CODEC 디코드와 인스턴스 loadFromNBT 경로를 혼동하지 말 것. 베이스를 읽어 결과를 다시 저장하는 시점에 Alpha가 빠질 수 있는 실제 설치 코드다. 과거 2026-10-11 기록의 save/load 전체 보존 주장은 이 경로를 검증하지 않아 충분하지 않았다.
+- **복구·한계:** 사용자 복구 지시로 서버 콘솔 조건부 item modify를 사용해 기존 한 개의 custom_data.pokemon.Alpha만 true로 보완했다. 원본 UUID·레벨·합성된 IV·기술·수량·다른 모든 컴포넌트는 구조 비교로 동일하다. 새 개체 지급·모드 소스 수정·JAR 배포·VPS 종료/재시작은 하지 않았다. 현재 합성 코드는 그대로라 다시 합성하면 재발할 수 있으며 사용자에게 결과를 확정하지 말라고 안내했다. 복구 이후 실제 파티 복원/실게임 확인은 미실행이다. 상세 복구 자료는 vps-manager MEMORY와 F:/AI/scratch/ppakemon-cinderace-20261026-117d에 있다.
+
 ## [2026-10-25 21:28] 윤쑤 피카츄 합성 거절 조사 — 폼 정책 유지
 
 - **확인:** 문의 25adf61c의 원문·관리자 검토 카드·VPS latest.log와 문의자 PC 저장본을 읽었다. 결과 UUID 4b8b83db-a11a-40c8-b1d5-46e388d9043c(normal, Box15/Slot20)와 9e968af0-1445-44aa-9cf3-a98d4262d1ac(alolabias, region_bias=alola, Box15/Slot21)의 저장 폼이 다르다. PokeFusionService.compatibilityFailure는 같은 종이라도 evolutionNode의 폼이 다르면 DIFFERENT_FORM으로 거절하며 결과 barrier의 한국어 이름은 '같은 폼끼리만 합성할 수 있습니다'다. 재료 1/9는 1개를 넣었다는 뜻이며 9개 필수 조건이 아니다. 캡처는 UUID를 보여주지 않으므로 이미지의 두 입력과 이 UUID들의 일대일 대응까지 입증한 것은 아니다.
