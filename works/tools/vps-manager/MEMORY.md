@@ -1,3 +1,10 @@
+# [2026-10-26 21:47] Park_JH 에이스번 기존 아이템 Alpha 한 필드 복구 (VPS 무중단)
+
+- **요청·확인:** 빡대리가 실수로 합성 소모한 것 같은 우두머리 에이스번 복구를 요청했다. 실제로는 UUID 40d00c87-c525-48ea-bb27-a2ddfb204e68가 21:36:39 합성 결과에도 유지되고 현재 인벤토리 Slot31의 66레벨 아이템으로 남았다. Alpha 필드만 없고 우두머리 마크·표시 정보가 남아 있었다. 별도 신규 개체 지급은 필요하지 않았다. 당일 04시 전체 백업의 본인 playerdata·party·PC에는 해당 에이스번이 없었으므로 그 백업으로 원본을 복원했다고 쓰지 않는다.
+- **복구:** 21:43:38 count1·Slot31·종·원본 UUID가 일치하고 Alpha=true가 아닌 조건에서만 item modify entity Park_JH inventory.22의 인라인 set_custom_data로 cobblemon_to_item.pokemon.Alpha=1b를 재귀 병합했다. 실행 직전 원본 SNBT와 실행 후 SNBT·콘솔 결과는 서버 밖 /home/ubuntu/.local/share/ppakemon-backups/manual/20261026-parkjh-cinderace-alpha에 보관했다. Slot31은 핫바 다음 소지품 영역의 inventory.22이며 슬롯 번호 체계를 혼동하지 않는다.
+- **검증:** 콘솔 교체 성공과 직후 Alpha=1b를 확인했다. SNBT를 구조로 파싱하여 before와 after에서 Alpha 추가 하나만 다르고 UUID·레벨66·IV·기술·수량·컴포넌트 전부가 같음을 확인했다. F:/AI/scratch/ppakemon-cinderace-20261026-117d/restoration.json, verify_restoration.py, verification.json에 근거를 남겼다. 실제 파티 복원·후속 디스크 저장·사용자 화면은 직접 확인하지 않았다. 새 지급·다른 개체/월드 파일 덮어쓰기·모드/설정 수정·서버 재시작은 없다. tmux pane %0 PID277928·dead0이 전후 동일하다.
+- **원인 조사:** 운영 JAR의 실제 class를 읽어 합성 브리지의 인스턴스 loadFromNBT가 Cobblemon copyFrom의 Alpha 누락을 거치는 것을 확인했다. installed-classes.json, actual-classes, Pokemon-installed.txt, PokeFusionCobblemonBridge-installed.txt에 근거가 있다. 모드 수정·빌드·테스트·배포는 하지 않았으며 현 합성 경로는 재발 가능성이 있다. 사용자에게 결과 확정을 멈추라고 안내했다.
+
 # [2026-10-25 00:45] 찌르꼬 지급 아이템 표시 정보 누락 수정·파티 복원 확인
 
 - **잘못·원인:** 앞선 수동 지급은 포켓몬 NBT만 포함하고 `PokemonItem.from`이 설정하는 `cobblemon:pokemon_item` 컴포넌트를 빠뜨렸다. 서버 인벤토리에는 원본 UUID의 아이템 한 개가 있었지만 사용자 캡처에서는 해당 칸이 비어 보였다. 서버 데이터만 근거로 칸을 안내한 것은 불충분했다.
