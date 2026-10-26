@@ -38,7 +38,8 @@ public final class PokeFusionCobblemonBridge {
     }
 
     public static Pokemon loadPokemon(RegistryAccess registryAccess, CompoundTag tag) {
-        return new Pokemon().loadFromNBT(registryAccess, tag);
+        // The instance loader calls copyFrom, which omits Alpha and other state in Cobblemon 1.8.1.
+        return Pokemon.Companion.loadFromNBT(registryAccess, tag);
     }
 
     public static CompoundTag savePokemon(Pokemon pokemon, RegistryAccess registryAccess) {

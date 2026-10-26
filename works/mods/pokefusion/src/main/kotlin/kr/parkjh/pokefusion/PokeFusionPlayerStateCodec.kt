@@ -14,6 +14,7 @@ object PokeFusionPlayerStateCodec {
             root.put(MATERIALS_KEY, encodeItems(state.materialInputs, registries))
             root.put(PENDING_KEY, encodeItems(state.pendingOutputs, registries))
             root.putBoolean(LEGACY_MIGRATION_KEY, state.legacyMigrationComplete)
+            root.putBoolean(BLOCKED_KEY, state.deliveryBlocked)
         }
 
     fun decode(root: CompoundTag, registries: HolderLookup.Provider): PokeFusionPlayerState {
@@ -29,7 +30,8 @@ object PokeFusionPlayerStateCodec {
         require(materials.size <= FusionMaterialLogic.MAX_MATERIALS) { "too many material inputs" }
         val pending = decodeItems(root, PENDING_KEY, registries)
         require(root.contains(LEGACY_MIGRATION_KEY, Tag.TAG_BYTE.toInt())) { "missing legacy migration flag" }
-        return PokeFusionPlayerState(base, materials, pending, root.getBoolean(LEGACY_MIGRATION_KEY))
+        require(!root.contains(BLOCKED_KEY) || root.contains(BLOCKED_KEY, Tag.TAG_BYTE.toInt())) { "invalid delivery-blocked flag" }
+        return PokeFusionPlayerState(base, materials, pending, root.getBoolean(LEGACY_MIGRATION_KEY), root.getBoolean(BLOCKED_KEY))
     }
 
     private fun encodeItems(items: List<ItemStack>, registries: HolderLookup.Provider): ListTag =
@@ -57,4 +59,5 @@ object PokeFusionPlayerStateCodec {
     private const val MATERIALS_KEY = "materials"
     private const val PENDING_KEY = "pending"
     private const val LEGACY_MIGRATION_KEY = "legacyMigrationComplete"
+    private const val BLOCKED_KEY = "deliveryBlocked"
 }

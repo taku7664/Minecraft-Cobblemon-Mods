@@ -6,7 +6,9 @@ data class PokeFusionPlayerState(
     val baseInput: ItemStack = ItemStack.EMPTY,
     val materialInputs: List<ItemStack> = emptyList(),
     val pendingOutputs: List<ItemStack> = emptyList(),
-    val legacyMigrationComplete: Boolean = false
+    val legacyMigrationComplete: Boolean = false,
+    /** A delivery threw after external state may have changed; never automatically grant it again. */
+    val deliveryBlocked: Boolean = false
 ) {
     fun withInputs(base: ItemStack, materials: List<ItemStack>): PokeFusionPlayerState = copy(
         baseInput = base.safeCopy(),
