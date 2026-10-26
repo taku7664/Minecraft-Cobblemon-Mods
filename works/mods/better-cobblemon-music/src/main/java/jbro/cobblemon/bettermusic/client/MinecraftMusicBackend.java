@@ -86,6 +86,16 @@ public final class MinecraftMusicBackend implements FadingMusicPlayer.Backend {
     @Override
     public void stop(FadingMusicPlayer.Handle handle) {
         FadingMusicSoundInstance sound = requireSound(handle);
+        sound.cancelMusic();
+        var engine = ((SoundManagerAccessor) soundManager).betterCobblemonMusic$getSoundEngine();
+        var channel = ((SoundEngineAccessor) engine).betterCobblemonMusic$getInstanceToChannel().get(sound);
+        if (channel != null) {
+            // Muting the native channel also covers a stream callback that runs after this stop.
+            channel.execute(nativeChannel -> {
+                nativeChannel.setVolume(0.0F);
+                nativeChannel.stop();
+            });
+        }
         ownedSounds.remove(sound);
         affectedSounds.remove(sound);
         soundManager.stop(sound);

@@ -41,6 +41,16 @@ final class FadingMusicSoundInstance extends AbstractTickableSoundInstance
         this.volume = toVolume(volume);
     }
 
+    void cancelMusic() {
+        volume = 0.0F;
+        stop();
+    }
+
+    @Override
+    public boolean canPlaySound() {
+        return !isStopped();
+    }
+
     private static float toVolume(double volume) {
         if (!Double.isFinite(volume) || volume < 0.0) {
             throw new IllegalArgumentException("volume must be finite and non-negative");

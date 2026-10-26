@@ -11,6 +11,61 @@ import org.junit.jupiter.api.Test;
 
 final class FadingMusicPlayerTest {
     @Test
+    void rejectedPlaybackDoesNotRotateTitlesOrRetryEveryTick() {
+        var backend = new FakeBackend();
+        backend.rejectStarts = true;
+        var announcements = new ArrayList<String>();
+        var player = new FadingMusicPlayer(backend, track -> announcements.add(track.sound()));
+        int[] requested = {0};
+        var source = new FadingMusicPlayer.TrackSource() {
+            public FadingMusicPlayer.Track nextTrack() {
+                return new FadingMusicPlayer.Track("example:track_" + requested[0]++, 1.0);
+            }
+            public double betweenTracksSeconds() { return 0.0; }
+        };
+        player.transitionSource(0.0, Optional.of(source), 1.0, 1.0);
+        for (int tick = 1; tick <= 100; tick++) player.tick(tick / 20.0);
+        assertEquals(1, backend.handles.size());
+        assertEquals(List.of(), announcements);
+        backend.rejectStarts = false;
+        player.tick(5.2);
+        assertEquals(2, backend.handles.size());
+        assertEquals(1, requested[0]);
+        assertEquals(List.of("example:track_0"), announcements);
+    }
+
+    @Test
+    void interruptedFadeLeavesAnAbandonedLoadingTrackSilent() {
+        var backend = new FakeBackend();
+        var player = new FadingMusicPlayer(backend);
+        var track = new FadingMusicPlayer.Track("example:old", 1.0);
+        player.transitionSource(0.0, Optional.of(source(track, 0)), 0, 0);
+        player.transitionSource(1.0, Optional.of(source(track, 0)), 1, 1);
+        player.transitionSource(1.2, Optional.of(source(track, 0)), 1, 1);
+        var abandoned = backend.handles.getFirst();
+        assertTrue(abandoned.stopped);
+        // Even if a late stream callback revives it, its retained volume must be zero.
+        abandoned.playing = true;
+        assertEquals(0.0, abandoned.volume);
+        player.tick(2.3);
+        assertEquals(1, backend.handles.stream().filter(h -> h.playing && h.volume > 0).count());
+    }
+
+    @Test
+    void aNewContextDiscardsTheFailedTracksPendingRetry() {
+        var backend = new FakeBackend();
+        backend.rejectStarts = true;
+        var player = new FadingMusicPlayer(backend);
+        player.transitionSource(0, Optional.of(source(new FadingMusicPlayer.Track("example:end", 1), 0)), 0, 0);
+        player.tick(0.2);
+        backend.rejectStarts = false;
+        player.transitionSource(1, Optional.of(source(new FadingMusicPlayer.Track("example:overworld", 1), 0)), 0, 0);
+        player.tick(6);
+        assertEquals(2, backend.handles.size());
+        assertEquals("example:overworld", player.currentTrack().orElseThrow().sound());
+    }
+
+    @Test
     void currentTrackReportsPlaybackInsteadOfTheDesiredPlaylistDuringGapsAndStops() {
         var backend = new FakeBackend();
         var player = new FadingMusicPlayer(backend);
@@ -242,10 +297,12 @@ final class FadingMusicPlayerTest {
         private final List<FakeHandle> handles = new ArrayList<>();
         private double muffleAmount;
         private double underwaterAmount;
+        private boolean rejectStarts;
 
         @Override
         public FadingMusicPlayer.Handle play(FadingMusicPlayer.Track track, double initialVolume) {
             var handle = new FakeHandle(track, initialVolume);
+            handle.playing = !rejectStarts;
             handles.add(handle);
             return handle;
         }
