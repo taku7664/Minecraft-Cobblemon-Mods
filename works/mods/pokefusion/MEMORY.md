@@ -10,6 +10,7 @@
 - **남은 중요 한계:** 체크포인트→외부 지급 사이의 치명적 중단/프로세스 종료와 플레이어/월드 저장 간 원자성은 해결하지 않았다. 큐에서 항목이 빠졌지만 외부 지급이 되지 않는 상태를 AssertionError 주입 검사로 관측했으며, 이는 통과한 복구 사례가 아니라 알려진 유실 틈을 확인하는 검사다. 저장 전 보류 표식도 강제 종료하면 유실될 수 있다. 완전한 충돌 복구에는 별도 영속 거래 원장/수령 증거 설계가 필요하다. 외부 모드의 임의 부작용·다른 소유자의 중복 UUID까지 전역적으로 입증하지 않는다.
 - **빌드·자료:** pokefusion·cobblemon-to-item·cobblemon-party-sidebar build 성공. Sidebar 자체 검사는 없다. 모든 Gradle 출력·프로젝트 캐시·TMP/TEMP·JVM 임시는 F:/AI/builds/fusion-alpha-audit-117d, 공용 Gradle 홈은 F:/AI/caches/gradle. audit-build.log, junit/pokefusion/TEST-junit-jupiter.xml, junit/cobblemon-to-item/TEST-junit-jupiter.xml이 근거다. 초기 테스트 환경의 registry/config/기술 등록 및 라이딩 키 표기 오류는 수정 후 전체를 재통과했다. JAR은 F에만 생성했으며 개발/운영/VPS/릴리스 설치·실게임 검증은 하지 않았다.
 - **산출물:** PokemonFusion-fabric-1.4.3.jar SHA256 02fe1d4fc2821ac41f83b949a0041c215953a2ef5ec5bedbffcaa094c3675289, ZIP CRC 정상·Fabric 버전1.4.3·한영 키 일치·테스트 클래스 미포함을 확인했다. 테스트에는 재료 역순 결과 동일·기여 광택 판정·크기0.5/1.08/3.0 및 손상 입력을 베이스에 둔 경우도 포함한다.
+- **main 재검증:** 구현 main 병합 da1b82d77 이후 원격 동기화를 확인하고 해당 커밋 전체를 F에 다시 추출해 세 모듈 build와 합성1,400/아이템화21 검사를 재통과했다. JAR 해시는 동일하다. 관련 소스/리소스/빌드 입력89개는 내용이 같고87개는 Git 보관본과 CRLF/LF 차이만 있었다(텍스트85개 정규화 비교, accesswidener2개는 양쪽 전체 행을 별도로 대조). main-verified.log 및 main-verification.json이 근거다. 병합에 함께 포함된 다른 작업의 음악 모듈 버전 변경을 임의로 되돌리지 않았다.
 
 ## [2026-10-26 21:47] Park_JH 우두머리 에이스번 원본 복구·결과 로더 Alpha 누락 확인
 
