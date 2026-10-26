@@ -3,6 +3,7 @@ package jbro.cobblemon.mcc.internal.pvp
 import java.util.UUID
 import jbro.cobblemon.mcc.internal.battle.BattleCompletionRetryQueue
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.reportManagedCleanupFailureSafely
+import net.minecraft.network.chat.Component
 
 internal const val PVP_COMPLETION_RETRY_MILLIS = 5_000L
 
@@ -11,6 +12,8 @@ internal data class PendingPvpCompletion(
     val battleId: UUID,
     val winnerId: UUID?,
     val loserId: UUID?,
+    /** Each player's display name (Styled Nicknames' nickname) taken when the battle ended, for the result broadcast. */
+    val displayNames: Map<UUID, Component> = emptyMap(),
 ) {
     init {
         require((winnerId == null) == (loserId == null)) { "A PvP result must contain both winner and loser" }

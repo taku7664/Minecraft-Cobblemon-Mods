@@ -119,6 +119,7 @@
   "screen.more_cobblemon_contents.pvp.matchup": "Opponent: %s · %s",
   "screen.more_cobblemon_contents.pvp.format.single": "Single Battle",
   "screen.more_cobblemon_contents.pvp.format.double": "Double Battle",
+  "chat.more_cobblemon_contents.pvp.result": "%1$s won a 1v1 %3$s against %2$s!",
   "screen.more_cobblemon_contents.pvp.opponent_team": "Opponent's registered team",
   "screen.more_cobblemon_contents.pvp.your_team": "Your selection",
   "screen.more_cobblemon_contents.pvp.selection_summary": "%s/%s selected · %s seconds remaining",
