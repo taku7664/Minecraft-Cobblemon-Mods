@@ -3,6 +3,7 @@ package kr.parkjh.pokefusion
 import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.toitem.api.PokemonItemData
 import net.minecraft.core.component.DataComponents
+import net.minecraft.core.RegistryAccess
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.item.ItemStack
@@ -30,25 +31,28 @@ object PokeFusionService {
         return PokemonItemData.isPokemonItem(stack)
     }
 
-    fun createResult(player: ServerPlayer, baseStack: ItemStack, materialStacks: List<ItemStack>): Result {
+    fun createResult(player: ServerPlayer, baseStack: ItemStack, materialStacks: List<ItemStack>): Result =
+        createResult(player.registryAccess(), baseStack, materialStacks)
+
+    internal fun createResult(registries: RegistryAccess, baseStack: ItemStack, materialStacks: List<ItemStack>): Result {
         return try {
-            createResultUnchecked(player, baseStack, materialStacks)
+            createResultUnchecked(registries, baseStack, materialStacks)
         } catch (exception: Exception) {
             LOGGER.error("Pokefusion 결과 생성 중 오류가 발생했습니다.", exception)
             Result.Failure(ValidationFailure.PROCESSING_ERROR)
         }
     }
 
-    private fun createResultUnchecked(player: ServerPlayer, baseStack: ItemStack, materialStacks: List<ItemStack>): Result {
+    private fun createResultUnchecked(registries: RegistryAccess, baseStack: ItemStack, materialStacks: List<ItemStack>): Result {
         if (baseStack.isEmpty || materialStacks.isEmpty()) return Result.Failure(ValidationFailure.MISSING_INPUT)
         if (materialStacks.size > FusionMaterialLogic.MAX_MATERIALS ||
-            !isPokemonItem(baseStack) || materialStacks.any { !isPokemonItem(it) }
+            !validIdentities(baseStack, materialStacks)
         ) {
             return Result.Failure(ValidationFailure.INVALID_ITEM)
         }
 
-        val base = loadPokemon(player, baseStack) ?: return Result.Failure(ValidationFailure.INVALID_ITEM)
-        val materials = materialStacks.map { loadPokemon(player, it) ?: return Result.Failure(ValidationFailure.INVALID_ITEM) }
+        val base = loadPokemon(registries, baseStack) ?: return Result.Failure(ValidationFailure.INVALID_ITEM)
+        val materials = materialStacks.map { loadPokemon(registries, it) ?: return Result.Failure(ValidationFailure.INVALID_ITEM) }
 
         compatibilityFailure(base, materials)?.let { return Result.Failure(it) }
 
@@ -56,15 +60,20 @@ object PokeFusionService {
 
         val result = baseStack.copy()
         val existing = result.get(DataComponents.CUSTOM_DATA)?.copyTag() ?: CompoundTag()
-        PokemonItemFormat.putPokemonData(existing, PokeFusionCobblemonBridge.savePokemon(base, player.registryAccess()))
+        val original = requireNotNull(PokemonItemData.pokemonTag(baseStack))
+        PokemonItemFormat.putPokemonData(existing, PokemonItemFormat.withIvs(original, PokeFusionCobblemonBridge.ivs(base)))
         result.set(DataComponents.CUSTOM_DATA, CustomData.of(existing))
         result.count = 1
         return Result.Success(result, PokeFusionCobblemonBridge.heldItems(materials))
     }
 
-    fun materialContributions(player: ServerPlayer, baseStack: ItemStack, materialStacks: List<ItemStack>): List<Boolean> {
-        val base = loadPokemon(player, baseStack) ?: return List(materialStacks.size) { false }
-        val materials = materialStacks.map { loadPokemon(player, it) }
+    fun materialContributions(player: ServerPlayer, baseStack: ItemStack, materialStacks: List<ItemStack>): List<Boolean> =
+        materialContributions(player.registryAccess(), baseStack, materialStacks)
+
+    internal fun materialContributions(registries: RegistryAccess, baseStack: ItemStack, materialStacks: List<ItemStack>): List<Boolean> {
+        if (materialStacks.size > FusionMaterialLogic.MAX_MATERIALS || !validIdentities(baseStack, materialStacks)) return List(materialStacks.size) { false }
+        val base = loadPokemon(registries, baseStack) ?: return List(materialStacks.size) { false }
+        val materials = materialStacks.map { loadPokemon(registries, it) }
         if (materials.any { it == null }) return List(materialStacks.size) { false }
         val validMaterials = materials.filterNotNull()
         if (compatibilityFailure(base, validMaterials) != null) return List(materialStacks.size) { false }
@@ -104,12 +113,19 @@ object PokeFusionService {
         )
     }
 
-    private fun loadPokemon(player: ServerPlayer, stack: ItemStack): Pokemon? {
+    private fun validIdentities(base: ItemStack, materials: List<ItemStack>): Boolean {
+        val ids = (listOf(base) + materials).map {
+            PokemonItemData.pokemonTag(it)?.getUUID("UUID") ?: return false
+        }
+        return ids.toSet().size == ids.size
+    }
+
+    private fun loadPokemon(registries: RegistryAccess, stack: ItemStack): Pokemon? {
         return try {
             val customData = stack.get(DataComponents.CUSTOM_DATA) ?: return null
             val root = customData.copyTag()
             val pokemonData = PokemonItemFormat.pokemonData(root) ?: return null
-            PokeFusionCobblemonBridge.loadPokemon(player.registryAccess(), pokemonData)
+            PokeFusionCobblemonBridge.loadPokemon(registries, pokemonData)
         } catch (_: Exception) {
             null
         }

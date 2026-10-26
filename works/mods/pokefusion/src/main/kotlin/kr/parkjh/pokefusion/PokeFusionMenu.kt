@@ -307,7 +307,9 @@ class PokeFusionMenu(
         try {
             PendingOutputService.deliver(player)
         } catch (exception: Exception) {
-            LOGGER.error("Pokefusion 결과 아이템을 지급하지 못했습니다. 다음 확인 때 다시 시도합니다.", exception)
+            LOGGER.error("Pokefusion 결과 아이템 전달이 불명확합니다. 관리자 확인이 필요합니다.", exception)
+            storageAvailable = false
+            player.displayClientMessage(PokeFusionText.of("message.pokefusion.delivery_uncertain").withStyle(ChatFormatting.RED), false)
         }
         if (PendingOutputService.count(player) > 0) {
             player.displayClientMessage(

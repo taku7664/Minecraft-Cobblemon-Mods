@@ -8,6 +8,7 @@ object PendingOutputService {
         val loaded = PokeFusionPlayerStorage.load(player)
         if (loaded !is PokeFusionPlayerStorage.LoadResult.Success) return null
         var state = loaded.state
+        if (state.deliveryBlocked) return null
         if (!state.legacyMigrationComplete) {
             val legacy = PendingOutputSavedData.get(player.server)
             if (legacy.isAvailable) {
@@ -53,6 +54,11 @@ object PendingOutputService {
                     player.drop(candidate, false) != null -> null
                     else -> candidate
                 }
+            },
+            onUncertain = { remaining, failure ->
+                PokeFusionPlayerStorage.store(player, state.withPending(remaining).copy(deliveryBlocked = true))
+                org.slf4j.LoggerFactory.getLogger(PendingOutputService::class.java).error(
+                    "Pokefusion delivery became uncertain for {}; automatic retries are blocked; operator review is required", player.uuid, failure)
             }
         )
     }

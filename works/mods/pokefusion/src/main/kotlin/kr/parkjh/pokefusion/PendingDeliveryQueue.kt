@@ -11,7 +11,8 @@ internal object PendingDeliveryQueue {
     fun <T> deliver(
         pending: List<T>,
         checkpoint: (List<T>) -> Unit,
-        grant: (T) -> T?
+        grant: (T) -> T?,
+        onUncertain: (List<T>, Exception) -> Unit = { _, _ -> }
     ): Int {
         var queue = pending.toList()
         var delivered = 0
@@ -23,7 +24,12 @@ internal object PendingDeliveryQueue {
             val remainder = try {
                 grant(current)
             } catch (exception: Exception) {
-                checkpoint(listOf(current) + tail)
+                val unresolved = listOf(current) + tail
+                try {
+                    checkpoint(unresolved)
+                } finally {
+                    onUncertain(unresolved, exception)
+                }
                 throw exception
             }
 
