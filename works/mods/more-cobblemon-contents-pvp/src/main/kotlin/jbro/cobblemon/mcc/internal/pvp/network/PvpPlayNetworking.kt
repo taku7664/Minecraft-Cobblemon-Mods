@@ -1376,7 +1376,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             },
         )
 
-    /** Tells the whole server who lost to whom, by display name so Styled Nicknames' nicknames show. */
+    /** Tells the whole server who beat whom, by display name so Styled Nicknames' nicknames show. */
     private fun broadcastResult(server: MinecraftServer, pending: PendingPvpCompletion, format: PvpBattleFormat) {
         fun name(id: UUID): Component = pending.displayNames[id]
             ?: server.playerList.getPlayer(id)?.displayName
@@ -1384,8 +1384,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         server.playerList.broadcastSystemMessage(
             Component.translatable(
                 "chat.${MoreCobblemonContents.MOD_ID}.pvp.result",
-                name(checkNotNull(pending.loserId)),
                 name(checkNotNull(pending.winnerId)),
+                name(checkNotNull(pending.loserId)),
                 Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.pvp.format.${format.recordId}"),
             ),
             false,

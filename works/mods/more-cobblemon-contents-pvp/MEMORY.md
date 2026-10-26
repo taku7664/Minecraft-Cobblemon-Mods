@@ -2,8 +2,8 @@
 
 ## [2026-10-26 21:20] PvP 결과 전체채팅 알림 (컴파일·단위 테스트 확인, 빌드 배치·실게임 미확인)
 
-- **빡대리님 요청:** PvP 결과를 전체채팅에 "player1이(가) player2에게 싱글(더블)배틀 1:1에서 패배했습니다"처럼 띄우고, 이름은 닉네임 모드(Styled Nicknames) 것을 쓴다.
-- **구현:** `settleCompletion`이 결과를 받아들인 뒤 `broadcastResult`가 `playerList.broadcastSystemMessage`로 보낸다. 키 `chat.more_cobblemon_contents.pvp.result`(패자·승자·형식), 형식은 기존 `pvp.format.single/double`. 무승부·취소(`pending.cancelled`)와 이미 정산된 재시도는 보내지 않는다.
+- **빡대리님 요청:** PvP 결과를 전체채팅에 "player1이(가) player2에게 싱글(더블)배틀 1:1에서 패배했습니다"처럼 띄우고, 이름은 닉네임 모드(Styled Nicknames) 것을 쓴다. 이어서 승자 기준 문장으로 바꾸고 끝에 `!`를 붙이라고 했다("A이(가) B에게 싱글배틀 1:1에서 승리했습니다!").
+- **구현:** `settleCompletion`이 결과를 받아들인 뒤 `broadcastResult`가 `playerList.broadcastSystemMessage`로 보낸다. 키 `chat.more_cobblemon_contents.pvp.result`(승자·패자·형식), 형식은 기존 `pvp.format.single/double`. 무승부·취소(`pending.cancelled`)와 이미 정산된 재시도는 보내지 않는다.
 - **닉네임:** Styled Nicknames(`changeDisplayName: true`)가 `Player.getDisplayName`을 바꾸므로 의존성 없이 `displayName`을 쓴다. 로그아웃 기권이면 정산 시점에 패자가 플레이어 목록에 없어서, 배틀 런타임이 종료 콜백에서 시작 때 잡아 둔 `ServerPlayer`로 이름을 뽑아 `PendingPvpCompletion.displayNames`에 실어 보낸다. 끊긴 플레이어의 옛 객체에서도 닉네임이 나오는지는 확인하지 않았다(안 나오면 계정 이름).
 - **확인:** F 복사본에서 `:more-cobblemon-contents-pvp:unitTest` 244/244 통과. 처음엔 `displayName`이 nullable이라 컴파일이 깨져 `?: name`을 붙였다. 결과 알림 전용 단위 테스트는 없다. 빌드 배치·서버 기동·실제 두 사람 대전은 하지 않았다. 브랜치 `feature/pvp-result-broadcast`에만 커밋했고 main에는 넣지 않았다.
 
