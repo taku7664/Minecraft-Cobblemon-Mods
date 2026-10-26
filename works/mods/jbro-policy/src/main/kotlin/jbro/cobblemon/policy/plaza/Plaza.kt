@@ -67,7 +67,7 @@ object Plaza {
     }
 
     private fun clearIfStale(player: ServerPlayer) {
-        if (HubReturnRule.isStale(player.level().dimension().location().toString(), JbroPolicy.config.plazaOtherHubDimensions)) {
+        if (HubReturnRule.isStale(player.level().dimension().location().toString(), HubReturnRule.otherHubs(JbroPolicy.config.plazaOtherHubDimensions))) {
             PlazaReturnPoints.get(player.server).remove(player.uuid)
         }
     }
@@ -78,7 +78,7 @@ object Plaza {
         val level = player.server.getLevel(DIMENSION) ?: return fail(player, "unavailable")
         val points = PlazaReturnPoints.get(player.server)
         val source = player.level().dimension()
-        if (HubReturnRule.shouldSaveOnEntry(source.location().toString(), points[player.uuid] != null, JbroPolicy.config.plazaOtherHubDimensions)) {
+        if (HubReturnRule.shouldSaveOnEntry(source.location().toString(), points[player.uuid] != null, HubReturnRule.otherHubs(JbroPolicy.config.plazaOtherHubDimensions))) {
             points[player.uuid] = ReturnPoint(source, player.x, SafeLanding.groundY(player.serverLevel(), player), player.z, player.yRot, player.xRot)
         }
         val spawn = JbroPolicy.config.plaza

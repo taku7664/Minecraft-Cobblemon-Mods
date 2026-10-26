@@ -9,6 +9,10 @@ package jbro.cobblemon.policy.plaza
  */
 object HubReturnRule {
     const val PLAZA = "jbro_policy:plaza"
+    const val PVP_LOUNGE = "more_cobblemon_contents:battle_lounge"
+
+    /** A battle is a temporary detour within the hub trip, even on existing configs without this ID. */
+    fun otherHubs(configured: Collection<String>): Set<String> = (configured + PVP_LOUNGE).toSet()
 
     fun shouldSaveOnEntry(source: String, hasPoint: Boolean, otherHubs: Collection<String>): Boolean =
         source != PLAZA && (!hasPoint || source !in otherHubs)
