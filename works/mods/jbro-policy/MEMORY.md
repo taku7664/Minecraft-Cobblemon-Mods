@@ -1,5 +1,12 @@
 # jbro-policy MEMORY
 
+## [2026-10-27 22:38] 개발·로컬 운영·VPS 전설 가중치 0.01 통일
+
+- **사용자 지시·범위:** 전설 가중치를 0.01로 맞추고 개발·운영에도 반영해 리로드한다. canonical 개발 서버, 로컬 운영 저장소, 실제 VPS의 `config/cobblemon/spawning/best-spawner-config.json`만 대상으로 했다. 클라이언트·JAR 기본값 0.002·다른 버킷은 변경하지 않았다.
+- **로컬:** 개발은 0.008→0.01. 로컬 운영은 처음 0.004였으며, 원격보다 3커밋 뒤인 main을 먼저 ff 동기화해 기존 승인 설정 0.008을 받은 뒤 0.01로 변경했다. 두 서버는 Java 서버 프로세스 및 25565/25566 LISTEN이 없어 켜거나 리로드하지 않았고 다음 기동부터 반영된다. 기존 운영 `config/cobblemon/main.json` 수정은 보존했다. 운영 저장소는 스테이징 경로 한 개·한 줄 변경을 확인해 `46b132f`로 main 커밋·푸시하고 origin/main 0/0 동기화를 확인했다.
+- **VPS:** 0.008→0.01만 변경하고 JSON 구조 비교로 다른 필드 불변을 확인했다. 22:38:28 `cobblemonconfig reload`의 `Reloading Cobblemon settings.` 로그, 전후 Java PID `277928`·pane_dead=0 동일을 확인했다. 서버 종료·재시작·강제 재접속은 하지 않았다. 기존 접속자의 PlayerSpawner는 이전 가중치를 보관하므로 재접속 후 반영된다. 전 플레이어의 실시간 맵이나 시간당 자연 출현은 측정하지 않았다.
+- **일치·백업:** 개발·로컬 운영·VPS 설정 SHA-256은 모두 `214acba790adcacfe6a68ad218ba50251863640f3f90e43282b18842b7aa5437`. 로컬 원본은 `%LOCALAPPDATA%/MinecraftServerDeploy/legend-rate-001-20261027-223753/{dev,production}/`, VPS 원본은 `/home/ubuntu/.local/share/ppakemon-backups/manual/20261027-223828-legend-rate-001/`에 보관했다. 소스/빌드 변경·Gradle/JUnit·실게임 포획 검증은 없다. 매우 희귀 0.2 대비 전설 0.01은 가중치 기준 1/20이다.
+
 ## [2026-10-26 21:41] 복귀 위치 보존 수정 — main 소스 최종 빌드·개발 설치
 
 - **main:** 코드 `6527d6831`을 `8d0862784`로 병합·푸시하고 `origin/main` 및 원격 main SHA 일치를 확인했다. SimpleMyRoom은 병합 `65ac87a`와 ID 정규화 `363cdfb`까지 main에 푸시했다.
