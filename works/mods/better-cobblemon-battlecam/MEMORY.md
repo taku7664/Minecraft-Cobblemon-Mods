@@ -5,6 +5,14 @@
 
 ---
 
+## [2026-10-28 19:02] F6으로 바꾼 모드가 배틀마다 초기화되던 것: json 기본값과 런타임 선택 분리 (단위 테스트 확인, 빌드 배치·실게임 미확인)
+
+- **빡대리님 지적:** F6으로 모드를 바꿔도 다음 배틀에서 원래대로 돌아간다. "json에서 읽는 거랑 런타임 따로 나눠."
+- **원인:** `cycleMode()`는 메모리의 `mode`만 바꿨고, `setContext()`가 배틀이 바뀔 때마다 `better_cobblemon_battlecam.json`의 전투 종류별 기본 모드로 덮어썼다.
+- **수정:** `BattlecamRuntimeModes`가 F6으로 고른 모드를 전투 종류(야생·NPC·PvP)별로 이번 게임 실행 동안만 기억한다. 배틀이 시작되면 그 종류에 고른 모드가 있으면 그걸, 없으면 json 값을 쓴다. json 파일은 쓰지 않는다. 설정 화면에서 저장하면 고른 모드를 비우고 새 json 값을 따른다. 전투 종류를 알 수 없을 때(배틀 객체 없음)는 기억하지도 덮어쓰지도 않는다.
+- **결정(내가 정함, 빡대리님 확인 전):** 종류별로 나눈 이유는 json 기본값이 종류별이라서다. 야생에서 고른 모드는 PvP에 번지지 않는다. 게임을 껐다 켜면 json 값으로 돌아간다.
+- **확인:** F 복사본에서 `:better-cobblemon-battlecam:unitTest` 18/18(새 `BattlecamRuntimeModesTest` 4개). JAR 배치와 실게임은 하지 않았다. 관전 중 `CobblemonClient.getBattle()`이 null이면 관전에서는 기억되지 않는다(실제 값은 미확인).
+
 ## [2026-10-20 21:15] 145179925 개발 클라 배포 (빌드·해시 확인, 실게임은 빡대리님)
 
 - `main` `145179925`(= `origin/main`)로 맞춘 F 복사본(배틀캠·리그 소스가 커밋과 같음을 대조)에서 `:better-cobblemon-battlecam:build`, `:more-cobblemon-contents-league-challenge:build`(EXIT 0, `unzip -t` 정상). 배틀캠 JAR은 CLASSIC 40°·1.1배로 캡처한 빌드 그대로다(remapJar UP-TO-DATE). 안정화(`7ad41df95`)도 들어 있다.

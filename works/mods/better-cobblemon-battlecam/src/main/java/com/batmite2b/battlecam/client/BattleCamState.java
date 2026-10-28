@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import jbro.cobblemon.battlecam.BattlecamModePolicy;
+import jbro.cobblemon.battlecam.BattlecamRuntimeModes;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.network.chat.Component;
@@ -54,6 +55,8 @@ public final class BattleCamState {
     private SceneFocus sceneFocus;
     // The mode of the battle that just ended, so a scene after it honours a camera the player turned off.
     private Mode lastBattleMode;
+    // Modes picked with the cycle key this session; the json defaults stay as the player saved them.
+    private final BattlecamRuntimeModes runtimeModes = new BattlecamRuntimeModes();
 
     public BattleCamState() {
         this.mode = BattleCamClient.CONFIG.defaultMode;
@@ -115,33 +118,36 @@ public final class BattleCamState {
         this.lastQueuedActionAt = 0L;
         switch (newContext) {
             case NONE: {
-                this.mode = configuredModeFor(newContext);
+                this.mode = modeFor(newContext);
                 this.showOwnBody = true;
                 break;
             }
             case SPECTATING: {
-                this.mode = configuredModeFor(newContext);
+                this.mode = modeFor(newContext);
                 this.showOwnBody = true;
                 break;
             }
             case OWN_BATTLE: {
-                this.mode = configuredModeFor(newContext);
+                this.mode = modeFor(newContext);
                 this.showOwnBody = true;
             }
         }
     }
 
+    // The config screen just saved new defaults, so they replace any mode picked with the cycle key.
     public void applyConfiguredMode() {
+        this.runtimeModes.clear();
         if (this.context != BattleViewContext.NONE) {
-            this.mode = configuredModeFor(this.context);
+            this.mode = modeFor(this.context);
         }
     }
 
-    private static Mode configuredModeFor(BattleViewContext context) {
-        return BattlecamModePolicy.modeForCurrentBattle(
+    private Mode modeFor(BattleViewContext context) {
+        Mode configured = BattlecamModePolicy.modeForCurrentBattle(
             context,
             BattleCamClient.CONFIG.defaultModeFor(context)
         );
+        return this.runtimeModes.resolve(BattlecamModePolicy.currentBattleType(context), configured);
     }
 
     public void tick(Minecraft client) {
@@ -240,6 +246,7 @@ public final class BattleCamState {
             case 2 -> Mode.CLASSIC;
             case 3 -> Mode.OFF;
         };
+        this.runtimeModes.remember(BattlecamModePolicy.currentBattleType(this.context), this.mode);
     }
 
     public void toggleOwnBody() {

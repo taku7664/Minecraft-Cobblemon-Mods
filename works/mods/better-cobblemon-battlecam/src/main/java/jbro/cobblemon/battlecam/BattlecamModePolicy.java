@@ -26,14 +26,19 @@ public final class BattlecamModePolicy {
         BattleViewContext context,
         BattleCamState.Mode fallback
     ) {
-        if (context == BattleViewContext.NONE) {
+        BattlecamBattleType battleType = currentBattleType(context);
+        if (battleType == null) {
             return fallback;
+        }
+        return modeFor(BattlecamConfigStore.current(), battleType);
+    }
+
+    public static BattlecamBattleType currentBattleType(BattleViewContext context) {
+        if (context == BattleViewContext.NONE) {
+            return null;
         }
         ClientBattle battle = CobblemonClient.INSTANCE.getBattle();
-        if (battle == null) {
-            return fallback;
-        }
-        return modeFor(BattlecamConfigStore.current(), BattlecamBattleType.classify(battle));
+        return battle == null ? null : BattlecamBattleType.classify(battle);
     }
 
     public static void applyToActiveBattle() {
