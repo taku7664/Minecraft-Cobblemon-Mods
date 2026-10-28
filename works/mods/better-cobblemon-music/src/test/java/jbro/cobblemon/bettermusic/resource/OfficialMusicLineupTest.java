@@ -35,6 +35,7 @@ final class OfficialMusicLineupTest {
     static FieldMusicConfig field;
     static Map<String, String> eventTitles;
     static Map<String, String> trackEvents;
+    static jbro.cobblemon.bettermusic.screen.ScreenPlaylistResolver screens;
 
     @BeforeAll
     static void compileOfficialPack() throws Exception {
@@ -50,6 +51,7 @@ final class OfficialMusicLineupTest {
             battle = compiled.snapshot().battle();
             field = compiled.snapshot().field();
             resolver = new BattlePlaylistResolver(battle);
+            screens = new jbro.cobblemon.bettermusic.screen.ScreenPlaylistResolver(compiled.snapshot().screens());
             eventTitles = compiled.eventTitles();
             trackEvents = compiled.trackEvents();
         }
@@ -105,7 +107,7 @@ final class OfficialMusicLineupTest {
 
     @Test
     void everyOfficialBgmHasAKoreanDisplayTitleAtThePlaybackBoundary() {
-        assertEquals(97, eventTitles.size());
+        assertEquals(98, eventTitles.size());
         eventTitles.forEach((event, title) -> assertTrue(
             title.codePoints().anyMatch(codePoint -> codePoint >= 0xAC00 && codePoint <= 0xD7A3),
             event + " still uses an untranslated filename: " + title));
@@ -116,6 +118,21 @@ final class OfficialMusicLineupTest {
             eventTitles.forEach((event, title) -> assertTrue(!title.contains(game),
                 event + " includes a full game name instead of English initials: " + title));
         }
+    }
+
+    @Test
+    void pvpPickScreenSelectsTheRequestedChampionsTrack() throws Exception {
+        var selection = screens.select(List.of("more_cobblemon_contents:pvp/team_select")).orElseThrow();
+        String track = "better_cobblemon_music:screen/pvp/pokemon_champions_team_select";
+        assertEquals(List.of(track), selection.playlist().tracks());
+        String event = trackEvents.get(track);
+        assertEquals("팀 선택 (PC)", eventTitles.get(event));
+        var sounds = JsonParser.parseString(Files.readString(temporaryDirectory.resolve(
+            "pack/assets/better_cobblemon_music/sounds.json"))).getAsJsonObject();
+        var sound = sounds.getAsJsonObject(event.substring(event.indexOf(':') + 1))
+            .getAsJsonArray("sounds").get(0).getAsJsonObject();
+        assertTrue(sound.get("stream").getAsBoolean());
+        assertEquals("better_cobblemon_music:music/screen/pvp/pokemon_champions_team_select", sound.get("name").getAsString());
     }
 
     @Test
@@ -180,6 +197,7 @@ final class OfficialMusicLineupTest {
         assertEquals(89, tracks.size());
         Set<String> expected = trackEvents.keySet().stream()
             .filter(id -> !id.contains("/galar_"))
+            .filter(id -> !id.equals("better_cobblemon_music:screen/pvp/pokemon_champions_team_select"))
             .map(id -> "music/" + id.substring("better_cobblemon_music:".length()) + ".ogg")
             .collect(Collectors.toSet());
         expected.remove("music/battle/trainer/sinnoh_trainer_battle_facility.ogg");

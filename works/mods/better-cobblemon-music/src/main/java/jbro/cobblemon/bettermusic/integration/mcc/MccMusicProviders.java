@@ -51,7 +51,8 @@ final class MccMusicProviders {
             @Override
             public List<String> screenKeys() {
                 String tab = MccClientContext.current().getHubTab();
-                return tab == null ? List.of() : MccMusicKeys.hub(tab);
+                var screen = net.minecraft.client.Minecraft.getInstance().screen;
+                return MccMusicKeys.screen(screen == null ? null : screen.getClass().getName(), tab);
             }
 
             @Override

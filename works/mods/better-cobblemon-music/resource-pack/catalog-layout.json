@@ -13,6 +13,7 @@
     "better_cobblemon_music:battle/wild/sinnoh_wild_pokemon_battle_mythical": "better_cobblemon_music:battle/wild/sinnoh_wild_pokemon_battle"
   },
   "trackTitles": {
+    "better_cobblemon_music:screen/pvp/pokemon_champions_team_select": "팀 선택 (PC)",
     "better_cobblemon_music:battle/gym/galar_gym_leader": "전투! 체육관 관장 (Sw·Sh)",
     "better_cobblemon_music:battle/gym/galar_piers": "전투! 체육관 관장 두송 (Sw·Sh)",
     "better_cobblemon_music:battle/trainer/galar_marnie": "결전! 마리 (Sw·Sh)",
@@ -210,6 +211,7 @@
   },
   "mappings": {
     "screens": {
+      "more_cobblemon_contents:pvp/team_select": "better_cobblemon_music:track/screen/pvp/pokemon_champions_team_select",
       "minecraft:title": "better_cobblemon_music:screen_title",
       "more_cobblemon_contents:hub": "better_cobblemon_music:track/screen/mcc/boutique",
       "more_cobblemon_contents:hub/shop": "better_cobblemon_music:track/screen/mcc/poke_mart"

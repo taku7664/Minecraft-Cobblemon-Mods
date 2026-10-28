@@ -7,6 +7,16 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 
 final class MccMusicKeysTest {
+    @Test
+    void teamSelectionMusicOnlyAppliesToThePvpPickScreen() {
+        assertEquals(List.of(MccMusicKeys.PVP_TEAM_SELECT),
+            MccMusicKeys.screen("jbro.cobblemon.mcc.client.PvpSelectionScreen", "more_cobblemon_contents:pvp"));
+        assertEquals(List.of(), MccMusicKeys.screen(null, null));
+        assertEquals(MccMusicKeys.hub("more_cobblemon_contents:pvp"),
+            MccMusicKeys.screen("jbro.cobblemon.mcc.client.hub.BattleHubScreen", "more_cobblemon_contents:pvp"));
+        assertTrue(MccMusicKeys.KNOWN_SCREEN_KEYS.contains(MccMusicKeys.PVP_TEAM_SELECT));
+    }
+
     private static final String LEAGUE = "more_cobblemon_contents:league_challenge";
 
     @Test

@@ -24,6 +24,8 @@ final class MccMusicKeys {
     private static final String TOWER = NAMESPACE + ":battle_tower";
     private static final String FACTORY = NAMESPACE + ":battle_factory";
     private static final String PVP = NAMESPACE + ":pvp";
+    static final String PVP_TEAM_SELECT = PVP + "/team_select";
+    private static final String PVP_SELECTION_SCREEN = "jbro.cobblemon.mcc.client.PvpSelectionScreen";
 
     /** The settings offer content/stage keys and Galar's named trainer keys. */
     static final Set<String> KNOWN_BATTLE_KEYS = battleKeys();
@@ -54,10 +56,18 @@ final class MccMusicKeys {
 
     static final Set<String> KNOWN_SCREEN_KEYS = Set.copyOf(List.of(
         HUB, HUB + "/dashboard", HUB + "/shop", HUB + "/league_challenge", HUB + "/battle_tower",
-        HUB + "/battle_factory", HUB + "/pvp"
+        HUB + "/battle_factory", HUB + "/pvp", PVP_TEAM_SELECT
     ));
 
     private MccMusicKeys() {
+    }
+
+    /** Identify the optional PvP addon's internal screen without loading or depending on its classes. */
+    static List<String> screen(String screenClassName, String hubTab) {
+        if (PVP_SELECTION_SCREEN.equals(screenClassName)) {
+            return List.of(PVP_TEAM_SELECT);
+        }
+        return hubTab == null ? List.of() : hub(hubTab);
     }
 
     /** A battle's keys, most specific first; parts that would not form a valid key are skipped. */
