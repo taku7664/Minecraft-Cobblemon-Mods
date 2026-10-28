@@ -1,5 +1,12 @@
 # MEMORY
 
+## [2026-10-28 18:55] 개발 서버·클라이언트 첫 배치 (배치·해시 확인, 서버 기동·실게임 미확인)
+
+- `feature/pwt`를 main에 병합해 푸시했다(63275c5b9). 그 커밋의 `git archive`를 F에서 빌드했고 `:more-cobblemon-contents-pwt:unitTest` 14/14 통과, `remapJar` 성공, `unzip -t` 통과(트레이너 JSON 17개).
+- `more-cobblemon-contents-pwt-0.1.0.jar`(SHA-256 `b5627b2b…e9a3a5`)를 `develop-product/server/mods`와 `develop-product/client/mods`에 새로 넣었다. 처음 설치라 교체한 파일이 없어 백업은 만들지 않았다. 복사할 때 서버와 클라이언트는 둘 다 꺼져 있었다.
+- 설치된 MCC 코어(10-25 15:14)가 코어의 마지막 소스 변경(10-25 03:57)보다 새것이고, PWT가 쓰는 `ManagedPveBattles`·`BattleContentAccess`·`BattlePointRewards`·`MccNews`·`TrainerResourceSkin`·`MccHubPortraitCards`와 리그의 `LeagueRanks`가 설치본에 있음을 확인했다.
+- **확인 안 함:** 개발 서버 기동(서버는 꺼진 채로 두었다), 허브 화면, 전투 흐름, 보상, 채팅 알림.
+
 ## [2026-10-28 13:45] PWT 애드온 1차 구현 (컴파일·단위 테스트·JAR 빌드 확인, 실게임·배치 미확인)
 
 - **빡대리님 결정(10-27~28 기획):** 대회는 하나뿐. 역대 세대 강자(챔피언과 N·금랑 같은 인물) 8명이 붙는 싱글 단판 토너먼트, 3연승하면 우승. 처음부터 3마리만 들고 들어가 끝까지 쓴다(원작 방식, 6→3 선출 없음). Lv50 이하로만 맞춤, 같은 종·같은 도구 금지, 무전설(원작 챔피언 대회 규칙, 상대도 같음), 기믹 전부 금지. 우승자만 25BP. 리그 챔피언이 되면 해금. 렌탈·더블·다른 대회 없음, 플레이어 대회는 나중에. 대진표는 양쪽으로 펼치고 칸에는 얼굴만, 호버하면 이름·세대·대표 포켓몬.
