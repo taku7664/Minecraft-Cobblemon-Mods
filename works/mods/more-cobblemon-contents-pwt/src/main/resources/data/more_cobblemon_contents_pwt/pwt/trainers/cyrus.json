@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.cyrus",
+  "generation": 4,
+  "skin": "rctmod:textures/trainers/single/team_galactic_boss_cyrus_041a.png",
+  "slim": false,
+  "ace": "weavile",
+  "pokemon": [
+    "weavile level=50 moves=icepunch,knockoff,iceshard,lowkick ability=pressure nature=jolly held_item=cobblemon:choice_band hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "honchkrow level=50 moves=bravebird,suckerpunch,nightslash,heatwave ability=superluck nature=adamant held_item=cobblemon:life_orb hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "crobat level=50 moves=bravebird,crosspoison,uturn,roost ability=innerfocus nature=jolly held_item=cobblemon:black_sludge hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "gyarados level=50 moves=waterfall,icefang,earthquake,dragondance ability=intimidate nature=adamant held_item=cobblemon:lum_berry hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "houndoom level=50 moves=darkpulse,flamethrower,sludgebomb,nastyplot ability=flashfire nature=timid held_item=cobblemon:focus_sash hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252"
+  ]
+}

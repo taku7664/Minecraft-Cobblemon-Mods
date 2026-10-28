@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.diantha",
+  "generation": 6,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/diantha.png",
+  "slim": false,
+  "ace": "gardevoir",
+  "pokemon": [
+    "gardevoir level=50 moves=moonblast,psychic,mysticalfire,calmmind ability=trace nature=timid held_item=cobblemon:leftovers hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "hawlucha level=50 moves=acrobatics,closecombat,swordsdance,roost ability=unburden nature=jolly hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "tyrantrum level=50 moves=headsmash,dragonclaw,earthquake,dragondance ability=strongjaw nature=adamant held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "aurorus level=50 moves=freezedry,earthpower,thunderbolt,blizzard ability=refrigerate nature=modest held_item=cobblemon:choice_specs hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "gourgeist level=50 moves=willowisp,seedbomb,shadowsneak,leechseed ability=frisk nature=impish held_item=cobblemon:rocky_helmet hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=252 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "goodra level=50 moves=dracometeor,fireblast,sludgebomb,thunderbolt ability=sapsipper nature=modest held_item=cobblemon:assault_vest hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0"
+  ]
+}

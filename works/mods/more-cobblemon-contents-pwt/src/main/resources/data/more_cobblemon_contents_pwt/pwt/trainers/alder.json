@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.alder",
+  "generation": 5,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/alder.png",
+  "slim": false,
+  "ace": "volcarona",
+  "pokemon": [
+    "volcarona level=50 moves=quiverdance,fierydance,bugbuzz,gigadrain ability=flamebody nature=timid held_item=cobblemon:leftovers hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "accelgor level=50 moves=bugbuzz,focusblast,energyball,uturn ability=stickyhold nature=timid held_item=cobblemon:choice_specs hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "bouffalant level=50 moves=headcharge,earthquake,stoneedge,megahorn ability=sapsipper nature=adamant held_item=cobblemon:choice_band hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "druddigon level=50 moves=outrage,superpower,suckerpunch,firepunch ability=roughskin nature=adamant held_item=cobblemon:life_orb hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "vanilluxe level=50 moves=blizzard,flashcannon,freezedry,autotomize ability=snowwarning nature=modest held_item=cobblemon:focus_sash hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "escavalier level=50 moves=megahorn,ironhead,drillrun,knockoff ability=shellarmor nature=adamant held_item=cobblemon:assault_vest hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0"
+  ]
+}

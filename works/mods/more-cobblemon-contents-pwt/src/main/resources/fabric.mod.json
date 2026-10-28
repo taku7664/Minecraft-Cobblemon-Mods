@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "id": "more_cobblemon_contents_pwt",
+  "version": "${version}",
+  "name": "More Cobblemon Contents: PWT",
+  "description": "A Pokémon World Tournament for MCC: eight strong trainers from every generation in a single-elimination bracket. Bring three Pokémon, win three battles, take the title.",
+  "authors": [
+    "jbro"
+  ],
+  "license": "MIT",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.mcc.pwt.MoreCobblemonContentsPwt"
+      }
+    ],
+    "client": [
+      {
+        "adapter": "kotlin",
+        "value": "jbro.cobblemon.mcc.pwt.client.MoreCobblemonContentsPwtClient"
+      }
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.19.5",
+    "fabric-api": "*",
+    "fabric-language-kotlin": ">=1.14.1+kotlin.2.4.20",
+    "minecraft": "~1.21.1",
+    "java": ">=21",
+    "cobblemon": ">=1.8.1 <1.9.0",
+    "more_cobblemon_contents": ">=0.1.0 <1.0.0"
+  },
+  "suggests": {
+    "more_cobblemon_contents_league_challenge": "*"
+  },
+  "icon": "assets/more_cobblemon_contents_pwt/icon.png",
+  "contact": {
+    "sources": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/tree/main/works/mods/more-cobblemon-contents-pwt",
+    "issues": "https://github.com/taku7664/Minecraft-Cobblemon-Mods/issues"
+  }
+}

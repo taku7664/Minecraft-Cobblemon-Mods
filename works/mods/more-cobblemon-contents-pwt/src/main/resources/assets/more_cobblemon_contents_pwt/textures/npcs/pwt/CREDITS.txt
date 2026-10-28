@@ -1,0 +1,17 @@
+PWT trainer skins, by their Planet Minecraft authors (https://www.planetminecraft.com/skin/<page>/):
+
+steven.png    Maditata          steven-stone-pokemon-4278008
+wallace.png   AgentG128         pokemon-rse-gym-leaderchampion-wallace
+n.png         PixelPancake      pokemon-trainer-n---king-of-team-plasma
+alder.png     sunturine         pok-mon-masters-ex-alder-and-volcarona-ex
+iris.png      Zossie            champion-iris-pokemon-black-and-white-2
+diantha.png   drifblim_s        diantha-pokemon-xy
+kukui.png     axoNNNessj        professor-kukui-pokemon-sun-and-moon
+geeta.png     chlodoodlez       pokemon-geeta
+nemona.png    MikeMakesSkins    nemona-pokemon-violet-skin
+leon.png      HydraMaigon       champion-leon
+raihan.png    WormWeeps         raihan-pokemon-sword-shield
+
+wallace.png, n.png and diantha.png were published as legacy 64x32 skins; they are widened to 64x64 with the left
+arm and leg mirrored from the right, as Minecraft does. Slim arms: geeta.png, nemona.png, raihan.png.
+Red, Blue, Giovanni, Lance, Cynthia and Cyrus come from the RCT Trainers+ resource pack and are not shipped here.

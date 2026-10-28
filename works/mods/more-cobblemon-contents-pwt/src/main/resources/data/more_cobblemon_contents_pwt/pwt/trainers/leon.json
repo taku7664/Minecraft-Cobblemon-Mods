@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.leon",
+  "generation": 8,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/leon.png",
+  "slim": false,
+  "ace": "charizard",
+  "pokemon": [
+    "charizard level=50 moves=flamethrower,airslash,focusblast,dragonpulse ability=blaze nature=timid held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "aegislash level=50 moves=shadowball,flashcannon,shadowsneak,kingsshield ability=stancechange nature=quiet held_item=cobblemon:leftovers hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "dragapult level=50 moves=dracometeor,shadowball,flamethrower,uturn ability=clearbody nature=timid held_item=cobblemon:choice_specs hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "haxorus level=50 moves=dragondance,dragonclaw,earthquake,poisonjab ability=moldbreaker nature=jolly held_item=cobblemon:lum_berry hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "rhyperior level=50 moves=stoneedge,earthquake,megahorn,icepunch ability=solidrock nature=adamant held_item=cobblemon:weakness_policy hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "inteleon level=50 moves=hydropump,icebeam,darkpulse,uturn ability=sniper nature=timid held_item=cobblemon:focus_sash hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252"
+  ]
+}

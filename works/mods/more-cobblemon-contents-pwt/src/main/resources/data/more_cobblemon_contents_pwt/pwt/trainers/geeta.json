@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.geeta",
+  "generation": 9,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/geeta.png",
+  "slim": true,
+  "ace": "kingambit",
+  "pokemon": [
+    "kingambit level=50 moves=kowtowcleave,ironhead,suckerpunch,swordsdance ability=supremeoverlord nature=adamant held_item=cobblemon:lum_berry hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "glimmora level=50 moves=powergem,sludgewave,earthpower,stealthrock ability=toxicdebris nature=modest held_item=cobblemon:focus_sash hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "espathra level=50 moves=luminacrash,dazzlinggleam,shadowball,calmmind ability=speedboost nature=timid held_item=cobblemon:leftovers hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "gogoat level=50 moves=hornleech,earthquake,bulkup,milkdrink ability=sapsipper nature=impish held_item=cobblemon:sitrus_berry hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=252 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "veluza level=50 moves=aquacutter,psychocut,aquajet,nightslash ability=sharpness nature=adamant held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "avalugg level=50 moves=avalanche,bodypress,recover,iciclecrash ability=sturdy nature=impish held_item=cobblemon:rocky_helmet hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=252 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0"
+  ]
+}

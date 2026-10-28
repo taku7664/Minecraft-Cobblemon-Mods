@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.steven",
+  "generation": 3,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/steven.png",
+  "slim": false,
+  "ace": "metagross",
+  "pokemon": [
+    "metagross level=50 moves=meteormash,zenheadbutt,earthquake,bulletpunch ability=clearbody nature=adamant held_item=cobblemon:life_orb hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "skarmory level=50 moves=bravebird,ironhead,roost,spikes ability=sturdy nature=impish held_item=cobblemon:rocky_helmet hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=252 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "aggron level=50 moves=headsmash,heavyslam,earthquake,icepunch ability=rockhead nature=adamant held_item=cobblemon:choice_band hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "claydol level=50 moves=earthpower,psychic,rapidspin,stealthrock ability=levitate nature=modest held_item=cobblemon:leftovers hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "cradily level=50 moves=gigadrain,ancientpower,recover,toxic ability=stormdrain nature=calm held_item=cobblemon:sitrus_berry hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=4 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=252 speed_iv=31 speed_ev=0",
+    "armaldo level=50 moves=xscissor,stoneedge,earthquake,swordsdance ability=battlearmor nature=adamant held_item=cobblemon:weakness_policy hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0"
+  ]
+}

@@ -1,0 +1,159 @@
+{
+ "name": "more_cobblemon_contents:managed_trainer",
+ "order": 40,
+ "variations": [
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_alder_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/alder.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_diantha_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/diantha.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_geeta_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/geeta.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_iris_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/iris.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_kukui_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/kukui.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_leon_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/leon.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_n_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/n.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_nemona_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/nemona.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_raihan_png_slim"
+   ],
+   "layers": [],
+   "model": "cobblemon:alex.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/raihan.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_steven_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/steven.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_more_cobblemon_contents_pwt_textures_npcs_pwt_wallace_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "more_cobblemon_contents_pwt:textures/npcs/pwt/wallace.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_boss_giovanni_0045_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/boss_giovanni_0045.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_champion_cynthia_03a5_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/champion_cynthia_03a5.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_champion_lance_0027_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/champion_lance_0027.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_champion_terry_01b6_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/champion_terry_01b6.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_player_red_0202_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/player_red_0202.png"
+  },
+  {
+   "aspects": [
+    "mcc_skin_rctmod_textures_trainers_single_team_galactic_boss_cyrus_041a_png"
+   ],
+   "layers": [],
+   "model": "cobblemon:steve.geo",
+   "poser": "cobblemon:standard",
+   "texture": "rctmod:textures/trainers/single/team_galactic_boss_cyrus_041a.png"
+  }
+ ]
+}
