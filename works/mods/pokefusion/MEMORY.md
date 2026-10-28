@@ -1,5 +1,11 @@
 # PokemonFusion MEMORY
 
+## [2026-10-28 11:20] 1.4.3 개발 서버·클라이언트 배포
+
+- **요청·배치:** 빡대리의 개발 배포 지시로 정식 체크아웃 C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/server/mods 및 client/mods의 PokemonFusion-fabric-1.4.2.jar를 1.4.3으로 교체했다. client는 기존 Modrinth cobblemon-dev 정션이다. 다른 모드는 교체하지 않았다.
+- **빌드 재사용:** 최신 origin/main e24463023과 검증 소스 main da1b82d77 사이의 합성/아이템화 모듈 소스·리소스·빌드 설정, 루트 build/settings/gradle.properties와 Gradle wrapper 변경이 없음을 확인했다(관련 범위 변경은 MEMORY뿐). 검증된 F:/AI/builds/fusion-alpha-audit-117d/out/pokefusion/libs/PokemonFusion-fabric-1.4.3.jar를 재사용했다. 양쪽 설치본 SHA256은 02fe1d4fc2821ac41f83b949a0041c215953a2ef5ec5bedbffcaa094c3675289로 빌드본과 같다. 배치 전 대상 mod ID가 각각 하나이고1.4.2임을 확인한 뒤 구버전을 제거했다.
+- **보존·실행 범위:** Java 프로세스와 개발 포트25566 리스너가 없는 상태에서 교체했다. 전체134개 JAR 중 대상2개만 바뀌고 나머지132개는 이름·해시가 같다. 기존 JAR 백업과 before.json/after.json은 F:/AI/builds/fusion-alpha-audit-117d/development-deploy-20261028-111952에 보관했다. 설정·월드·플레이어 데이터·운영/VPS·릴리스 폴더는 변경하지 않았다. 이번에는 설치 파일 일치를 확인했으며 빌드·단위 검사를 다시 실행하지 않았다. 서버/클라이언트 기동·실게임 합성은 미실행이고 강제 종료 안전성의 기존 한계는 아래 기록대로 남아 있다.
+
 ## [2026-10-26 22:18] 1.4.3 우두머리 누락 수정·합성 경계 조건 검사 (미배포)
 
 - **요청·범위:** 빡대리가 코드 수정과 모든 엣지케이스 전수 검사를 지시했다. 실제 로더·원본 데이터 보존·IV 조합·중복/손상 입력·폼/계보·전달 실패·저장/재접속 상태와 메뉴 클릭 경로를 대상으로 했다. 운영 서버에서 시험 지급·아이템 소모·서버 종료/재시작은 하지 않았다. 물리적 모든 환경/외부 모드 조합까지 검증했다는 의미로 '전수 통과'라고 보고하지 않는다.
