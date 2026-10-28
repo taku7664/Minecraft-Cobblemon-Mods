@@ -5,6 +5,13 @@
 
 ---
 
+## [2026-10-28 20:25] 256d5e270 개발 배포 (빌드·해시 확인, 실게임 미확인)
+
+- `fix/battlecam-runtime-mode`를 `origin/main`에 fast-forward로 올렸다(`85e69dcdf..256d5e270`). 로컬 `main`은 다른 워크트리(`.codex/worktrees/5c87`)가 체크아웃하고 있어서 옮기지 않았다.
+- `256d5e270`의 `git archive`로 F 복사본을 만들어 `:better-cobblemon-battlecam:build`(EXIT 0, unitTest 18/18). JAR 엔트리 87개, `BattlecamRuntimeModes.class` 포함.
+- 개발 클라(`cobblemon-dev`)와 PPakemon 프로필의 `better-cobblemon-battlecam-0.3.0.jar`를 교체했고, 둘 다 SHA-256 앞 16자리 6a19ca20ba48ab5a로 빌드본과 같다. 배치 때 게임은 꺼져 있었다. 이전 JAR(e836c0c2fbe906ce) 백업은 `develop-product/deployment-backups/20261028-battlecam-runtime-mode`. 개발 서버에는 배틀캠이 없다.
+- 운영 서버·VPS·deploy-product에는 반영하지 않았다. F6 유지 동작은 게임에서 아직 보지 않았다.
+
 ## [2026-10-28 19:02] F6으로 바꾼 모드가 배틀마다 초기화되던 것: json 기본값과 런타임 선택 분리 (단위 테스트 확인, 빌드 배치·실게임 미확인)
 
 - **빡대리님 지적:** F6으로 모드를 바꿔도 다음 배틀에서 원래대로 돌아간다. "json에서 읽는 거랑 런타임 따로 나눠."
