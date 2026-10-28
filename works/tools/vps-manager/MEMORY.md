@@ -1,3 +1,11 @@
+# [2026-10-28 11:22] Pokachip5139 원본 야도뇽 오프라인 지급·귓말 예약 저장 확인
+
+- **지시·상태:** 빡대리님이 지급과 귓말 안내를 명시했다. 11:18:36 `list`에서 접속자0명·Pokachip 조회 No entity 확인. 기존 `PendingItems`와 `OperatorWhisper`의 다음 접속 전달 경로를 사용했으며 즉시 인벤토리 수령/귓말 열람으로 보고하지 않는다.
+- **지급 내용·중복 방지:** 원본 `bb82fa1c-cb84-4974-814c-b0f45f0a640b`의 48레벨·수컷·이로치 야도뇽 NBT를 사용했다. 현재 저장본과 기존 지급 대기열에 같은 UUID가 없는지 확인하고, 서버 스레드에서도 오프라인 상태·기존 대기열 중복을 재확인했다. `cobblemon:pokemon_item={species:"cobblemon:salandit",aspects:["shiny","male"]}` 표시 정보와 `cobblemon_to_item` 버전1 원본 전체 NBT를 가진 아이템 한 개를 기존 PendingItems API로 등록했다. 클래스 재정의/변환이나 제품 코드/JAR 교체는 없다.
+- **귓말:** 기존 OperatorWhisper API로 “분실 신고하신 이로치 야도뇽을 10월 21일 백업 원본으로 복구해 지급했습니다. 48레벨 수컷이며 원래 개체값·성격·특성·기술을 유지했습니다. 포켓몬 아이템을 손에 들고 우클릭해 복원해 주세요. 소지품이 가득 찼다면 발밑을 확인해 주세요.”를 본인 UUID에 예약했다. 다음 접속 때 운영자 귓말 형식으로 전달된다.
+- **저장 검증:** 11:21:42 `save-all flush`의 Saved the game 확인. `world/data/jbro_policy_pending_items.dat`의 본인 큐에 원본 UUID가 정확히1개이며 포켓몬 NBT의 자료형·값 전체가 10/21 백업 원본과 동일함을 검증했다. `jbro_policy_operator_whispers.dat`에도 안내 문구1개가 저장됐다. 서버 Java PID277928·pane_dead=0 유지, 종료·재시작·강제 접속 조작 없음.
+- **근거·미확인:** `F:/AI/scratch/pokachip-salandit-20261028/{offline-grant-result.txt,offline-grant-saved-verification.txt,grant-item.snbt,whisper-message.txt}`. 실제 다음 접속 지급·귓말 수신·아이템의 파티 복원은 아직 확인하지 않았다. 인벤토리가 가득 차면 기존 PendingItems 구현에 따라 발밑에 떨어진다. 소실 원인은 이번 지급으로 해결됐다고 주장하지 않는다.
+
 # [2026-10-28 00:35] Pokachip5139 이로치 야도뇽 원본 확보 (지급 전)
 
 - **추가 단서:** 빡대리님이 마지막 보관 시점을 지난주로 추정했다. 10/21 21:04:06 Pokachip의 `[Salandit]`, 21:04:21~23 `수컷이라 / 못씀`을 확인했다. 제보의 수컷 야도뇽과 특징은 일치하나 채팅 로그만으로 동일 UUID·이로치 여부는 확인할 수 없다. 바로 뒤 연결 종료 로그가 있지만 소실 원인으로 단정하지 않는다.
