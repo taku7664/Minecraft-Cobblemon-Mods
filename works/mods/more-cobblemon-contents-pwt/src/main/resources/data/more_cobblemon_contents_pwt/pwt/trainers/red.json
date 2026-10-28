@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.red",
+  "generation": 1,
+  "skin": "rctmod:textures/trainers/single/player_red_0202.png",
+  "slim": false,
+  "ace": "pikachu",
+  "pokemon": [
+    "pikachu level=50 moves=thunderbolt,voltswitch,grassknot,surf ability=static nature=timid held_item=cobblemon:light_ball hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "venusaur level=50 moves=gigadrain,sludgebomb,sleeppowder,earthpower ability=overgrow nature=modest held_item=cobblemon:black_sludge hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "charizard level=50 moves=flamethrower,airslash,focusblast,dragonpulse ability=blaze nature=timid held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "blastoise level=50 moves=hydropump,icebeam,aurasphere,darkpulse ability=torrent nature=modest held_item=cobblemon:sitrus_berry hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "snorlax level=50 moves=bodyslam,earthquake,crunch,curse ability=thickfat nature=adamant held_item=cobblemon:leftovers hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "lapras level=50 moves=freezedry,hydropump,thunderbolt,icebeam ability=waterabsorb nature=modest held_item=cobblemon:assault_vest hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0"
+  ]
+}

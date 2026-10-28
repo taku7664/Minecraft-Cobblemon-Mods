@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.raihan",
+  "generation": 8,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/raihan.png",
+  "slim": true,
+  "ace": "duraludon",
+  "pokemon": [
+    "duraludon level=50 moves=dracometeor,flashcannon,thunderbolt,bodypress ability=stalwart nature=modest held_item=cobblemon:choice_specs hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "flygon level=50 moves=earthquake,dragonclaw,uturn,firepunch ability=levitate nature=jolly held_item=cobblemon:choice_scarf hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "goodra level=50 moves=dracometeor,fireblast,sludgebomb,thunderbolt ability=sapsipper nature=modest held_item=cobblemon:assault_vest hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "turtonator level=50 moves=shellsmash,flamethrower,dragonpulse,earthquake ability=shellarmor nature=modest held_item=cobblemon:white_herb hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "sandaconda level=50 moves=earthquake,coil,glare,stoneedge ability=sandspit nature=adamant held_item=cobblemon:leftovers hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "torkoal level=50 moves=eruption,solarbeam,earthpower,willowisp ability=drought nature=quiet held_item=cobblemon:sitrus_berry hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0"
+  ]
+}

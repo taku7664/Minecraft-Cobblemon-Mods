@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.blue",
+  "generation": 1,
+  "skin": "rctmod:textures/trainers/single/champion_terry_01b6.png",
+  "slim": false,
+  "ace": "pidgeot",
+  "pokemon": [
+    "pidgeot level=50 moves=hurricane,heatwave,uturn,roost ability=keeneye nature=timid held_item=cobblemon:focus_sash hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "alakazam level=50 moves=psychic,shadowball,focusblast,dazzlinggleam ability=magicguard nature=timid held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "rhyperior level=50 moves=stoneedge,earthquake,megahorn,icepunch ability=solidrock nature=adamant held_item=cobblemon:weakness_policy hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "arcanine level=50 moves=flareblitz,extremespeed,wildcharge,closecombat ability=intimidate nature=adamant held_item=cobblemon:choice_band hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "gyarados level=50 moves=waterfall,icefang,earthquake,dragondance ability=intimidate nature=jolly held_item=cobblemon:lum_berry hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "exeggutor level=50 moves=gigadrain,psychic,sleeppowder,sludgebomb ability=harvest nature=modest held_item=cobblemon:sitrus_berry hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0"
+  ]
+}

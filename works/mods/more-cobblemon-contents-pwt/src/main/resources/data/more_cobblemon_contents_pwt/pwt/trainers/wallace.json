@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.wallace",
+  "generation": 3,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/wallace.png",
+  "slim": false,
+  "ace": "milotic",
+  "pokemon": [
+    "milotic level=50 moves=scald,icebeam,recover,haze ability=marvelscale nature=bold held_item=cobblemon:leftovers hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=252 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "wailord level=50 moves=waterspout,hydropump,icebeam,hypervoice ability=pressure nature=modest held_item=cobblemon:choice_specs hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "tentacruel level=50 moves=sludgebomb,surf,icebeam,rapidspin ability=clearbody nature=timid held_item=cobblemon:black_sludge hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "ludicolo level=50 moves=hydropump,gigadrain,icebeam,fakeout ability=swiftswim nature=modest held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "whiscash level=50 moves=earthquake,waterfall,stoneedge,dragondance ability=oblivious nature=adamant held_item=cobblemon:sitrus_berry hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "gyarados level=50 moves=waterfall,earthquake,icefang,dragondance ability=moxie nature=jolly held_item=cobblemon:lum_berry hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252"
+  ]
+}

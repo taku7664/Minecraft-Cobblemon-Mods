@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.iris",
+  "generation": 5,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/iris.png",
+  "slim": false,
+  "ace": "haxorus",
+  "pokemon": [
+    "haxorus level=50 moves=dragondance,outrage,earthquake,poisonjab ability=moldbreaker nature=jolly held_item=cobblemon:lum_berry hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "hydreigon level=50 moves=dracometeor,darkpulse,flamethrower,focusblast ability=levitate nature=timid held_item=cobblemon:choice_specs hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "druddigon level=50 moves=outrage,earthquake,suckerpunch,stealthrock ability=roughskin nature=adamant held_item=cobblemon:rocky_helmet hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "aggron level=50 moves=headsmash,heavyslam,earthquake,icepunch ability=rockhead nature=adamant held_item=cobblemon:choice_band hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "archeops level=50 moves=acrobatics,stoneedge,earthquake,uturn ability=defeatist nature=jolly hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "lapras level=50 moves=hydropump,freezedry,thunderbolt,icebeam ability=waterabsorb nature=modest held_item=cobblemon:sitrus_berry hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0"
+  ]
+}

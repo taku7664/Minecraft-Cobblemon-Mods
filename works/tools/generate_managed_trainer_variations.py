@@ -21,6 +21,7 @@ ORDER = {
     "more-cobblemon-contents-league-challenge": 10,
     "more-cobblemon-contents-battle-tower": 20,
     "more-cobblemon-contents-battle-factory": 30,
+    "more-cobblemon-contents-pwt": 40,
 }
 
 

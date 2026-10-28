@@ -27,6 +27,7 @@ include(
     "more-cobblemon-contents-pvp",
     "more-cobblemon-contents-battle-factory",
     "more-cobblemon-contents-league-challenge",
+    "more-cobblemon-contents-pwt",
     "pokefusion",
     "simple-trash-can"
 )

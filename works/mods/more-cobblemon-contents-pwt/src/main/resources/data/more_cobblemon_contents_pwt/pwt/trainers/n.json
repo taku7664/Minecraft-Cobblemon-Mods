@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.n",
+  "generation": 5,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/n.png",
+  "slim": false,
+  "ace": "zoroark",
+  "pokemon": [
+    "zoroark level=50 moves=nastyplot,darkpulse,flamethrower,focusblast ability=illusion nature=timid held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "carracosta level=50 moves=shellsmash,waterfall,stoneedge,aquajet ability=sturdy nature=adamant held_item=cobblemon:white_herb hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "vanilluxe level=50 moves=blizzard,freezedry,flashcannon,icebeam ability=snowwarning nature=modest held_item=cobblemon:choice_specs hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "archeops level=50 moves=acrobatics,stoneedge,earthquake,uturn ability=defeatist nature=jolly hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "klinklang level=50 moves=shiftgear,geargrind,wildcharge,substitute ability=clearbody nature=adamant held_item=cobblemon:leftovers hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252"
+  ]
+}

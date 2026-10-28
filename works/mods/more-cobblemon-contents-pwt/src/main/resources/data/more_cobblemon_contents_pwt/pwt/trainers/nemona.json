@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "name_key": "trainer.more_cobblemon_contents_pwt.nemona",
+  "generation": 9,
+  "skin": "more_cobblemon_contents_pwt:textures/npcs/pwt/nemona.png",
+  "slim": true,
+  "ace": "pawmot",
+  "pokemon": [
+    "pawmot level=50 moves=doubleshock,closecombat,machpunch,icepunch ability=voltabsorb nature=jolly held_item=cobblemon:life_orb hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "lycanroc level=50 moves=accelerock,stoneedge,closecombat,crunch ability=steadfast nature=jolly held_item=cobblemon:focus_sash hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252",
+    "goodra level=50 moves=dracometeor,fireblast,sludgebomb,thunderbolt ability=sapsipper nature=modest held_item=cobblemon:assault_vest hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "dudunsparce level=50 moves=boomburst,earthpower,roost,coil ability=serenegrace nature=modest held_item=cobblemon:leftovers hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=252 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "orthworm level=50 moves=ironhead,bodypress,earthquake,coil ability=eartheater nature=impish held_item=cobblemon:rocky_helmet hp_iv=31 hp_ev=252 attack_iv=31 attack_ev=0 defence_iv=31 defence_ev=252 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=4 speed_iv=31 speed_ev=0",
+    "meowscarada level=50 moves=flowertrick,knockoff,uturn,playrough ability=protean nature=jolly held_item=cobblemon:choice_band hp_iv=31 hp_ev=4 attack_iv=31 attack_ev=252 defence_iv=31 defence_ev=0 special_attack_iv=31 special_attack_ev=0 special_defence_iv=31 special_defence_ev=0 speed_iv=31 speed_ev=252"
+  ]
+}
