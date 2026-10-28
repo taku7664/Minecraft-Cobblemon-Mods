@@ -1,5 +1,12 @@
 # Better Cobblemon Music 작업 기록
 
+## [2026-10-28 11:47] PvP 픽창 Team Select main 반영·개발 클라이언트 배포
+
+- 소스 `8a62ba49d`를 main 병합 `3d3312024`로 반영하고 origin/main 동기화를 확인했다. F 드라이브 미러에서 `:better-cobblemon-music:build` 성공, 전체 189/189 테스트 통과. 픽창 전용 키·허브/닫힌 화면 분리·새 스트리밍 이벤트와 기존 PvP 전투곡 유지 검증을 포함한다. Gradle 홈·프로젝트 캐시·모든 build·JVM/JavaExec 임시는 F 드라이브였다. 빌드 로그 `F:/AI/builds/pvp-pick-music-e634/verify.log`.
+- 빌드 입력과 병합된 main의 관련 네 모듈 소스·리소스·빌드 파일 및 음악팩 총 1,652개를 대조했다. main에 포인터로 있는 기존 LFS 99개는 실제 빌드 입력의 SHA-256을 포인터 OID와 비교해 일치했다. 새 ZIP은 기존 선택 ZIP 대비 JSON 두 개만 변경하고 지정 OGG 한 개만 추가하며, 기존 OGG 99개는 바이트 단위 동일하다.
+- 게임이 꺼진 상태에서 기본 체크아웃 `develop-product/client/mods`의 음악 JAR만 1.3.19→1.3.20으로 교체했다. JAR 빌드본·설치본 SHA-256 `6c5c9888487d6a72657dc52fde46d5210dbdc41dff1b8eb61cf211e09cb01b95` 일치. 선택을 유지하려고 빌드 ZIP 1.3.20을 현재 선택된 `resourcepacks/better-cobblemon-music-resourcepack-1.3.18.zip`에 설치했고 SHA-256 `79dc2934a009eac8462a456a68a2596d9b7b58cdf43bf49259d1ef54eb93964b` 일치. options·개인 설정·동명 비활성 폴더·다른 프로필은 수정하지 않았다.
+- 서버·PvP 애드온·릴리스 산출물에는 변경/설치하지 않았다. 백업과 검증 자료는 제품 밖 F:/AI/builds/pvp-pick-music-e634에 보관했다. 실게임 픽창·관전·전투 전환과 실제 청취는 실행하지 않았으며 이번 완료 범위는 변환·소스/팩 연결·테스트·빌드·설치 파일 검증이다.
+
 ## [2026-10-28 11:35] PvP 픽창 전용 Pokémon Champions Team Select 연결
 
 - 사용자 지정 `Downloads/pokemusic/Team Select Music - Pokémon Champions [OST].mp3`를 스킬 도구로 Vorbis q4·스테레오·44.1kHz로 변환했다. 원본·게인·길이·구간은 변경하지 않았다. 전체 디코딩 및 단일 Vorbis 스트림 검증을 통과했다. 1,545,669→1,359,879바이트, 약 94.169초이며 SHA-256과 인수는 `resource-pack/pvp-team-select-import-2026-10-28.json`에 있다. 최초 변환은 완료 후 보고서 출력의 cp949 인코딩만 실패했으며 재인코딩 없이 결과를 검사해 UTF-8 보고서를 작성했다.
