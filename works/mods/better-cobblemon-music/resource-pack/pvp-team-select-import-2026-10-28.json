@@ -1,0 +1,16 @@
+{
+  "channels": 2,
+  "sample_rate": 44100,
+  "logical_streams": 1,
+  "duration_seconds": 94.16854875283447,
+  "source": "Team Select Music - Pokémon Champions [OST].mp3",
+  "target": "music/screen/pvp/pokemon_champions_team_select.ogg",
+  "input_bytes": 1545669,
+  "output_bytes": 1359879,
+  "input_sha256": "63d27753f9b40cedf482ab1eb9119a1177260a4959d1ec2d20df1ac61902d6ba",
+  "output_sha256": "0e635c6f95454955a896afc36547c48c5ec6c1537e489802561cfa738544a871",
+  "quality": 4,
+  "mode": "music",
+  "gain": "unchanged",
+  "full_decode_verified": true
+}

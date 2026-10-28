@@ -1,5 +1,11 @@
 # Better Cobblemon Music 작업 기록
 
+## [2026-10-28 11:35] PvP 픽창 전용 Pokémon Champions Team Select 연결
+
+- 사용자 지정 `Downloads/pokemusic/Team Select Music - Pokémon Champions [OST].mp3`를 스킬 도구로 Vorbis q4·스테레오·44.1kHz로 변환했다. 원본·게인·길이·구간은 변경하지 않았다. 전체 디코딩 및 단일 Vorbis 스트림 검증을 통과했다. 1,545,669→1,359,879바이트, 약 94.169초이며 SHA-256과 인수는 `resource-pack/pvp-team-select-import-2026-10-28.json`에 있다. 최초 변환은 완료 후 보고서 출력의 cp949 인코딩만 실패했으며 재인코딩 없이 결과를 검사해 UTF-8 보고서를 작성했다.
+- 음악 모듈의 기존 MCC 화면 제공자에서 실제 픽창 클래스 `jbro.cobblemon.mcc.client.PvpSelectionScreen`을 식별한다. PvP 애드온의 internal 클래스에 직접 의존하지 않도록 클래스 이름으로 판별하고, `more_cobblemon_contents:pvp/team_select`를 화면 키·Mod Menu 선택지에 추가했다. 픽창의 참가자/관전자 모두 같은 곡을 사용하고 창을 닫으면 키가 사라진다. 기존 PvP 전투곡 매핑은 유지한다.
+- 공식 팩에 `screen/pvp/pokemon_champions_team_select` 음원 하나와 `팀 선택 (PC)` 제목·화면 매핑을 추가했다. 새 곡은 과거 일괄 감쇠 이력의 대상이 아니므로 해당 역사 테스트에서만 제외했다. 모듈 버전 1.3.20. 본 항목 작성 시 전체 테스트·빌드·main 병합·개발 배포는 진행 전이며 실게임 재생도 미확인이다.
+
 ## [2026-10-26 22:24] 음악 중지·재시도 수정 main 반영 및 개발 클라이언트 설치
 
 - 소스 `b6b37e47f`, 테스트 구성 수정 `fa4080e54`를 main 병합 `fc22fc34f`로 반영하고 origin/main과 동기화했다. 최초 전체 실행은 새 테스트가 미해결 Sound의 getVolume()을 호출해 186/187이었고, 로딩 전 인스턴스 음량을 검사하도록 테스트를 고친 뒤 전체 187/187 및 remapJar가 성공했다.
