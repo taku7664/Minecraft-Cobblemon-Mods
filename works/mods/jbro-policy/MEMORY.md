@@ -1,3 +1,11 @@
+## [2026-10-29 16:26] `/접속자` 답변 공개 범위를 즉시 반영하는 JSON 설정, 개발 배포
+
+- **요청·설계:** 봇 명령의 답변 공개 범위를 바꾸려고 JAR을 매번 교체하는 문제를 `/접속자` 범위에서 해소했다. 별도 `config/jbro-policy-discord-replies.json`의 `onlinePlayersPrivate`를 true/false로 두고, Discord interaction의 첫 deferred 응답 직전에 파일 내용을 읽는다. 디스코드의 첫 응답에 ephemeral flag를 넣어야 해서 최종 답변 편집 시점에만 값을 바꿔서는 안 된다. 다른 명령의 기존 공개 범위(인증·위키 등의 비공개 포함)는 그대로 둔다. 설정이 잘못되면 마지막 유효한 값을 유지하며 같은 잘못된 내용에는 경고를 한 번만 남긴다. 기존 설정 파일의 토큰·채널 설정은 서버 시작 시 로드되는 방식 그대로다.
+- **검증:** `main` 커밋 `28af01a47`의 `works`를 F 드라이브 소스 사본으로 추출해 모든 Gradle 쓰기 경로를 F로 지정하고 `:jbro-policy:build` 성공(49초). 새 테스트는 한 객체에서 설정 true→false→손상→true 순서의 즉시 반영, 손상 시 마지막 값, 민감한 다른 명령의 비공개 유지, 경고 중복 방지를 확인했다. 전체 단위 테스트125개 중124개 성공·1개 중단·실패0. Windows 기본 `jar --validate`는 로컬 `jar` 도구가 Java21 클래스 major65를 지원하지 않아 실패했으며 JAR 손상 근거는 아니다. ZIP350항목을 읽고 새 클래스 존재를 확인했다.
+- **개발 설치:** `C:/Users/박주형/Documents/GitHub/Cobblemon-Mods/develop-product/{server,client}/mods/jbro-policy-0.1.8.jar`에 main 빌드본만 설치했다. 복사 전 Java/javaw 프로세스와 개발 25566 LISTEN이 없음을 확인했다. 빌드본·두 설치본 SHA-256은 모두 `5766724259230A4DB911C25EC5BA46DE851ADBA92D701340175C78EA305902A1`. 개발 서버에 `config/jbro-policy-discord-replies.json`을 새로 만들고 `onlinePlayersPrivate: true`를 설정했다. JSON 구문 읽기를 확인했다. 개발 서버·클라이언트는 실행하지 않아 게임/디스코드 실제 표시 검증은 미수행이다.
+- **범위·적용:** 기존 봇은 여전히 게임 서버 모드 안에 있다. 이번 변경은 `/접속자` 답변 공개 범위만 JSON으로 전환하며 다른 봇 명령의 동작 수정이나 봇 전체 분리를 뜻하지 않는다. VPS 운영 JAR·설정·프로세스는 변경하지 않았다. VPS에는 별도 배포와 재시작 동의가 필요하다. `deploy-product`는 릴리스 요청이 없어서 건드리지 않았다.
+- **Git:** 코드·README `28af01a47`을 main/origin/main에 반영했다. 이 기록도 별도 커밋·푸시한다.
+
 ## [2026-10-29 16:12] 디스코드 /접속자 답변 본인에게만 표시
 
 - **요청·변경:** DiscordCommands의 기본 `/접속자` 명령에 `ephemeral = true`를 지정했다. 기존 DiscordBot은 명령의 ephemeral 속성에 따라 deferred interaction callback에 Discord EPHEMERAL flag를 넣고 후속 답변을 편집한다. 따라서 접속자 수·닉네임 계산과 다른 명령의 응답 방식은 바꾸지 않는다. README의 해당 명령 설명을 갱신했다.
