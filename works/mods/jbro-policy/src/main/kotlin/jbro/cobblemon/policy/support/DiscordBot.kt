@@ -15,6 +15,7 @@ import java.util.concurrent.TimeUnit
 import java.util.function.Supplier
 import jbro.cobblemon.policy.JbroPolicy
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.server.MinecraftServer
 
 /**
@@ -135,6 +136,7 @@ internal object DiscordBot {
 
     private var token = ""
     private var settings = DiscordSettings()
+    private lateinit var replyVisibility: DiscordReplyVisibility
     private var rest: DiscordRest? = null
     @Volatile private var server: MinecraftServer? = null
     @Volatile private var running = false
@@ -166,6 +168,9 @@ internal object DiscordBot {
         if (!settings.botConfigured) return
         token = settings.botToken
         this.settings = settings
+        replyVisibility = DiscordReplyVisibility(FabricLoader.getInstance().configDir.resolve("jbro-policy-discord-replies.json")) { message, failure ->
+            JbroPolicy.LOGGER.warn(message, failure)
+        }
         val client = DiscordRest(token).also { rest = it }
         if (settings.statusChannelId.isNotBlank()) status = DiscordStatusMessage(client, settings.statusChannelId)
         if (settings.newsChannelId.isNotBlank()) DiscordNews.register(client, settings.newsChannelId, restWorker)
@@ -312,7 +317,9 @@ internal object DiscordBot {
         val acknowledged = client.request("POST", "/interactions/$id/$interactionToken/callback", JsonObject().apply {
             addProperty("type", DEFERRED_REPLY)
             // A command in the wrong channel is told so to the caller alone.
-            if (command?.ephemeral == true || misplaced != null) add("data", JsonObject().apply { addProperty("flags", EPHEMERAL) })
+            if (replyVisibility.isPrivate(command?.name, command?.ephemeral == true) || misplaced != null) {
+                add("data", JsonObject().apply { addProperty("flags", EPHEMERAL) })
+            }
         }, authorized = false)
         if (command is DiscordAsyncCommand && !acknowledged.ok) return
         val live = server
