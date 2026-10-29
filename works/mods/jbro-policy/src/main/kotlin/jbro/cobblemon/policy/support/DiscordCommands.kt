@@ -105,6 +105,7 @@ internal object DiscordCommands {
     fun registerBuiltIns() = add(object : DiscordCommand {
         override val name = "접속자"
         override val description = "지금 서버에 접속한 트레이너"
+        override val ephemeral = true
 
         override fun reply(server: MinecraftServer, options: Map<String, String>): JsonObject {
             // Players know each other by their Styled Nicknames nickname, which is the display name.
