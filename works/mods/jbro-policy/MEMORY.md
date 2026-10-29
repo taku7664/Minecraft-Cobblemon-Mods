@@ -1,3 +1,10 @@
+## [2026-10-29 16:12] 디스코드 /접속자 답변 본인에게만 표시
+
+- **요청·변경:** DiscordCommands의 기본 `/접속자` 명령에 `ephemeral = true`를 지정했다. 기존 DiscordBot은 명령의 ephemeral 속성에 따라 deferred interaction callback에 Discord EPHEMERAL flag를 넣고 후속 답변을 편집한다. 따라서 접속자 수·닉네임 계산과 다른 명령의 응답 방식은 바꾸지 않는다. README의 해당 명령 설명을 갱신했다.
+- **Git:** 코드·README 커밋 `4c2ca9b2e`를 main에 `14d9c0c95`로 cherry-pick해 origin/main에 푸시했다. 메인과 원격은 ahead/behind 0/0이다.
+- **빌드 검증:** 커밋된 main의 `works`를 `F:/AI/builds/discord-online-private-20261029/src/`에 추출해 F 드라이브 전용 Gradle 캐시·출력·임시 경로로 `:jbro-policy:build` 성공. 단위 테스트 124개 중123개 성공·1개 중단·실패0. 첫 실행은 PowerShell의 `-Djava.io.tmpdir` 인자 처리 문제와 init 경로 문자열 문제로 빌드 태스크 실행 전 실패했고, JAVA_TOOL_OPTIONS·출력 스크립트를 수정한 재실행이 성공했다. 새 JAR `F:/AI/builds/discord-online-private-20261029/out/jbro-policy/libs/jbro-policy-0.1.8.jar` SHA-256 `72ADF86ABAF4960B8E2C3B253BA9E16BB8132FC871388F99059B040CFA3374C2`.
+- **적용 상태:** VPS 실행 중 설치본 SHA-256은 `7b4c827c609947f8b55aaa13ec2770fe0d2c059b3a5624de22a8632498c2ff9b`로 이전 버전이다. Java·25565 LISTEN·tmux pane_dead=0 확인. VPS 모드 교체/재시작은 사용자 명시 동의가 없어서 수행하지 않았다. Discord 실제 ephemeral UI 확인도 미수행. 개발 서버·클라이언트·deploy-product도 수정하지 않았다.
+
 # jbro-policy MEMORY
 
 ## [2026-10-27 23:36] VPS 전설 미출현 조사 — 실제 풀·개인 가중치·후보 검사
