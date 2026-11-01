@@ -1,6 +1,7 @@
 {
   "block.more_cobblemon_contents_pwt.pwt_terminal": "PWT 터미널",
   "screen.more_cobblemon_contents.hub.tab.pwt": "PWT",
+  "screen.more_cobblemon_contents.hub.unavailable.pwt": "PWT 화면을 열 수 없습니다.",
   "screen.more_cobblemon_contents_pwt.waiting": "대회 정보를 불러오는 중…",
   "screen.more_cobblemon_contents_pwt.intro": "역대 강자 8명이 겨루는 토너먼트 · 우승 보상 %sBP",
   "screen.more_cobblemon_contents_pwt.titles": "우승 %s회",
@@ -8,6 +9,7 @@
   "screen.more_cobblemon_contents_pwt.next": "%s · 상대: %s",
   "screen.more_cobblemon_contents_pwt.battling": "%s 대전 중",
   "screen.more_cobblemon_contents_pwt.result.won": "우승! 보상 %sBP를 받았습니다",
+  "screen.more_cobblemon_contents_pwt.result.won_owed": "우승! 보상 %sBP는 다음에 접속하거나 이 탭을 열 때 지급합니다",
   "screen.more_cobblemon_contents_pwt.result.lost": "%s에서 탈락했습니다",
   "screen.more_cobblemon_contents_pwt.round.0": "8강",
   "screen.more_cobblemon_contents_pwt.round.1": "4강",

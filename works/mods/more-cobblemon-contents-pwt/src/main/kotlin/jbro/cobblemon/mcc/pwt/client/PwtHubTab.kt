@@ -50,7 +50,7 @@ internal class PwtHubTab : MccHubTabContent {
         view.errorKey?.let { return Component.translatable(it) }
         val run = view.run ?: return pwt("intro", view.bp)
         return when {
-            run.won -> pwt("result.won", view.bp)
+            run.won -> pwt(if (view.rewardOwed) "result.won_owed" else "result.won", view.bp)
             // The loss settled its round, so the round lost is the one before the current.
             run.finished -> pwt("result.lost", pwt("round.${(run.round - 1).coerceIn(0, 2)}"))
             run.battling -> pwt("battling", pwt("round.${run.round}"))
@@ -58,12 +58,8 @@ internal class PwtHubTab : MccHubTabContent {
         }
     }
 
-    private fun opponentName(run: PwtRunView): Component {
-        val player = run.entrants.indexOfFirst { it.player }
-        val alive = if (run.round == 0) (0 until 8).toList() else run.winners[run.round - 1]
-        val index = alive.indexOf(player)
-        return run.entrants.getOrNull(alive.getOrNull(index xor 1) ?: -1)?.let { Component.translatable(it.nameKey) } ?: Component.literal("?")
-    }
+    private fun opponentName(run: PwtRunView): Component =
+        run.opponent?.let(run.entrants::getOrNull)?.let { Component.translatable(it.nameKey) } ?: Component.literal("?")
 
     private fun addParty(host: MccHubContentHost, rect: UiRect, view: PwtView) {
         val body = MccHubKit.card(host, rect, pwt("party", PwtClientState.picked.size, PwtRules.TEAM_SIZE), MccHubKit.CardTone.FEATURE)

@@ -35,7 +35,7 @@ internal class PwtBracketWidget(r: UiRect, private val run: PwtRunView) :
         scaledItem(g, ItemStack(Items.NETHER_STAR), layout.trophy)
         // The match the challenger plays next blinks: their box and the opponent's.
         val playerSlot = run.entrants.indexOfFirst { it.player }
-        val current = if (run.finished || run.battling) emptySet() else currentMatch(playerSlot)
+        val current = if (run.battling) emptySet() else setOfNotNull(playerSlot.takeIf { run.opponent != null }, run.opponent)
         val blinkOn = PwtClientState.ticks / 10 % 2 == 0L
         var hovered: Pair<PwtEntrantView, Int>? = null
         layout.boxes.forEach { box ->
@@ -61,14 +61,6 @@ internal class PwtBracketWidget(r: UiRect, private val run: PwtRunView) :
             if (mouseX >= rect.x && mouseX < rect.right && mouseY >= rect.y && mouseY < rect.bottom) hovered = entrant to box.round
         }
         hovered?.let { (entrant, _) -> Minecraft.getInstance().screen?.setTooltipForNextRenderPass(tooltip(entrant)) }
-    }
-
-    /** The two slots of the challenger's match this round. */
-    private fun currentMatch(playerSlot: Int): Set<Int> {
-        val alive = if (run.round == 0) (0 until 8).toList() else run.winners[run.round - 1]
-        val index = alive.indexOf(playerSlot)
-        if (index < 0) return emptySet()
-        return setOf(alive[index], alive[index xor 1])
     }
 
     /** Shown dimmed in [round]'s box: the slot lost that round's match. */

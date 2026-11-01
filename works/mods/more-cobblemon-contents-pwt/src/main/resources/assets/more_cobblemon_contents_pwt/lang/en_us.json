@@ -1,6 +1,7 @@
 {
   "block.more_cobblemon_contents_pwt.pwt_terminal": "PWT Terminal",
   "screen.more_cobblemon_contents.hub.tab.pwt": "PWT",
+  "screen.more_cobblemon_contents.hub.unavailable.pwt": "The PWT screen could not be opened.",
   "screen.more_cobblemon_contents_pwt.waiting": "Loading the tournament…",
   "screen.more_cobblemon_contents_pwt.intro": "Eight strong trainers from every generation · Winner earns %s BP",
   "screen.more_cobblemon_contents_pwt.titles": "Titles: %s",
@@ -8,6 +9,7 @@
   "screen.more_cobblemon_contents_pwt.next": "%s · vs %s",
   "screen.more_cobblemon_contents_pwt.battling": "%s in progress",
   "screen.more_cobblemon_contents_pwt.result.won": "Champion! You earned %s BP",
+  "screen.more_cobblemon_contents_pwt.result.won_owed": "Champion! Your %s BP will be paid at your next login or when you reopen this tab",
   "screen.more_cobblemon_contents_pwt.result.lost": "Knocked out in the %s",
   "screen.more_cobblemon_contents_pwt.round.0": "Quarterfinal",
   "screen.more_cobblemon_contents_pwt.round.1": "Semifinal",

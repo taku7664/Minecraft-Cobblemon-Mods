@@ -37,7 +37,7 @@ import net.minecraft.server.level.ServerPlayer
 /** Every mutation runs on the server thread; clients send intents, never results. */
 object PwtServer {
     /** A tournament under way: the bracket, the three Pokémon entered, and the battle being fought. */
-    private class Run(val token: UUID, var bracket: PwtBracket, val team: List<String>, val teamSpecies: List<String>) {
+    private class Run(val token: UUID, var bracket: PwtBracket, val team: List<String>) {
         var battleToken: UUID? = null
     }
 
@@ -65,7 +65,7 @@ object PwtServer {
             }
         }
         ServerLifecycleEvents.SERVER_STOPPED.register { access?.close(); access = null; runs.clear(); nonces.clear(); PwtCatalogResources.clear() }
-        ServerPlayConnectionEvents.JOIN.register { handler, _, server -> payOwed(server, handler.player.uuid) }
+        ServerPlayConnectionEvents.JOIN.register { handler, _, server -> attempt(handler.player.uuid, false) { payOwed(server, handler.player.uuid) } }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ ->
             val playerId = handler.player.uuid
             nonces.remove(playerId)
@@ -105,8 +105,7 @@ object PwtServer {
         val members = picked.map { id -> party.first { it.uuid == id } }
         check(members.none { it.isBattleClone() }) { "not_in_party" }
         runs[player.uuid] = Run(UUID.randomUUID(), PwtBracket.draw(catalog.trainers.keys, random),
-            members.map { it.saveToJSON(player.registryAccess()).toString() },
-            members.map { it.species.resourceIdentifier.toString() })
+            members.map { it.saveToJSON(player.registryAccess()).toString() })
     }
 
     private fun fight(player: ServerPlayer) {
@@ -116,9 +115,10 @@ object PwtServer {
         val trainer = checkNotNull(PwtCatalogResources.current?.trainers?.get(run.bracket.entrants[slot])) { "catalog_unavailable" }
         val round = run.bracket.round
         val token = UUID.randomUUID()
-        run.battleToken = token
         val request = ManagedPveBattles.Request(token, Mod.CONTENT, trainer.id, trainer.nameKey, run.team, trainer.drawTeam(random),
             skill = PwtRules.ROUND_SKILLS[round], appearance = TrainerResourceSkin(trainer.skin, trainer.slim), stage = STAGES[round])
+        // Set before the start: a battle can end inside it. Every failure from here on lets go of it again.
+        run.battleToken = token
         val battle = try {
             ManagedPveBattles.start(player, request, PwtRules.BATTLE_LEVEL) { outcome -> finish(player.server, player.uuid, token, outcome) }
         } catch (failure: RuntimeException) {
@@ -138,61 +138,83 @@ object PwtServer {
         runs.remove(player.uuid)
     }
 
-    /** The battle's result moves the bracket; a cancelled battle (a disconnect, the server stopping) counts as a loss. */
+    /**
+     * The battle's result moves the bracket; a cancelled battle (a disconnect, the server stopping) counts as a loss.
+     * MCC calls this again when it throws, so the battle stays held until the title is saved. Everything after that
+     * only tells people, and is not worth repeating the result for.
+     */
     private fun finish(server: MinecraftServer, playerId: UUID, token: UUID, outcome: ManagedPveBattles.Outcome) {
         val run = runs[playerId]?.takeIf { it.battleToken == token } ?: return
-        run.battleToken = null
         val slot = checkNotNull(run.bracket.opponentSlot())
         val trainer = PwtCatalogResources.current?.trainers?.get(run.bracket.entrants[slot])
-        val won = outcome == ManagedPveBattles.Outcome.WIN
-        run.bracket = run.bracket.settle(won, random)
+        val settled = run.bracket.settle(outcome == ManagedPveBattles.Outcome.WIN, random)
+        if (settled.playerWon) PwtSavedData.get(server).recordTitle(playerId, run.token)
+        run.bracket = settled
+        run.battleToken = null
+        val paid = settled.playerWon && crown(server, playerId)
         val player = server.playerList.getPlayer(playerId)
         if (player == null) {
             runs.remove(playerId)
             return
         }
-        if (run.bracket.playerWon) crown(player, run)
-        val opponent = trainer?.let { Component.translatable(it.nameKey) } ?: Component.literal(run.bracket.entrants[slot])
-        when (outcome) {
-            ManagedPveBattles.Outcome.WIN -> BattleResultNotices.victory(player, opponent, if (run.bracket.playerWon) PwtRules.WINNER_BP else 0)
-            ManagedPveBattles.Outcome.LOSS -> BattleResultNotices.defeat(player, opponent)
-            ManagedPveBattles.Outcome.CANCELLED -> Unit
+        val opponent = trainer?.let { Component.translatable(it.nameKey) } ?: Component.literal(settled.entrants[slot])
+        attempt(playerId, Unit) {
+            when (outcome) {
+                ManagedPveBattles.Outcome.WIN -> BattleResultNotices.victory(player, opponent, if (paid) PwtRules.WINNER_BP else 0)
+                ManagedPveBattles.Outcome.LOSS -> BattleResultNotices.defeat(player, opponent)
+                ManagedPveBattles.Outcome.CANCELLED -> Unit
+            }
         }
-        if (nonces.containsKey(playerId)) send(player, openScreen = true)
+        if (nonces.containsKey(playerId)) attempt(playerId, Unit) { send(player, openScreen = true) }
     }
 
-    /** The title: counted and owed in one save, then paid, announced to Discord and told to everyone online. */
-    private fun crown(player: ServerPlayer, run: Run) {
-        val server = player.server
-        PwtSavedData.get(server).recordTitle(player.uuid, run.token)
-        payOwed(server, player.uuid)
-        MccNews.publish(server, MccNewsEvent("${Mod.MOD_ID}:title", player.uuid,
-            Component.translatable("news.${Mod.MOD_ID}.title", MccNews.playerName(server, player.uuid))))
-        // The display name carries a Styled Nicknames nickname.
-        server.playerList.broadcastSystemMessage(Component.translatable("chat.${Mod.MOD_ID}.title", player.displayName ?: player.name), false)
+    /** A saved title paid, announced to Discord and told to everyone online. True when nothing is left owed. */
+    private fun crown(server: MinecraftServer, playerId: UUID): Boolean {
+        val paid = attempt(playerId, false) { payOwed(server, playerId) }
+        attempt(playerId, Unit) {
+            MccNews.publish(server, MccNewsEvent("${Mod.MOD_ID}:title", playerId,
+                Component.translatable("news.${Mod.MOD_ID}.title", MccNews.playerName(server, playerId))))
+        }
+        attempt(playerId, Unit) {
+            // The display name carries a Styled Nicknames nickname. A winner who just left has only the profile name.
+            val name = server.playerList.getPlayer(playerId)?.let { it.displayName ?: it.name } ?: Component.literal(MccNews.playerName(server, playerId))
+            server.playerList.broadcastSystemMessage(Component.translatable("chat.${Mod.MOD_ID}.title", name), false)
+        }
+        return paid
     }
 
-    private fun payOwed(server: MinecraftServer, playerId: UUID) {
+    /** True when nothing is left owed; what could not be paid is tried again at the next join or tab opening. */
+    private fun payOwed(server: MinecraftServer, playerId: UUID): Boolean {
         val saved = PwtSavedData.get(server)
         saved.unpaid(playerId).forEach { token ->
             val result = BattlePointRewards.award(server, playerId, token, PwtRules.WINNER_BP, Mod.CONTENT, "pwt_title")
             if (result.accepted) saved.paid(token)
+            else Mod.LOGGER.warn("PWT title BP for {} was not paid: {}", playerId, result.status)
         }
+        return saved.unpaid(playerId).isEmpty()
+    }
+
+    private inline fun <T> attempt(playerId: UUID, fallback: T, action: () -> T): T = try {
+        action()
+    } catch (failure: RuntimeException) {
+        Mod.LOGGER.error("PWT follow-up failed for {}", playerId, failure)
+        fallback
     }
 
     private fun send(player: ServerPlayer, openScreen: Boolean = false, errorKey: String? = null) {
         val nonce = nonces[player.uuid] ?: return
         val run = runs[player.uuid]
         val catalog = PwtCatalogResources.current
+        val saved = PwtSavedData.get(player.server)
         val view = PwtView(nonce.toString(), PwtLeagueGate.unlocked(player.server, player.uuid),
             Cobblemon.storage.getParty(player).toList().map(::partyView),
             run?.let { r ->
                 PwtRunView(r.bracket.entrants.map { id ->
                     if (id == PwtBracket.PLAYER) PwtEntrantView(player.gameProfile.name, null, 0, null, true)
                     else catalog?.trainers?.get(id).let { t -> PwtEntrantView(t?.nameKey ?: id, t?.skin, t?.generation ?: 0, t?.ace, false) }
-                }, r.bracket.winners, r.bracket.round, r.bracket.finished, r.bracket.playerWon, r.teamSpecies, r.battleToken != null)
+                }, r.bracket.winners, r.bracket.round, r.bracket.finished, r.bracket.playerWon, r.bracket.opponentSlot(), r.battleToken != null)
             },
-            PwtSavedData.get(player.server).titles(player.uuid), PwtRules.WINNER_BP, errorKey, openScreen)
+            saved.titles(player.uuid), PwtRules.WINNER_BP, errorKey, openScreen, saved.unpaid(player.uuid).isNotEmpty())
         ServerPlayNetworking.send(player, PwtStatePayload(gson.toJson(view)))
     }
 

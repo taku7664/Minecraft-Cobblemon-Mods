@@ -13,7 +13,6 @@ import jbro.cobblemon.mcc.pwt.system.PwtRules
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
-import net.minecraft.client.Minecraft
 
 /** The PWT state the server last sent, the Pokémon picked locally, and the one request in flight. */
 internal object PwtClientState {
@@ -71,7 +70,4 @@ internal object PwtClientState {
         ClientPlayNetworking.send(PwtIntentPayload(nonce, action, if (action == PwtAction.ENTER) picked.toList() else emptyList()))
         return true
     }
-
-    /** True while the hub shows PWT, for redraws that need no new state. */
-    fun showing(): Boolean = Minecraft.getInstance().screen.let { it is MccHubScreen && MccHubScreen.showing(Mod.CONTENT) }
 }

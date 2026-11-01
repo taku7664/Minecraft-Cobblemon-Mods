@@ -2,11 +2,13 @@ package jbro.cobblemon.mcc.pwt.system
 
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import jbro.cobblemon.mcc.api.presentation.TrainerResourceSkin
+import jbro.cobblemon.mcc.internal.battle.LegendaryClassPolicy
 import kotlin.random.Random
 
 /**
- * A tournament trainer. [pool] holds Showdown-style property lines at the battle level; each battle draws
- * [PwtRules.TEAM_SIZE] of them, so a pool keeps one Pokémon per species and one of each held item.
+ * A tournament trainer. [pool] holds Showdown-style property lines at the battle level; each battle fields [ace] and
+ * draws the rest of its [PwtRules.TEAM_SIZE] from them, so a pool keeps one Pokémon per species and one of each held item.
  */
 data class PwtTrainer(
     val id: String,
@@ -18,7 +20,10 @@ data class PwtTrainer(
     val ace: String,
     val pool: List<String>,
 ) {
-    fun drawTeam(random: Random): List<String> = pool.shuffled(random).take(PwtRules.TEAM_SIZE)
+    fun drawTeam(random: Random): List<String> {
+        val (aces, others) = pool.partition { PwtCatalogParser.species(it) == ace }
+        return (aces + others.shuffled(random).take(PwtRules.TEAM_SIZE - aces.size)).shuffled(random)
+    }
 }
 
 data class PwtCatalog(val trainers: Map<String, PwtTrainer>)
@@ -42,14 +47,15 @@ object PwtCatalogParser {
         require(json.get("schema_version")?.asInt == 1) { "schema_version must be 1" }
         val pool = json.getAsJsonArray("pokemon").map { it.asString.trim() }
         require(pool.size in PwtRules.TEAM_SIZE..6) { "pokemon must list ${PwtRules.TEAM_SIZE} to 6 entries" }
-        val species = pool.map { it.substringBefore(' ') }
+        pool.forEach(::checkEntry)
+        val species = pool.map(::species)
         require(species.distinct().size == species.size) { "pokemon repeats a species" }
-        val items = pool.mapNotNull { line -> property(line, "held_item") }
+        val items = pool.mapNotNull { line -> property(line, "held_item")?.let(::bareId) }
         require(items.distinct().size == items.size) { "pokemon repeats a held item" }
-        pool.forEach { line -> require(property(line, "level") == PwtRules.BATTLE_LEVEL.toString()) { "every entry must be level=${PwtRules.BATTLE_LEVEL}: $line" } }
         val skin = json.get("skin").asString
         require(TEXTURE.matches(skin)) { "skin must be a texture resource: $skin" }
-        val ace = json.get("ace").asString
+        require(runCatching { TrainerResourceSkin(skin) }.isSuccess) { "the battle refuses skin $skin" }
+        val ace = bareId(json.get("ace").asString)
         require(ace in species) { "ace $ace is not in the pool" }
         return PwtTrainer(
             id = id,
@@ -61,6 +67,21 @@ object PwtCatalogParser {
             pool = pool,
         )
     }
+
+    /** What the battle would only refuse once a player has pressed the button, or would quietly read another way. */
+    private fun checkEntry(line: String) {
+        require('=' !in line.substringBefore(' ')) { "an entry starts with its species: $line" }
+        val keys = line.split(' ').drop(1).filter(String::isNotEmpty).map { it.substringBefore('=').lowercase() }
+        require(keys.distinct().size == keys.size) { "entry repeats a property: $line" }
+        require(property(line, "level") == PwtRules.BATTLE_LEVEL.toString()) { "every entry must be level=${PwtRules.BATTLE_LEVEL}: $line" }
+        require(property(line, "moves")?.split(',')?.filter(String::isNotBlank).orEmpty().size in 1..4) { "an entry has 1 to 4 moves: $line" }
+        require(LegendaryClassPolicy.categoryFor(species(line)) == null) { "legendary-class Pokémon are banned on both sides: $line" }
+    }
+
+    /** The species of a pool entry, however it is spelled. */
+    internal fun species(line: String): String = bareId(line.substringBefore(' '))
+
+    private fun bareId(id: String): String = id.substringAfter(':').lowercase()
 
     private fun property(line: String, key: String): String? =
         line.split(' ').firstOrNull { it.startsWith("$key=") }?.substringAfter('=')

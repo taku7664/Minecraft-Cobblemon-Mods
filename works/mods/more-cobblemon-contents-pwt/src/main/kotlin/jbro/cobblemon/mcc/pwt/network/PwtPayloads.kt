@@ -17,14 +17,16 @@ data class PwtPartyView(val id: String, val speciesId: String, val formId: Strin
 /** One bracket slot: a trainer, or the challenger when [player]. */
 data class PwtEntrantView(val nameKey: String, val skin: String?, val generation: Int, val aceSpecies: String?, val player: Boolean)
 
-/** The bracket as [jbro.cobblemon.mcc.pwt.system.PwtBracket] holds it, with each slot's look. */
+/** The bracket as [jbro.cobblemon.mcc.pwt.system.PwtBracket] holds it, with each slot's look; [opponent] is the slot met next. */
 data class PwtRunView(val entrants: List<PwtEntrantView>, val winners: List<List<Int>>, val round: Int,
-    val finished: Boolean, val won: Boolean, val team: List<String>, val battling: Boolean)
+    val finished: Boolean, val won: Boolean, val opponent: Int?, val battling: Boolean)
 
 data class PwtView(val nonce: String, val unlocked: Boolean, val party: List<PwtPartyView>, val run: PwtRunView?,
     val titles: Int, val bp: Long, val errorKey: String? = null,
     /** Set on the state sent after a battle, which brings the hub back on the PWT tab. */
-    val openScreen: Boolean = false)
+    val openScreen: Boolean = false,
+    /** A title's reward could not be paid yet. */
+    val rewardOwed: Boolean = false)
 
 data class PwtStatePayload(val json: String) : CustomPacketPayload {
     override fun type() = TYPE
