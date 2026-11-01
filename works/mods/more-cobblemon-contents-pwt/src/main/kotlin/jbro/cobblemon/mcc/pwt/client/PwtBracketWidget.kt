@@ -11,8 +11,6 @@ import net.minecraft.client.gui.components.PlayerFaceRenderer
 import net.minecraft.client.gui.narration.NarrationElementOutput
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.ResourceLocation
-import net.minecraft.world.item.ItemStack
-import net.minecraft.world.item.Items
 import jbro.cobblemon.uikit.CobblemonUiThemes
 
 /**
@@ -32,7 +30,7 @@ internal class PwtBracketWidget(r: UiRect, private val run: PwtRunView) :
             val color = if (line.lit) theme.colors.accentGood else theme.colors.shell
             line.segments.forEach { g.fill(it.x, it.y, it.right, it.bottom, color) }
         }
-        scaledItem(g, ItemStack(Items.NETHER_STAR), layout.trophy)
+        layout.trophy.let { g.blit(TROPHY, it.x, it.y, it.width, it.height, 0f, 0f, 16, 16, 16, 16) }
         // The match the challenger plays next blinks: their box and the opponent's.
         val playerSlot = run.entrants.indexOfFirst { it.player }
         val current = if (run.battling) emptySet() else setOfNotNull(playerSlot.takeIf { run.opponent != null }, run.opponent)
@@ -77,6 +75,8 @@ internal class PwtBracketWidget(r: UiRect, private val run: PwtRunView) :
     override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
 }
 
+private val TROPHY = ResourceLocation.fromNamespaceAndPath("more_cobblemon_contents_pwt", "textures/gui/trophy.png")
+
 private val faces = HashMap<String, ResourceLocation?>()
 
 /** The trainer's skin, or the challenger's own; null when the skin's pack is missing. */
@@ -86,11 +86,6 @@ private fun face(entrant: PwtEntrantView): ResourceLocation? {
     return faces.getOrPut(skin) {
         ResourceLocation.tryParse(skin)?.takeIf { Minecraft.getInstance().resourceManager.getResource(it).isPresent }
     }
-}
-
-private fun scaledItem(g: GuiGraphics, item: ItemStack, rect: UiRect) {
-    g.pose().pushPose(); g.pose().translate(rect.x.toFloat(), rect.y.toFloat(), 0f); g.pose().scale(rect.width / 16f, rect.height / 16f, 1f)
-    g.renderItem(item, 0, 0); g.pose().popPose()
 }
 
 internal fun pwt(key: String, vararg args: Any): Component = Component.translatable("screen.more_cobblemon_contents_pwt.$key", *args)
