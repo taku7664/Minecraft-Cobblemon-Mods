@@ -19,7 +19,7 @@
 | 상황 | 결과 |
 |---|---|
 | 다른 아이템을 올림 | 원래 아이템이 지워지고 새 아이템이 남습니다 |
-| 같은 아이템을 올림 | 그대로 쌓입니다 |
+| 같은 아이템을 올림 | 그대로 쌓입니다. 한 묶음을 넘는 만큼은 지워지고, 슬롯에는 한 묶음이 남습니다 |
 | 인벤토리를 닫음 | 남아 있습니다 |
 | 접속을 끊거나 게임이 튕김 | 사라집니다(저장하지 않습니다) |
 | 죽음 | 사라집니다. 바닥에 떨어지지 않습니다 |
@@ -36,6 +36,7 @@
 | 괄호 안 | 지워진 이유 |
 |---|---|
 | `replaced` | 다른 아이템을 올려서 교체됨 |
+| `overflow` | 같은 아이템을 올렸는데 한 묶음을 넘침 |
 | `disconnect` | 휴지통에 남긴 채 접속을 끊음 |
 | `death` | `keepInventory` 없이 죽음 |
 
@@ -45,7 +46,7 @@
 |---|---|
 | 아이템을 들고 좌클릭 | 들고 있는 아이템을 전부 넣습니다 |
 | 아이템을 들고 우클릭 | 하나만 넣습니다 |
-| 숫자키·보조손 키 | 그 칸의 아이템을 넣습니다. 같은 아이템이면 쌓습니다 |
+| 숫자키·보조손 키 | 그 칸의 아이템을 전부 넣습니다. 같은 아이템이면 쌓고, 넘치는 만큼은 지워집니다 |
 | 빈손으로 클릭 | 휴지통 아이템을 집어 꺼냅니다 |
 | 휴지통에서 Shift+클릭 | 인벤토리로 돌려놓습니다 |
 | 인벤토리에서 Shift+클릭 | 휴지통으로 가지 않습니다(실수 방지) |
@@ -68,7 +69,7 @@
 
 ## English
 
-Adds one trash slot to the right of the survival inventory, level with the last inventory row. An item placed there is not deleted right away: it stays until you put a different item in (the same item stacks), so a mistake can be taken back. The slot is never saved, so leaving the game or a crash empties it; on death it is deleted, not dropped, unless `keepInventory` is on. Shift-click never moves items into it, and it is hidden in the creative inventory tab. Every actual deletion is written to the server log with the player, item, count and reason (`replaced`, `disconnect`, `death`).
+Adds one trash slot to the right of the survival inventory, level with the last inventory row. An item placed there is not deleted right away: it stays until you put a different item in (the same item stacks, and whatever a full stack cannot hold is deleted), so a mistake can be taken back. The slot is never saved, so leaving the game or a crash empties it; on death it is deleted, not dropped, unless `keepInventory` is on. Shift-click never moves items into it, and it is hidden in the creative inventory tab. Every actual deletion is written to the server log with the player, item, count and reason (`replaced`, `overflow`, `disconnect`, `death`).
 
 Requires Fabric API on Minecraft 1.21.1. Install it on both the client and the server.
 
