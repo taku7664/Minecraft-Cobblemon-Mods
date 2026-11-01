@@ -284,13 +284,34 @@ final class KeybindingSetupTest {
         assertTrue(Files.readString(settings).contains("keep me"));
     }
 
-    @Test void irisShaderReloadKeyClearsOnceAndKeepsOtherIrisKeys() throws Exception {
+    private static final String IRIS_ALL_CLEARED = "key_iris.keybind.reload:key.keyboard.unknown\n"
+        + "key_iris.keybind.toggleShaders:key.keyboard.unknown\n"
+        + "key_iris.keybind.shaderPackSelection:key.keyboard.unknown\n"
+        + "key_iris.keybind.wireframe:key.keyboard.unknown\n";
+
+    @Test void everyIrisShaderKeyClearsOnceAndLaterRebindsStay() throws Exception {
         Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.r\nkey_iris.keybind.toggleShaders:key.keyboard.k\n");
         assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("iris")));
-        assertEquals("key_iris.keybind.reload:key.keyboard.unknown\nkey_iris.keybind.toggleShaders:key.keyboard.k\n",
-            Files.readString(optionsFile()));
-        Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.r\n");
+        assertEquals(IRIS_ALL_CLEARED, Files.readString(optionsFile()));
+        Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.r\nkey_iris.keybind.toggleShaders:key.keyboard.k\n");
         assertEquals(0, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("iris")));
-        assertEquals("key_iris.keybind.reload:key.keyboard.r\n", Files.readString(optionsFile()));
+        assertEquals("key_iris.keybind.reload:key.keyboard.r\nkey_iris.keybind.toggleShaders:key.keyboard.k\n",
+            Files.readString(optionsFile()));
+    }
+
+    @Test void brandNewProfileGetsEveryIrisShaderKeyCleared() throws Exception {
+        assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("iris")));
+        assertTrue(Files.readString(optionsFile()).endsWith(IRIS_ALL_CLEARED));
+    }
+
+    @Test void profileThatOnlyHadTheOldReloadRuleClearsTheOtherIrisKeysOnce() throws Exception {
+        Files.createDirectories(stateFile().getParent());
+        Files.writeString(stateFile(), profile() + "keybindings-iris-v1=true\n");
+        Files.writeString(optionsFile(), "key_iris.keybind.reload:key.keyboard.g\n"
+            + "key_iris.keybind.toggleShaders:key.keyboard.k\nkey_iris.keybind.shaderPackSelection:key.keyboard.o\n");
+        assertEquals(1, KeybindingSetup.apply(gameDirectory, configDirectory(), Set.of("iris")));
+        assertEquals("key_iris.keybind.reload:key.keyboard.g\n"
+            + "key_iris.keybind.toggleShaders:key.keyboard.unknown\nkey_iris.keybind.shaderPackSelection:key.keyboard.unknown\n"
+            + "key_iris.keybind.wireframe:key.keyboard.unknown\n", Files.readString(optionsFile()));
     }
 }

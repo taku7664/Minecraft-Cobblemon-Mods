@@ -53,6 +53,9 @@ CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 | Cobblemon | `key_key.cobblemon.ridingfreelook` | 미지정 |
 | 빡켓몬 정책 | `key_key.jbro_policy.pokenav` (포켓내비 열기·닫기) | Tab |
 | Iris | `key_iris.keybind.reload` (셰이더 새로고침) | 미지정 |
+| Iris | `key_iris.keybind.toggleShaders` (셰이더 켜기/끄기) | 미지정 |
+| Iris | `key_iris.keybind.shaderPackSelection` (셰이더 선택 화면) | 미지정 |
+| Iris | `key_iris.keybind.wireframe` (와이어프레임) | 미지정 |
 | Sophisticated Backpacks | `key_keybind.sophisticatedbackpacks.toggle_upgrade_1` | 미지정 |
 | Sophisticated Backpacks | `key_keybind.sophisticatedbackpacks.toggle_upgrade_2` | 미지정 |
 | Crafting Tweaks | `key_key.craftingtweaks.compress_stack` | 미지정 |
@@ -60,7 +63,8 @@ CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 
 PvP룸 키는 별도 `more_cobblemon_contents_pvp` 모드가 설치되었을 때 적용합니다.
 PvP룸 HUD 접기/펼치기 H와 전투 정보 창의 Tab은 유지합니다.
-Iris 셰이더 새로고침의 기본 R은 Cobblemon 포켓몬 내보내기 R과 겹쳐서 해제합니다. 다른 Iris 키는 유지합니다.
+Iris 셰이더 새로고침의 기본 R은 Cobblemon 포켓몬 내보내기 R과 겹쳐서 해제합니다. 나머지 Iris 키도 모두 해제합니다.
+이 셋은 `keybindings-iris-shader-keys-v1=true`로 따로 기록하므로 이전 Iris 적용 기록이 있어도 한 번 적용합니다.
 
 Crafting Tweaks의 `config/craftingtweaks-common.toml`도 `[client] mode = "BUTTONS"`로
 설정하여 버튼을 유지하고 단축키를 끕니다. 이 설정 역시 단축키 정리 적용 방식을 따릅니다.

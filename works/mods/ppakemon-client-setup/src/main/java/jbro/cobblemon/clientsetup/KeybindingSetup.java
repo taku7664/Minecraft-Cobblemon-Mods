@@ -40,6 +40,9 @@ public final class KeybindingSetup {
             "keybindings-jbro_policy-pokenav-v1", "key.keyboard.tab"),
         // Iris binds shader reload to R, which collides with Cobblemon's send-out key.
         new Rule("iris", List.of("key_iris.keybind.reload")),
+        // A separate record, so profiles that already cleared the reload key still get the rest once.
+        new Rule("iris", List.of("key_iris.keybind.toggleShaders", "key_iris.keybind.shaderPackSelection",
+            "key_iris.keybind.wireframe"), "keybindings-iris-shader-keys-v1", "key.keyboard.unknown"),
         new Rule("sophisticatedbackpacks", List.of("key_keybind.sophisticatedbackpacks.toggle_upgrade_1",
             "key_keybind.sophisticatedbackpacks.toggle_upgrade_2")),
         new Rule("craftingtweaks", List.of("key_key.craftingtweaks.compress_stack", "key_key.craftingtweaks.refill_last_stack")));
