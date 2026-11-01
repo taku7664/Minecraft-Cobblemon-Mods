@@ -1,5 +1,13 @@
 # MEMORY
 
+## [2026-11-02 02:39] 리뷰 수정본 개발 서버·클라이언트 배치 (배치·해시 확인, 서버 기동·실게임 미확인)
+
+- `feature/pwt`를 `origin/main`에 빨리감기로 푸시했다(`a9880ac23`). 로컬 `main`은 Codex 워크트리가 체크아웃하고 있어 갱신하지 못했다.
+- 그 커밋의 `git archive`를 F에서 빌드했고 `:more-cobblemon-contents-pwt:unitTest` 42/42 통과, `remapJar` 성공, `unzip -t` 통과, 진입점 클래스 2개 포함을 확인했다.
+- `more-cobblemon-contents-pwt-0.1.0.jar`(SHA-256 `45271c6b…e4eae0`)를 `develop-product/server/mods`와 `develop-product/client/mods`에 교체했다. 복사할 때 Java 프로세스는 없었다. 이전 JAR 백업은 `develop-product/deployment-backups/20261102-023919-pwt-review-fixes`다.
+- MCC 코어의 마지막 소스 변경(10-25 03:57)이 설치본(10-25 15:14)보다 오래되어 코어는 다시 넣지 않았다. PPakemon 프로필에는 PWT가 없어 건드리지 않았다. `recordDecisions`는 `true`다.
+- **확인 안 함:** 개발 서버 기동(꺼진 채로 두었다), 허브 화면, 전투 흐름, 보상, 채팅 알림.
+
 ## [2026-11-02 02:40] 리뷰·적대적 테스트 지적 10건 수정 (단위 테스트 확인, JAR 빌드·배치·실게임 미확인)
 
 - **결과 처리:** MCC는 `complete`가 예외를 던지면 같은 결과로 다시 부른다. 그래서 `finish`는 우승을 저장한 뒤에야 `battleToken`을 놓고, 그 뒤의 지급·소식·채팅·알림·화면 갱신은 단계마다 `attempt`로 감싸 하나가 실패해도 결과를 되돌리지 않는다. 우승 기록은 플레이어가 나가 있어도 남긴다.
