@@ -15,6 +15,7 @@ public final class TrashLog {
 
     public enum Reason {
         REPLACED("replaced"),
+        OVERFLOW("overflow"),
         DISCONNECT("disconnect"),
         DEATH("death");
 

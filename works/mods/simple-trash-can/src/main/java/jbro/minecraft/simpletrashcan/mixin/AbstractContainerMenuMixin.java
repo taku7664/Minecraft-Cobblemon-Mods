@@ -32,9 +32,10 @@ abstract class AbstractContainerMenuMixin {
 
     /**
      * Putting an item on an occupied trash slot: a different item replaces the old one, which is deleted; the same
-     * item stacks onto it. Both are done here rather than left to vanilla, which would swap the old item back out (a
-     * number key always swaps) or let the cursor item's own click behaviour (a bundle) run on the emptied slot and
-     * place nothing. Taking the item out stays vanilla's. Runs on both sides, so the client's prediction matches.
+     * item stacks onto it, and whatever a full stack cannot hold is deleted. Both are done here rather than left to
+     * vanilla, which would swap the old item back out (a number key always swaps), refuse the click on a full stack,
+     * or let the cursor item's own click behaviour (a bundle) run on the emptied slot and place nothing. Taking the
+     * item out stays vanilla's. Runs on both sides, so the client's prediction matches.
      */
     @Inject(method = "doClick", at = @At("HEAD"), cancellable = true)
     private void simpleTrashCan$replaceTrash(int slotId, int button, ClickType clickType, Player player, CallbackInfo ci) {
@@ -44,9 +45,14 @@ abstract class AbstractContainerMenuMixin {
         ItemStack old = slot.getItem();
         if (clickType == ClickType.PICKUP) {
             ItemStack carried = getCarried();
-            // Same item: vanilla stacks it; empty cursor: vanilla picks the trash item up.
-            if (carried.isEmpty() || ItemStack.isSameItemSameComponents(carried, old)) return;
-            simpleTrashCan$logReplaced(player, old);
+            // Empty cursor: vanilla picks the trash item up.
+            if (carried.isEmpty()) return;
+            if (ItemStack.isSameItemSameComponents(carried, old)) {
+                simpleTrashCan$stack(player, slot, old, carried, button == 0 ? carried.getCount() : 1);
+                ci.cancel();
+                return;
+            }
+            simpleTrashCan$log(player, old, TrashLog.Reason.REPLACED);
             if (button == 0) {
                 slot.setByPlayer(carried);
                 setCarried(ItemStack.EMPTY);
@@ -61,14 +67,9 @@ abstract class AbstractContainerMenuMixin {
             ItemStack held = inventory.getItem(button);
             if (held.isEmpty()) return;
             if (ItemStack.isSameItemSameComponents(held, old)) {
-                int moved = Math.min(held.getCount(), slot.getMaxStackSize(old) - old.getCount());
-                if (moved > 0) {
-                    old.grow(moved);
-                    held.shrink(moved);
-                    slot.setChanged();
-                }
+                simpleTrashCan$stack(player, slot, old, held, held.getCount());
             } else {
-                simpleTrashCan$logReplaced(player, old);
+                simpleTrashCan$log(player, old, TrashLog.Reason.REPLACED);
                 slot.setByPlayer(held);
                 inventory.setItem(button, ItemStack.EMPTY);
             }
@@ -76,9 +77,19 @@ abstract class AbstractContainerMenuMixin {
         }
     }
 
+    // Takes amount from source: the trash stack keeps what fits and the rest is deleted, so a full slot still takes more.
+    @Unique
+    private static void simpleTrashCan$stack(Player player, Slot slot, ItemStack old, ItemStack source, int amount) {
+        int moved = Math.min(amount, Math.max(0, slot.getMaxStackSize(old) - old.getCount()));
+        if (amount > moved) simpleTrashCan$log(player, source.copyWithCount(amount - moved), TrashLog.Reason.OVERFLOW);
+        old.grow(moved);
+        source.shrink(amount);
+        slot.setChanged();
+    }
+
     // The click runs on both sides; only the server's copy is the real deletion.
     @Unique
-    private static void simpleTrashCan$logReplaced(Player player, ItemStack old) {
-        if (player instanceof ServerPlayer serverPlayer) TrashLog.deleted(serverPlayer, old, TrashLog.Reason.REPLACED);
+    private static void simpleTrashCan$log(Player player, ItemStack deleted, TrashLog.Reason reason) {
+        if (player instanceof ServerPlayer serverPlayer) TrashLog.deleted(serverPlayer, deleted, reason);
     }
 }
