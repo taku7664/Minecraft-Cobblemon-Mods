@@ -19,6 +19,7 @@ import jbro.cobblemon.mcc.internal.battle.LegendaryClassPolicy
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.internal.hub.BattleHubIds
+import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.pwt.MoreCobblemonContentsPwt as Mod
 import jbro.cobblemon.mcc.pwt.network.*
 import jbro.cobblemon.mcc.pwt.system.PwtBracket
@@ -186,11 +187,16 @@ object PwtServer {
     /** True when nothing is left owed; what could not be paid is tried again at the next join or tab opening. */
     private fun payOwed(server: MinecraftServer, playerId: UUID): Boolean {
         val saved = PwtSavedData.get(server)
+        var anyPaid = false
         saved.unpaid(playerId).forEach { token ->
             val result = BattlePointRewards.award(server, playerId, token, PwtRules.WINNER_BP, Mod.CONTENT, "pwt_title")
-            if (result.accepted) saved.paid(token)
-            else Mod.LOGGER.warn("PWT title BP for {} was not paid: {}", playerId, result.status)
+            if (result.accepted) {
+                saved.paid(token)
+                anyPaid = true
+            } else Mod.LOGGER.warn("PWT title BP for {} was not paid: {}", playerId, result.status)
         }
+        // The hub header shows the balance and does not follow it by itself.
+        if (anyPaid) server.playerList.getPlayer(playerId)?.let(BattleHubNetworking::sendHeader)
         return saved.unpaid(playerId).isEmpty()
     }
 
