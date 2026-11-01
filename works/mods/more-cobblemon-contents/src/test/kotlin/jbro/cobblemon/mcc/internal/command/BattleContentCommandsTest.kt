@@ -26,7 +26,7 @@ class BattleContentCommandsTest {
         assertEquals(setOf("bp", "terminal"), root.children.map { it.name }.toSet())
 
         val terminal = root.getChild("terminal")
-        assertEquals(setOf("all", "league", "tower", "factory", "shop"), terminal.children.map { it.name }.toSet())
+        assertEquals(setOf("all", "league", "tower", "factory", "pwt", "shop"), terminal.children.map { it.name }.toSet())
         // The whole terminal branch is for operators; what is under it needs nothing more.
         assertFalse(terminal.requirement.test(source(0)))
         assertTrue(terminal.requirement.test(source(2)))
@@ -75,7 +75,7 @@ class BattleContentCommandsTest {
         listOf("mcc status", "mcc records reset <player>", "mcc battle list", "mcc bp add <player> <amount>").forEach {
             assertTrue(it in everything, it)
         }
-        listOf("all", "league", "tower", "factory", "shop").forEach {
+        listOf("all", "league", "tower", "factory", "pwt", "shop").forEach {
             assertTrue("mcc terminal $it" in everything)
             assertTrue("mcc terminal $it <player>" in everything)
         }
@@ -104,6 +104,7 @@ class BattleContentCommandsTest {
             "league" to "more_cobblemon_contents_league_challenge:league_terminal",
             "tower" to "more_cobblemon_contents_battle_tower:battle_tower_terminal",
             "factory" to "more_cobblemon_contents_battle_factory:battle_factory_terminal",
+            "pwt" to "more_cobblemon_contents_pwt:pwt_terminal",
         )
         expected.forEach { (alias, id) ->
             org.junit.jupiter.api.Assertions.assertThrows(com.mojang.brigadier.exceptions.CommandSyntaxException::class.java) {
@@ -124,7 +125,7 @@ class BattleContentCommandsTest {
         assertEquals("shop" to false, calls.last())
         assertEquals(1, dispatcher.execute("mcc terminal shop Alex", source(2)))
         assertEquals("shop" to true, calls.last())
-        assertEquals(10, calls.size)
+        assertEquals(12, calls.size)
     }
 
     @Test
