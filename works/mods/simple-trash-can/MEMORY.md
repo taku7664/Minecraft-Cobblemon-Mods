@@ -1,5 +1,12 @@
 # simple-trash-can 작업 기록
 
+## [2026-11-02 03:08] 꽉 찬 슬롯 수정 개발 재배치 (실게임 미확인)
+
+- `main` `5f55fd363` 사본으로 `:simple-trash-can:remapJar` 성공. JDK21 `jar --validate`·`unzip -t` 통과. 단위 테스트는 없다.
+- 개발 서버와 별개인 임시 폴더에서 Fabric API, 마이룸 1.0.5와 함께 기동해 `Done` 후 정상 종료했고 믹스인 오류·크래시는 없었다. 임시 폴더는 지웠다. 개발 서버는 켜지 않았다.
+- `develop-product/{client,server}/mods/simple-trash-can-1.0.0.jar`를 교체했다. 버전 번호는 그대로이며 SHA-256은 `554bb43711b7cdebab2c12a17077a256048667651f458a5d0a7d978efe044303`로 빌드본과 같다. 이전 JAR은 `develop-product/deployment-backups/20261102-bucket-trash/{client,server}`에 있다. 배치 전 25566 리스너·java 프로세스 없음 확인. PPakemon·운영·VPS는 그대로다.
+- **미확인:** 실제 클릭으로 쌓기·넘침 삭제가 되는지, `overflow` 로그 줄은 보지 못했다.
+
 ## [2026-11-02 02:45] 꽉 찬 휴지통에 같은 아이템이 안 들어가는 문제 수정 (빌드·실게임 미확인)
 
 - **제보:** 같은 블록을 연속으로 넣지 못한다. 설계는 "쌓임"이었지만 넘칠 때의 동작을 정하지 않았다.
