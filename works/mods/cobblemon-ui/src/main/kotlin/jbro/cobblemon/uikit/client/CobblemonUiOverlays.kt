@@ -1,5 +1,6 @@
 package jbro.cobblemon.uikit.client
 
+import com.mojang.blaze3d.systems.RenderSystem
 import jbro.cobblemon.uikit.CobblemonUiThemes
 import jbro.cobblemon.uikit.UiBorder
 import jbro.cobblemon.uikit.UiButtonSpec
@@ -22,6 +23,7 @@ import net.minecraft.client.gui.GuiGraphics
 import net.minecraft.client.gui.screens.Screen
 import net.minecraft.network.chat.Component
 import kotlin.math.max
+import org.lwjgl.opengl.GL11
 
 object CobblemonUiTooltipRenderer {
     fun render(
@@ -123,6 +125,9 @@ class CobblemonUiDialogScreen(
     override fun render(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
         val theme = CobblemonUiThemes.registry.snapshot()
         parent?.render(graphics, -1, -1, partialTick)
+        // Items and models in the parent sit high on the depth axis; forget them so the dialog covers everything.
+        graphics.flush()
+        RenderSystem.clear(GL11.GL_DEPTH_BUFFER_BIT, Minecraft.ON_OSX)
         graphics.fill(0, 0, width, height, 0xA0000000.toInt())
         UiSurfaceRenderer.draw(
             graphics,
