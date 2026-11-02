@@ -1,7 +1,7 @@
-## [2026-11-02 20:01] 피츄 묶음 개발 배포 (빌드·배치·해시 확인, 서버 기동·디스코드·실게임 미실행, main 푸시 보류)
+## [2026-11-02 20:01] 피츄 묶음 개발 배포 (빌드·배치·해시 확인, main 푸시 완료, 서버 기동·디스코드·실게임 미실행)
 
 - **소스:** 사용자 "배포해"에 따라 `origin/main`(`1bcb9b09e`, 코덱스 전설 5분 포함)을 `feature/pichu-wiki`에 병합한 `ae66724ec`로 빌드했다. 병합 충돌은 `MEMORY.md`와 `JbroPolicy.kt` 등록 줄이며 양쪽을 살렸다. 코덱스가 고치지 않은 위키의 30초·3분 문구를 5분으로 맞췄다.
-- **main:** `origin/main` 푸시가 자동 권한 검사에서 거부돼 하지 않았다. 프로젝트 규칙과 달리 브랜치 빌드본을 먼저 배치했으므로 main에서 빌드하는 다른 작업이 이 JAR을 되돌릴 수 있다.
+- **main:** `origin/main` 푸시가 자동 권한 검사에서 거부돼 브랜치 빌드본을 먼저 배치했다. 이후 사용자 허락으로 `7bf2f5b3b`를 fast-forward 푸시했다. 빌드 소스 `ae66724ec`와의 차이는 이 기록 파일뿐이라 JAR은 다시 빌드하지 않았다.
 - **배치:** `jbro-policy-0.1.9.jar` SHA-256 `9a7f6bb0…`을 개발 서버·클라이언트에 넣고 일치를 확인했다. 위키 5개(`nav.js`, `faq`, `legends`, `myroom`, `survival`)도 양쪽에 복사해 원본과 대조했다. 서버 시작 묶음을 다시 만들고 `startup-hooks.json`의 `wiki_files.sha256`만 `d3c7bac7…`로 바꿨다. 집계 파일 5명과 `recordDecisions=true`를 확인했다. 백업은 `develop-product/deployment-backups/20261102-200100-pichu-wiki`. 배치 전 Java 프로세스 0개, 서버는 켜지 않았다.
 - **테스트:** 병합본에서 4개 클래스 55개 통과. VPS·운영 서버·PPakemon·deploy-product는 건드리지 않았다.
 
