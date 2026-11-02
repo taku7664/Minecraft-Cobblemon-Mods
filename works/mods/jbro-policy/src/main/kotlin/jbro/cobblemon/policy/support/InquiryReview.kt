@@ -279,6 +279,9 @@ internal object InquiryReview {
 
     private fun settle(inquiry: Inquiry, verdict: InquiryVerdict, reference: String): Handling {
         if (!settings.autoResolve) return Handling(true, emptyList(), "자동 처리가 꺼져 있어요")
+        server?.let { InquiryLegendRestore.attempt(it, inquiry) }?.let { restored ->
+            return Handling(false, listOfNotNull(restored.ran), restored.message, restored.message, restored.changed)
+        }
         if (withContents && verdict.autoCommands.isEmpty() &&
             verdict.category in setOf(InquiryVerdict.Category.REWARD, InquiryVerdict.Category.SHOP)) {
             val activeServer = server ?: return Handling(true, emptyList(), "서버 확인이 필요해요")
