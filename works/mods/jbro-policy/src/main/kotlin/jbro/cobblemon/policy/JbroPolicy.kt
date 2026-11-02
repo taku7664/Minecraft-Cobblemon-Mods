@@ -55,6 +55,7 @@ object JbroPolicy : ModInitializer {
         jbro.cobblemon.policy.api.OperatorWhisper.register()
         LegendPolicy.register()
         jbro.cobblemon.policy.support.BattleRecords.register(FabricLoader.getInstance().gameDir)
+        jbro.cobblemon.policy.legend.LegendDespawnProtection.register()
         jbro.cobblemon.policy.legend.RareSpawnNotice.register()
         LegendCommand.register()
         SpawnForCommand.register()
