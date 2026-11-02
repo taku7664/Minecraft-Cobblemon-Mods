@@ -2,6 +2,12 @@
 
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 
+## [2026-11-02 09:06] 개발 배포 (main `ce289e4e3`)
+
+- **범위:** `/mcc terminal pwt`(`openTerminalCommand`의 `home` 파라미터). 이 함수는 MCC 안에서만 쓴다.
+- **MCC JAR SHA-256:** `1d80b23bf0b4cd3eddb9774fdaa5b22c8f42c6f8664b200b817ea8709c7f6c1e`
+- **확인:** `origin/main`을 묶은 F 복사본에서 `remapJar`, JAR 무결성과 엔트리포인트, 배치본 해시 일치. 서버는 켜지 않았고 배치본을 게임에 올려 보지는 않았다(실게임 확인은 같은 소스의 F 복사본 기준).
+
 ## [2026-11-02 07:50] `/mcc terminal pwt` 추가 (단위 테스트·실게임 확인, 배치 안 함)
 
 - PWT NPC용 명령. 다른 `terminal` 명령과 달리 대시보드가 아니라 PWT 탭에서 연다(`TerminalCommands.homes`). `openTerminalCommand`에 `home` 기본 인자를 더했고, 호출하는 곳은 `TerminalCommands`뿐이다. 실제 NPC 대사로는 아직 실행하지 않았다.
