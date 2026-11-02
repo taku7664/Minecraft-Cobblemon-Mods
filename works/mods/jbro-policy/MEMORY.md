@@ -1,3 +1,11 @@
+## [2026-11-03 08:30] 1.5.0 릴리스 (빌드·배치·해시 확인, 서버 기동·실접속·실게임 미실행)
+
+- **소스:** `origin/main` `10629261f`를 `F:\AI\build\release-1.5.0`에서 빌드했다. JAR 19개 검증 통과. 단위 테스트는 client-setup 94/94, PWT 42/42, jbro-policy 137/140(실패 0, 건너뜀 3)이다. MCC `BattleContentCommandsTest` 4/4는 직전 빌드 `e053796f1`에서 돌렸다.
+- **반영:** 개발 서버·클라이언트, PPakemon, 로컬 운영 서버(운영 저장소 `1ab2db4`), `deploy-product`, VPS(`1ab2db4`, 사용자가 08:00 종료를 지정). VPS 모드 50개가 `deploy-product/server`와 해시 차이 0이다. 위키 묶음과 위키 파일 5개도 로컬 운영 서버와 일치한다.
+- **VPS 백업:** 교체 전 월드·설정은 `gdrive:VPS-backups/PPakemon/manager/20261103-080056-fe388089`에 있고 `drive_verified`다. `world/datapacks/ppakemon-hard-league-levels.zip`은 사용자 결정대로 뺐고, 사본은 VPS `~/.local/share/ppakemon-backups/manual/hard-league-levels-20261103`에 있다.
+- **야간 백업 변경(사용자 결정):** 11-02와 11-03 04시 백업이 디스크 부족으로 실패했다. 스크립트가 서버 폴더 전체를 스테이징으로 복사해 순간 22.5GB를 쓰고, 마지막 백업 7.1GB와 실패 조각 5.4GB를 VPS에 남겼기 때문이다. `/opt/ppakemon-gdrive/backup.py`를 고쳐 `world`와 `jbro-policy`만 복사 없이 바로 압축하고, 드라이브 검증 뒤 VPS 사본을 지운다. 임시 폴더와 로컬 업로드 대상으로만 시험했다. 실제 드라이브 업로드와 서버 가동 중 실행은 2026-11-04 04시 실행이 첫 확인이다. 이전 스크립트는 `backup.py.bak-20261103`, `backup.py.bak-20261103-driveonly`다.
+- **미확인:** 서버 기동, 1.5.0 모드팩 실접속, 셰이더 키 해제, 전설 5분 유지와 재소환, 승인 버튼, 전투 기록 크기, 실제 AI 말투. 말투 통계는 VPS로 옮기지 않아 0부터 쌓인다. 드라이브에는 보관 기간 규칙이 없어 153GB가 쌓여 있고, 월드가 나흘간 3.8GB 늘어난 이유는 보지 않았다.
+
 ## [2026-11-02 20:01] 피츄 묶음 개발 배포 (빌드·배치·해시 확인, main 푸시 완료, 서버 기동·디스코드·실게임 미실행)
 
 - **소스:** 사용자 "배포해"에 따라 `origin/main`(`1bcb9b09e`, 코덱스 전설 5분 포함)을 `feature/pichu-wiki`에 병합한 `ae66724ec`로 빌드했다. 병합 충돌은 `MEMORY.md`와 `JbroPolicy.kt` 등록 줄이며 양쪽을 살렸다. 코덱스가 고치지 않은 위키의 30초·3분 문구를 5분으로 맞췄다.
