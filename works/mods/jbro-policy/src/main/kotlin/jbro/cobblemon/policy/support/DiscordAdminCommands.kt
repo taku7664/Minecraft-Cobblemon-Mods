@@ -208,16 +208,21 @@ internal object DiscordAdminCommands {
         override fun run(server: MinecraftServer, options: Map<String, String>, caller: DiscordCaller): JsonObject {
             val command = options["command"].orEmpty().trim().removePrefix("/")
             if (command.isEmpty()) return DiscordRest.message("명령이 비어 있어요.")
-            val output = mutableListOf<String>()
-            val capture = object : CommandSource {
-                override fun sendSystemMessage(message: Component) { output += KoreanText.render(message) }
-                override fun acceptsSuccess() = true
-                override fun acceptsFailure() = true
-                override fun shouldInformAdmins() = true
-            }
-            server.commands.performPrefixedCommand(server.createCommandSourceStack().withSource(capture), command)
-            val shown = output.joinToString("\n").ifBlank { "(출력 없음)" }.replace("```", "'''")
+            val shown = runCommand(server, command).replace("```", "'''")
             return DiscordRest.message("`/$command`\n```\n${shown.take(CODE_BLOCK_LIMIT)}\n```")
         }
+    }
+
+    /** Runs [command] as the console and returns what it answered. Call on the server thread. */
+    fun runCommand(server: MinecraftServer, command: String): String {
+        val output = mutableListOf<String>()
+        val capture = object : CommandSource {
+            override fun sendSystemMessage(message: Component) { output += KoreanText.render(message) }
+            override fun acceptsSuccess() = true
+            override fun acceptsFailure() = true
+            override fun shouldInformAdmins() = true
+        }
+        server.commands.performPrefixedCommand(server.createCommandSourceStack().withSource(capture), command)
+        return output.joinToString("\n").ifBlank { "(출력 없음)" }
     }
 }

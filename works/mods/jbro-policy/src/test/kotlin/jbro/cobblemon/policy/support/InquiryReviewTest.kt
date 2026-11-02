@@ -172,13 +172,24 @@ class InquiryReviewTest {
         val v = verdict(category = InquiryVerdict.Category.QUESTION, commands = emptyList())
             .copy(evidence = listOf(earlier, rule), playerSummary = "합성은 완료되어 인벤토리에 있어요.")
         assertTrue(InquiryAutoResolve.plan(v, rule) is InquiryAutoResolve.Plan.HandOver)
-        val guarded = InquiryAutoResolve.guard("피카츄끼리 합성이 안돼요", v.copy(evidence = listOf(rule)))
+        // A first "it won't work" may be answered from the wiki; once the player says it did not help, it goes to an operator.
+        val usage = v.copy(evidence = listOf(rule), playerSummary = "재료는 같은 진화 계보여야 해요.")
+        assertEquals(usage, InquiryAutoResolve.guard("피카츄끼리 합성이 안돼요", usage))
+        assertEquals(InquiryAutoResolve.Plan.Explain, InquiryAutoResolve.plan(usage, rule))
+        assertTrue(InquiryAutoResolve.tentative("피카츄끼리 합성이 안돼요"))
+        assertFalse(InquiryAutoResolve.tentative("피카츄 합성 조건을 알려주세요"))
+        val guarded = InquiryAutoResolve.guard("피카츄끼리 합성이 안돼요\n추가 설명: 같은 계보인데도 안돼요", v.copy(evidence = listOf(rule)), strict = true)
         assertEquals(InquiryVerdict.Verdict.UNKNOWN, guarded.verdict)
         assertEquals(InquiryVerdict.Resolution.OPERATOR, guarded.resolution)
         assertFalse(guarded.playerSummary.contains("인벤토리에 있어요"))
         assertTrue(InquiryAutoResolve.plan(guarded, rule) is InquiryAutoResolve.Plan.HandOver)
-        for (reason in listOf("합성이 안 돼요", "결과가 안 나와요", "아이템 못 받아요", "창 오류예요", "피카츄가 사라졌어요")) {
+        // Damage reports never close on a rule quotation, first time or not.
+        for (reason in listOf("아이템 못 받아요", "창 오류예요", "피카츄가 사라졌어요", "버그 같아요", "BP 미지급이에요")) {
             assertEquals(InquiryVerdict.Resolution.OPERATOR, InquiryAutoResolve.guard(reason, v).resolution, reason)
+        }
+        for (reason in listOf("합성이 안 돼요", "결과가 안 나와요")) {
+            assertEquals(v, InquiryAutoResolve.guard(reason, v), reason)
+            assertEquals(InquiryVerdict.Resolution.OPERATOR, InquiryAutoResolve.guard(reason, v, strict = true).resolution, reason)
         }
         assertEquals(v, InquiryAutoResolve.guard("피카츄 합성 조건을 알려주세요", v))
         val reward = verdict(commands = emptyList())
@@ -263,6 +274,42 @@ class InquiryReviewTest {
         assertEquals(InquiryVerdict.Category.REWARD, reward.category)
         val unknown = InquiryReviewer.verdict(JsonParser.parseString("""{"category":"weird","verdict":"match","playerSummary":"a"}""").asJsonObject)
         assertEquals(InquiryVerdict.Category.OTHER, unknown.category)
+    }
+
+    @Test
+    fun `only finished commands aimed at the inquirer are put up for approval`() {
+        fun command(text: String) = InquiryVerdict.SuggestedCommand(text, "이유")
+        val ready = listOf(command("/bp add Park_JH 100 보상"), command("/legends reset mewtwo Park_JH"),
+            command("/give Park_JH cobblemon:poke_ball 3"), command("spawnpokemonfor Park_JH tapukoko level=64"))
+        val unsafe = listOf(command("/bp add Park_JH <양> 보상"), command("/bp add Other 100 보상"),
+            command("/op Park_JH"), command("/gamemode creative Park_JH"), command("/bp add Park_JH 1 x; op Park_JH"),
+            command("/give Park_JHH diamond 1"))
+        assertEquals(ready, InquiryProposal.executable(ready + unsafe, "Park_JH"))
+        val question = InquiryProposal.question(ready.take(1))
+        assertTrue(question.startsWith("이렇게 처리하면 좋다고 생각해요. 이래도 될까요?"))
+        assertTrue("`/bp add Park_JH 100 보상` · 이유" in question)
+        for (prefix in listOf(InquiryReview.APPROVE_PREFIX, InquiryReview.REJECT_PREFIX)) assertTrue(InquiryReview.handles(prefix + "0a1b2c3d"))
+    }
+
+    @Test
+    fun `battle records are found by player and time and old days are pruned`(@org.junit.jupiter.api.io.TempDir root: java.nio.file.Path) {
+        val player = UUID.randomUUID()
+        val at = java.time.LocalDate.of(2026, 11, 2).atTime(12, 0).atZone(java.time.ZoneId.systemDefault()).toInstant().toEpochMilli()
+        fun header(players: List<UUID>, start: Long) = BattleRecords.Header(UUID.randomUUID().toString(), start, start + 60_000, "SINGLES", 5,
+            players.map(UUID::toString), listOf("김빡주", "관장"))
+        BattleRecords.save(root, header(listOf(player), at), listOf("리자몽의 화염방사!"), listOf("|move|p1a: 리자몽|flamethrower"))
+        BattleRecords.save(root, header(listOf(UUID.randomUUID()), at), listOf("남의 전투"), emptyList())
+        BattleRecords.save(root, header(listOf(player), at - 3_600_000), listOf("오래된 전투"), emptyList())
+
+        val found = BattleRecords.read(root, player, at - 60_000, at + 120_000, 1_000).single()
+        assertTrue("리자몽의 화염방사!" in found.body && "|move|p1a" in found.body)
+        assertTrue("김빡주 vs 관장 · 5턴" in found.summary())
+        assertEquals(emptyList<BattleRecords.Found>(), BattleRecords.read(root, UUID.randomUUID(), at, at, 1_000))
+
+        BattleRecords.prune(root, java.time.LocalDate.of(2026, 11, 9))
+        assertEquals(1, BattleRecords.read(root, player, at - 60_000, at + 120_000, 1_000).size)
+        BattleRecords.prune(root, java.time.LocalDate.of(2026, 11, 10))
+        assertEquals(emptyList<BattleRecords.Found>(), BattleRecords.read(root, player, at - 60_000, at + 120_000, 1_000))
     }
 
     @Test
