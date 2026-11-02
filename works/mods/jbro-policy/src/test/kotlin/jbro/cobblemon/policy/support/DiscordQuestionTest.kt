@@ -58,7 +58,7 @@ class DiscordQuestionTest {
     }
 
     @Test fun `question command bypasses command channel and bounds its input`() {
-        val command = DiscordQuestion { CompletableFuture.completedFuture("피카츄로 진화해요!") }
+        val command = DiscordQuestion({ _, _ -> CompletableFuture.completedFuture("피카츄로 진화해요!") })
         val option = command.definition().getAsJsonArray("options")[0].asJsonObject
         assertEquals("피츄", command.name)
         assertEquals(500, option.get("max_length").asInt)
@@ -68,13 +68,58 @@ class DiscordQuestionTest {
         assertTrue(command.replyAsync(mapOf("질문" to "다시 질문"), caller).get().get("content").asString.contains("초"))
     }
 
+    @Test fun `Pichu's verdict is taken off the answer and counted per user across restarts`(@org.junit.jupiter.api.io.TempDir dir: java.nio.file.Path) {
+        val file = dir.resolve("stats.json")
+        val stats = QuestionStats(file)
+        var now = 0L
+        var reply = "[쓸데없음] 제육 드세요."
+        val seen = mutableListOf<QuestionStats.Tally>()
+        val command = DiscordQuestion({ _, tally -> seen += tally; CompletableFuture.completedFuture(reply) }, QuestionCooldown { now }, stats)
+        val one = DiscordCaller("one", "user", emptyList(), "chat")
+        val first = command.replyAsync(mapOf("질문" to "저녁메뉴추천"), one).get().get("content").asString
+        assertTrue("제육 드세요." in first && "쓸데없음" !in first)
+        now += QuestionCooldown.INTERVAL
+        reply = "{}\n[제대로]\nN 누르세요."
+        val second = command.replyAsync(mapOf("질문" to "맵 크게 보기"), one).get().get("content").asString
+        assertTrue("N 누르세요." in second && "제대로" !in second && "{}" !in second)
+        now += QuestionCooldown.INTERVAL
+        reply = "표시 없는 답"
+        assertTrue("표시 없는 답" in command.replyAsync(mapOf("질문" to "a"), one).get().get("content").asString)
+        assertEquals(listOf(QuestionStats.Tally(), QuestionStats.Tally(1, 0), QuestionStats.Tally(1, 1)), seen)
+        assertEquals(QuestionStats.Tally(1, 1), QuestionStats(file).of("one"))
+        assertEquals(QuestionStats.Tally(), QuestionStats(file).of("two"))
+    }
+
+    @Test fun `the tone follows the share of pointless questions`() {
+        fun tier(pointless: Int, proper: Int) = PichuQuestionAI.tier(QuestionStats.Tally(pointless, proper))
+        assertEquals(0, tier(0, 0))
+        assertEquals(0, tier(0, 50))
+        assertEquals(1, tier(1, 0))
+        assertEquals(0, tier(1, 9))
+        assertEquals(2, tier(2, 1))
+        assertEquals(3, tier(3, 3))
+        assertEquals(2, tier(3, 4))
+        assertEquals(1, tier(3, 9))
+        assertEquals(0, tier(3, 20))
+    }
+
+    @Test fun `the prompt asks for a verdict and keeps polite speech and its limits`() {
+        val tone = PichuQuestionAI.tone(QuestionStats.Tally(2, 2))
+        assertTrue("쓸데없는 질문 2개, 제대로 된 질문 2개" in tone)
+        assertTrue("반말은 절대" in tone && "욕설" in tone && "분실" in tone && "답은 빼거나" in tone)
+        val proper = tone.lines().first { it.startsWith("[제대로]이면") }
+        val pointless = tone.lines().first { it.startsWith("[쓸데없음]이면") }
+        // A proper question counts first too: 2 of 5 stays at tier 2, while 3 of 5 reaches the top.
+        assertTrue("틱틱" in proper && "대놓고" !in proper && "대놓고" in pointless) { tone }
+    }
+
     @Test fun `provider failure does not consume cooldown and invalid input never reaches provider`() {
         var calls = 0
-        val command = DiscordQuestion {
+        val command = DiscordQuestion({ _, _ ->
             calls++
             if (calls == 1) CompletableFuture.failedFuture(IllegalStateException("private provider error"))
             else CompletableFuture.completedFuture("안녕하세요!")
-        }
+        })
         val caller = DiscordCaller("one", "user", emptyList(), "chat")
         command.replyAsync(mapOf("질문" to " "), caller).get()
         command.replyAsync(mapOf("질문" to "x".repeat(501)), caller).get()

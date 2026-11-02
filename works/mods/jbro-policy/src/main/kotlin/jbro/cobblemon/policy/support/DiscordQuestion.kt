@@ -2,7 +2,11 @@ package jbro.cobblemon.policy.support
 
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import java.nio.file.Files
+import java.nio.file.Path
 import java.util.concurrent.CompletableFuture
+import jbro.cobblemon.policy.JbroPolicy
 import net.minecraft.server.MinecraftServer
 
 /** A slow command whose work never runs on Minecraft's thread or the Discord REST worker. */
@@ -34,8 +38,50 @@ internal class QuestionCooldown(private val clock: () -> Long = { System.nanoTim
     companion object { const val INTERVAL = 300_000L }
 }
 
-internal class DiscordQuestion(private val ask: (String) -> CompletableFuture<String>) : DiscordAsyncCommand {
-    private val cooldown = QuestionCooldown()
+/**
+ * Each Discord user's tally of pointless and proper questions, as Pichu judged them, kept across restarts. Pichu's tone
+ * follows the share of pointless ones, so proper questions cool it down again.
+ */
+internal class QuestionStats(private val file: Path? = null) {
+    data class Tally(val pointless: Int = 0, val proper: Int = 0)
+
+    private val tallies = HashMap<String, Tally>()
+
+    init {
+        if (file != null && Files.isRegularFile(file)) runCatching {
+            JsonParser.parseString(Files.readString(file)).asJsonObject.entrySet().forEach { (user, value) ->
+                val tally = value.asJsonObject
+                tallies[user] = Tally(tally.get("pointless").asInt, tally.get("proper").asInt)
+            }
+        }.onFailure { JbroPolicy.LOGGER.warn("Could not read Pichu's question tally", it) }
+    }
+
+    @Synchronized fun of(user: String) = tallies[user] ?: Tally()
+
+    @Synchronized fun record(user: String, pointless: Boolean) {
+        val tally = of(user)
+        tallies[user] = if (pointless) tally.copy(pointless = tally.pointless + 1) else tally.copy(proper = tally.proper + 1)
+        val target = file ?: return
+        runCatching {
+            Files.createDirectories(target.toAbsolutePath().parent)
+            Files.writeString(target, JsonObject().apply {
+                tallies.forEach { (id, value) ->
+                    add(id, JsonObject().apply {
+                        addProperty("pointless", value.pointless)
+                        addProperty("proper", value.proper)
+                    })
+                }
+            }.toString())
+        }.onFailure { JbroPolicy.LOGGER.warn("Could not save Pichu's question tally", it) }
+    }
+}
+
+/** [ask] takes the question and its asker's tally; its answer opens with Pichu's verdict on the question. */
+internal class DiscordQuestion(
+    private val ask: (String, QuestionStats.Tally) -> CompletableFuture<String>,
+    private val cooldown: QuestionCooldown = QuestionCooldown(),
+    private val stats: QuestionStats = QuestionStats(),
+) : DiscordAsyncCommand {
     override val name = "피츄"
     override val description get() = text("description", "피츄에게 질문해요 (유저마다 5분에 한 번)")
     override val anyChannel = true
@@ -53,11 +99,13 @@ internal class DiscordQuestion(private val ask: (String) -> CompletableFuture<St
         val seconds = cooldown.acquire(caller.userId)
         if (seconds > 0) return CompletableFuture.completedFuture(DiscordRest.message(
             text("cooldown", "피츄에게는 5분에 한 번 질문할 수 있어요. %s초 뒤에 다시 물어봐 주세요.").format(seconds)))
-        val future = try { ask(question) } catch (failure: Exception) { CompletableFuture.failedFuture(failure) }
+        val future = try { ask(question, stats.of(caller.userId)) } catch (failure: Exception) { CompletableFuture.failedFuture(failure) }
         return future.handle { raw, failure ->
-            val answer = raw?.trim().orEmpty()
+            val verdict = VERDICT.find(raw.orEmpty())
+            val answer = (if (verdict != null) raw.orEmpty().removeRange(verdict.range) else raw.orEmpty()).trim()
             val success = failure == null && answer.isNotEmpty()
             cooldown.finish(caller.userId, success)
+            if (success && verdict != null) stats.record(caller.userId, verdict.groupValues[1] == PichuQuestionAI.POINTLESS)
             if (success) DiscordRest.message(text("answer", "⚡ 피츄\n질문: %s\n\n%s")
                 .format(question.take(180).replace("\n", " "), answer.take(1700)))
             else DiscordRest.message(text("failed", "지금은 답을 만들지 못했어요. 잠시 뒤에 다시 물어봐 주세요. 대기시간은 걸리지 않아요."))
@@ -66,6 +114,8 @@ internal class DiscordQuestion(private val ask: (String) -> CompletableFuture<St
 
     companion object {
         const val MAX_QUESTION = 500
+        /** The verdict Pichu is asked to open with; the model sometimes puts a stray `{}` before its answer. */
+        private val VERDICT = Regex("^\\s*(?:\\{\\}\\s*)?\\[(${PichuQuestionAI.POINTLESS}|${PichuQuestionAI.PROPER})\\]\\s*")
         private fun text(key: String, fallback: String) = KoreanText.translate("message.jbro_policy.discord_question.$key") ?: fallback
     }
 }
