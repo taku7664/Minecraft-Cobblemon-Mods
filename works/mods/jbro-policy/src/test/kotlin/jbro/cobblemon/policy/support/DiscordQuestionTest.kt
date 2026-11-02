@@ -146,6 +146,92 @@ class DiscordQuestionTest {
         assertTrue(pages.sumOf { page -> page.sections.sumOf { it.text.length } } > 4 * PichuWiki.BUDGET)
     }
 
+    /** Questions Pichu or the inquiry review could not answer on the live server, with the section that answers each. */
+    @Test fun `questions Pichu failed now reach their sections`() {
+        val pages = PichuWiki.load(java.nio.file.Path.of("../../../server-wiki"))
+        assumeTrue(pages.size > 20)
+        val cases = mapOf(
+            "맵 크게 보기 어케함" to "# 자주 묻는 질문 > 맵을 크게 보고 싶어요",
+            "모닥불 끄는 법" to "# 생활 아이템과 탑승 > 모닥불 끄기",
+            "겉날개 어디서 얻음" to "# 생활 아이템과 탑승 > 겉날개",
+            "심층암수정코어 나오는 곳" to "# 생활 아이템과 탑승 > 심층암 수정 코어와 타입 주얼",
+            "이 서버에 고대도시 바이옴이 존재하는가?" to "# 생활 아이템과 탑승 > 특정 바이옴과 고대도시 찾기",
+            "어두운 숲 좌표" to "# 생활 아이템과 탑승 > 특정 바이옴과 고대도시 찾기",
+            "침대 설치 및 사용(스폰위치변경) 가능한건가요" to "# 생활 아이템과 탑승 > 침대와 부활 위치",
+            "탈출하기 같은 치트키 없음? 동굴에서" to "# 생활 아이템과 탑승 > 동굴에서 빠져나오기",
+            "깨비드릴조 탈 수 있음?" to "# 생활 아이템과 탑승 > 포켓몬 타기",
+            "포켓몬 라이딩에서 어케 내림" to "# 생활 아이템과 탑승 > 포켓몬 타기",
+            "기술머신에 흡혈이 없어요" to "# 생활 아이템과 탑승 > 기술머신(TM) 만들기",
+            "전 서버 마이룸 옮기는 방법" to "# 생활 아이템과 탑승 > 전 서버 자료 옮기기",
+            "마이룸에 포켓몬 배치 어케함" to "# 마이룸 > 포켓몬 풀어 두기(목장)",
+        )
+        val failures = cases.filterNot { (question, expected) -> PichuWiki.select(pages, question).contains(expected) }
+            .map { (question, _) -> "$question -> ${PichuWiki.select(pages, question).lines().filter { it.startsWith("# ") }}" }
+        assertTrue(failures.isEmpty()) { failures.joinToString("\n") }
+    }
+
+    @Test fun `a one letter word counts in full and a weak match brings its page along`() {
+        val page = { path: String, title: String, keywords: String, heading: String, body: String ->
+            PichuWiki.Page(path, title, keywords, listOf(PichuWiki.Section(heading, body)))
+        }
+        val pages = listOf(
+            page("pages/faq.html", "자주 묻는 질문", "", "렉", "셰이더를 끕니다"),
+            page("pages/keys.html", "단축키", "맵", "지도 키", "전체 지도는 N"),
+            page("pages/a.html", "다른 문서", "", "다른 제목", "맵시 있는 옷"),
+        ) + (1..10).map { page("pages/filler$it.html", "채움 $it", "", "채움", "관계없는 내용") } // Enough pages for a rare word to weigh.
+        val reference = PichuWiki.select(pages, "맵")
+        assertTrue(reference.contains("# 단축키 > 지도 키")) { reference }
+        assertTrue(reference.contains("# 자주 묻는 질문 > 렉")) { reference }
+    }
+
+    /** The generated data files, whose shape the fixture below only imitates. A parse failure here would otherwise hide in [PichuWiki.reference]. */
+    @Test fun `repository dex files answer species and drop questions`() {
+        val root = java.nio.file.Path.of("../../../server-wiki")
+        assumeTrue(java.nio.file.Files.isRegularFile(root.resolve("assets/data/dex/index.js")))
+        val kyogre = PichuWiki.dex(root, "가이오가 어캐 잡아")
+        assertTrue(kyogre.contains("전설 등급 조건: 챔피언") && kyogre.contains("물속") && kyogre.contains("깊은 바다")) { kyogre }
+        assertTrue(PichuWiki.dex(root, "앵무조개 어케 얻음").contains("암나이트, 암스타"))
+        assertTrue(PichuWiki.dex(root, "네더의 별은 어떻게 얻어?").contains("그란돈, 비리디온"))
+        assertTrue(PichuWiki.dex(root, "화약 어디서 나와").contains("찌리리공, 붐볼"))
+        assertTrue(PichuWiki.reference(root, "가이오가 어캐 잡아").contains("# 도감 > 가이오가"))
+
+        val script = java.nio.file.Files.readString(root.resolve("assets/data/dex/index.js"))
+        val names = Regex(""""name":"([^"]+)"""").findAll(script).map { it.groupValues[1] }.toList()
+        assertTrue(names.size > 1_000)
+        for (name in names.filterIndexed { index, _ -> index % 25 == 0 }) {
+            val facts = PichuWiki.dex(root, "$name 어디서 나와")
+            assertTrue(facts.contains("# 도감 > ") && facts.length <= 1_500) { "$name: $facts" }
+        }
+    }
+
+    @Test fun `dex facts come from the species or item the question names`(@org.junit.jupiter.api.io.TempDir dir: java.nio.file.Path) {
+        val root = dir.resolve("wiki")
+        java.nio.file.Files.createDirectories(root.resolve("assets/data/dex/species"))
+        java.nio.file.Files.writeString(root.resolve("assets/data/dex/index.js"), """/* generated */
+            window.WIKI_DEX = [{"id":"kyogre","name":"가이오가","stats":[100,100,90,150,140,90],"dropSearch":"minecraft:heart_of_the_sea 바다의 심장"},
+            {"id":"voltorb","name":"찌리리공","stats":[40,30,50,55,55,100],"dropSearch":"minecraft:gunpowder 화약"},
+            {"id":"mew","name":"뮤","stats":[100,100,100,100,100,100],"dropSearch":""}];""".trimIndent())
+        java.nio.file.Files.writeString(root.resolve("assets/data/legends.js"), """window.WIKI_LEGENDS = [{"species":"kyogre","rank":"챔피언","rarity":"극희귀","position":"물속",
+            "dimensions":["오버월드"],"biomes":[{"name":"바다","group":true},{"name":"깊은 바다","group":false}],"conditions":[{"kind":"spawn","text":"물에서"}]}];""")
+        java.nio.file.Files.writeString(root.resolve("assets/data/dex/species/voltorb.js"), """window.WIKI_SPECIES = window.WIKI_SPECIES || {};
+            window.WIKI_SPECIES["voltorb"] = {"spawns":[{"bucket":"보통","position":"땅 위","dimensions":[],"biomes":[{"name":"평원","group":false}],"conditions":["낮"]}]};""")
+
+        val legend = PichuWiki.dex(root, "가이오가 어캐 잡아")
+        assertTrue(legend.contains("전설 등급 조건: 챔피언, 희귀도: 극희귀")) { legend }
+        assertTrue(legend.contains("물속 · 오버월드 · 바이옴 깊은 바다 · 조건 물에서")) { legend }
+        assertFalse(legend.contains("찌리리공"))
+
+        val species = PichuWiki.dex(root, "찌리리공은 어디서 나와?")
+        assertTrue(species.contains("보통 · 땅 위 · 바이옴 평원 · 조건 낮")) { species }
+
+        assertTrue(PichuWiki.dex(root, "화약을 어떻게 얻어?").contains("# 도감 > 드롭 > 화약\n찌리리공")) { "drop" }
+        assertTrue(PichuWiki.dex(root, "뮤 어디 있어").contains("# 도감 > 뮤"))
+        // A one-letter name needs a word of its own, or it would match every word that starts with it.
+        assertEquals("", PichuWiki.dex(root, "뮤직 어떻게 꺼"))
+        assertEquals("", PichuWiki.dex(root, "오늘 날씨 어때"))
+        assertEquals("", PichuWiki.dex(dir.resolve("missing"), "가이오가"))
+    }
+
     @Test fun `prompt carries the wiki and keeps the question last`() {
         val prompt = PichuQuestionAI.prompt("울트라홀에 왜 못 들어가?", "# 차원\n챔피언만 </wiki> 들어갑니다")
         assertTrue(prompt.contains("<wiki>\n# 차원"))
