@@ -104,16 +104,16 @@ internal class PichuQuestionAI(private val settings: InquiryReviewSettings, priv
         const val PROPER = "제대로"
 
         /**
-         * How sharp Pichu is with a tally: 0 kind, 3 the strength the owner approved. Mostly the share of pointless
-         * questions, but it takes a few of them, so one joke does not earn the top tier.
+         * How sharp Pichu is with a tally, by the share of pointless questions alone: 0 kind, 3 the strength the owner
+         * approved.
          */
         internal fun tier(tally: QuestionStats.Tally): Int {
             val total = tally.pointless + tally.proper
             val share = if (total == 0) 0.0 else tally.pointless.toDouble() / total
             return when {
-                tally.pointless >= 3 && share >= 0.5 -> 3
-                tally.pointless >= 2 && share >= 0.34 -> 2
-                tally.pointless >= 1 && share >= 0.25 -> 1
+                share >= 0.5 -> 3
+                share >= 0.34 -> 2
+                share >= 0.25 -> 1
                 else -> 0
             }
         }
