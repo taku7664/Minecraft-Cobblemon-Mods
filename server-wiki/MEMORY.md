@@ -1,5 +1,13 @@
 # 작업 기록
 
+## [2026-11-02 18:40] 피츄가 못 답한 질문용 `survival.html`·목장·맵 FAQ 추가 (문법·문구 검사, 배포·실게임 미실행)
+
+- **이유:** 문의·`/피츄` 조사에서 겉날개, 수정코어, 화약, 탑승, 기술머신, 침대, 고대도시 질문이 반복됐는데 위키에 없었다. 서버가 평화로움이라 원작 답을 그대로 쓰면 틀린다.
+- **근거:** 개발 서버 설치 JAR의 데이터로 확인했다. 드롭은 Cobblemon·Mega Showdown 종 데이터와 위키 도감 `dropSearch`, 수정코어는 `placed_feature/type_gems.json`(Y -64~0)과 루트 테이블·`needs_iron_tool`, 기술머신은 `data/cobblemon/tms`(기본 128, 해금 206, 업적 1)와 `TMMoveManager` 바이트코드, 탑승 101종은 Mega Showdown 덮어쓰기를 합친 `riding.behaviours`가 있는 종, 목장 한도는 개발·로컬 운영 `config/cobblemon/main.json`이 같음, 침대는 `PlazaProtection`·차원 문서. 이름은 Cobblemon `ko_kr.json`에서 읽었다. 깨비드릴조는 fearow이고 몰드류(excadrill)가 아니다. 둘 다 탑승 불가다.
+- **실게임 미확인(데이터·코드로만 추정):** 겉날개의 엔드 경로(평화로움에서 드래곤·엔드 시티 진행), 고대도시 실제 생성(Terralith 태그는 `ancient_city`를 없애지 않음), 수정코어 군집 성장, 탑승 키 조작. VPS `config/cobblemon/main.json`은 이번에 읽지 않았다.
+- **넣지 않은 것:** 파티 순서 바꾸기, 우두머리·이로치 중복, 말갑옷 효과, 메가스톤 자연 스폰 추가 설명. 근거를 확인하지 못했다.
+- **검증:** `nav.js` 문법, `test_player_text.cjs` 4개 통과. Python 위키 검사는 이 PC에 pytest가 없어 못 돌렸다. 문서 내용과 무관한 생성기 검사다. 화면은 CSS 없는 정적 미리보기로만 봤다. 시작 훅은 없는 파일만 채우므로 배포할 때 `nav.js`·`faq.html`·`myroom.html`은 직접 교체해야 한다.
+
 ## [2026-10-24 16:39] 개발·로컬 운영 서버 및 클라이언트 위키 배포
 
 - **대상·소스:** 사용자 추가 요청에 따라 canonical 저장소의 develop-product/server·develop-product/client, 로컬 MinecraftPPakemonServer, Modrinth PPakemon 프로필의 config/more-cobblemon-contents/wiki에 스폰 수정 파일 1,025개씩 반영했다. main 병합 c6ec483864f47b4011c8676d029aa229decc2180의 검증된 정적 묶음을 재사용했고, 배포 시점 canonical main 1957d740과 위키 정적 소스가 동일함을 확인했다.

@@ -44,11 +44,12 @@ window.WIKI_NAV = {
       title: "생활",
       pages: [
         { path: "pages/crafting.html", title: "제작법", icon: "🔨", keywords: "제작법 레시피 조합 몬스터볼 소모품 회복약 사탕 PP에이드 학습장치 PC 회복기 냄비 양조기 도구" },
+        { path: "pages/survival.html", title: "생활 아이템과 탑승", icon: "🪂", keywords: "겉날개 엘리트라 elytra 심층암 수정 코어 수정코어 주얼 타입주얼 화약 앵무조개 네더의별 네더의 별 엔더 진주 블레이즈 꿀블록 꿀블럭 기술머신 TM 머신 빈TM 흡혈 해금 탑승 라이딩 타기 내리기 바이옴 좌표 어두운 숲 고대도시 침대 스폰 부활 리스폰 동굴 탈출 모닥불 끄기 전 서버 이전 평화로움 몬스터 드롭" },
         { path: "pages/systems.html", title: "서버 시스템", icon: "🛡️", keywords: "채팅 등급 배지 공지 안내 팁 레시피 사탕" },
         { path: "pages/plaza.html", title: "광장", icon: "🏛️", keywords: "광장 plaza 터미널 이동 안내원 npc 간호순 회복 상점 리그 타워 팩토리" },
-        { path: "pages/myroom.html", title: "마이룸", icon: "🏠", keywords: "마이룸 room 방 공개 비공개 초대 신뢰 차단 방문" },
+        { path: "pages/myroom.html", title: "마이룸", icon: "🏠", keywords: "마이룸 room 방 공개 비공개 초대 신뢰 차단 방문 목장 방목 배치 풀어두기" },
         { path: "pages/dimensions.html", title: "차원과 울트라홀", icon: "🌀", keywords: "차원 울트라홀 웜홀 울트라스페이스 울트라비스트 고대 미래 포탈 패러독스 자격 입장 챔피언" },
-        { path: "pages/features.html", title: "편의 기능", icon: "🎮", keywords: "배틀 ui 배틀캠 음악 이모트 셰이더 라운딩 지도 미니맵 xaero 웨이포인트 정보창 우클릭 음성 채팅 도감" },
+        { path: "pages/features.html", title: "편의 기능", icon: "🎮", keywords: "배틀 ui 배틀캠 음악 이모트 셰이더 라운딩 지도 맵 전체지도 미니맵 xaero 웨이포인트 정보창 우클릭 음성 채팅 도감" },
         { path: "pages/discord.html", title: "디스코드", icon: "💬", keywords: "디스코드 discord 인증 디코인증 verify 연결 등급 역할 피츄 봇 채널 접속자 전적 랭킹" },
       ],
     },
@@ -56,7 +57,7 @@ window.WIKI_NAV = {
       title: "참고",
       pages: [
         { path: "pages/commands.html", title: "명령어", icon: "⌨️", keywords: "명령어 command mcc bp legends plaza room waypoint 광장 마이룸 포켓내비 웨이포인트 music 문의 디코인증 디스코드 verify" },
-        { path: "pages/keys.html", title: "단축키", icon: "🎹", keywords: "단축키 키 조작 키설정 충돌 웨이포인트 지도" },
+        { path: "pages/keys.html", title: "단축키", icon: "🎹", keywords: "단축키 키 조작 키설정 충돌 웨이포인트 지도 맵 전체지도" },
         { path: "pages/faq.html", title: "자주 묻는 질문", icon: "❓", keywords: "렉 문제 해결 질문 faq" },
         { path: "pages/support.html", title: "문의하기", icon: "✉️", keywords: "문의 신고 건의 버그 운영자 메일 inquiry" },
       ],
