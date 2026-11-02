@@ -34,6 +34,7 @@ window.WIKI_NAV = {
         { path: "pages/league.html", title: "리그 챌린지", icon: "🏆", keywords: "관장 체육관 사천왕 챔피언 난천 레벨캡 뱃지 배지 하드 등급 보상" },
         { path: "pages/tower.html", title: "배틀타워", icon: "🗼", keywords: "배틀타워 연승 보스 싱글 더블 bp 보상" },
         { path: "pages/factory.html", title: "배틀팩토리", icon: "🏭", keywords: "배틀팩토리 렌탈 교환 층 bp 보상" },
+        { path: "pages/pwt.html", title: "PWT", icon: "🥇", keywords: "pwt 월드 토너먼트 대회 대진표 우승 25bp 안내원" },
         { path: "pages/pvp.html", title: "PvP", icon: "⚔️", keywords: "pvp 대전 방 관전 라운지 타이머" },
         { path: "pages/pvp-matches.html", title: "PvP 전적", icon: "📜", keywords: "pvp 전적 기록 대전 승패 상대 랭킹" },
         { path: "pages/wild-trainers.html", title: "야생 트레이너", icon: "🧢", keywords: "트레이너 에이스 엘리트 bp 스폰 쿨다운 교환 교환꾼 퀴즈 회복 돌보미 여행자 선물" },
