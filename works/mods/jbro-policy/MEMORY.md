@@ -1,3 +1,9 @@
+## [2026-11-03 12:57] 피츄 JSON 이전 개발 배포 (빌드·배치·해시 확인, main 푸시 완료, 서버 기동·디스코드·실게임 미실행)
+
+- **소스:** 사용자 "개발에 배포해"에 따라 `origin/main`(`a53bbf494`, 1.5.0 릴리스·위키 문서)을 `feature/pichu-wiki`에 병합한 `0182672f8`로 빌드하고 `origin/main`에 fast-forward 푸시했다. 충돌은 이 파일뿐이라 양쪽 항목을 살렸다. 병합을 막던 `deploy-product/{client,server}/VERSION.txt` 미커밋 변경은 `origin/main` 블롭과 바이트가 같음을 확인하고 되돌린 뒤 병합했다.
+- **검증:** 관련 10개 클래스 82개 통과(테스트 상한 때문에 `InquiryReviewExecutableTest`, `DiscordWebhookTest`는 병합 전 코드에서만 통과, 병합으로 코드 변화 없음). JAR 무결성, `fabric.mod.json` 진입점 5개, 기본 `pichu-rules.json`이 소스와 같음, 언어 파일의 옛 `/피츄` 키 제거를 확인했다.
+- **배치:** `jbro-policy-0.1.9.jar` SHA-256 `71a03225…`을 개발 서버·클라이언트에 넣고 일치를 확인했다(이전 `eb4aa602…`, 백업 `develop-product/deployment-backups/20261103-125713-pichu-json`). 배치 전 Java 프로세스 0개. 서버는 켜지 않았으므로 `config/jbro-policy-pichu.json`은 아직 없고 첫 기동 때 생긴다. `jbro-policy-discord-replies.json`은 옛 형식(`commands` 없음)이며 그대로 읽힌다. `recordDecisions=true` 확인. PPakemon, 로컬 운영, VPS, deploy-product는 건드리지 않았다.
+
 ## [2026-11-03 12:10] 나머지 디코 봇 문구·AI 자료 설명·판별 정규식도 JSON으로 이전 (구현·단위 테스트, 빌드 배치·디스코드·실게임 미실행)
 
 - **사용자 지시:** "나머지도 옮겨". 바로 아래 항목에서 남겨 둔 것을 `jbro-policy-pichu.json`으로 옮겼다.
