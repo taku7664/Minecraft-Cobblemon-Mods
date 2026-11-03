@@ -46,6 +46,10 @@ object LeagueServer {
 
     fun register() {
         BattleHubEntries.register(BattleHubEntry(CONTENT) { player, terminal -> openFromHub(player, terminal) })
+        // A run (a gym battle or the finals) started before the League was switched off is played to its end.
+        MccContentSwitches.registerRunProbe(CONTENT) { server, playerId ->
+            LeagueProgressQueries.states(server, playerId).values.any { it.run != null }
+        }
         PayloadTypeRegistry.playS2C().register(LeagueStatePayload.TYPE, LeagueStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(LeagueRankPayload.TYPE, LeagueRankPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(LeagueErrorPayload.TYPE, LeagueErrorPayload.CODEC)
@@ -167,6 +171,11 @@ object LeagueServer {
                     ManagedPveBattles.cancel(player.server, player.uuid)
                 }
                 LeagueAction.START, LeagueAction.NEXT -> {
+                    // START writes the run before its battle, so the switch is checked here rather than at the battle.
+                    if (intent.action == LeagueAction.START) {
+                        (BattleContentAccess.check(player, CONTENT, ContentAccessAction.START) as? ContentAccessDecision.Denied)
+                            ?.let { error(it.code) }
+                    }
                     LeagueIntegrations.validateCaps(catalog)
                     reconcile(player)
                     LeagueWorldRules.requireCanChallenge(catalog, LeagueProgressQueries.states(player.server, player.uuid))
@@ -389,7 +398,7 @@ object LeagueServer {
             "run_active", "party_required", "rewards_pending", "history_full", "prerequisite", "hard_locked", "no_run", "phase_invalid", "level_cap",
             "opponent_level_unsupported", "league_locked", "invalid_branch", "duplicate_species", "duplicate_item",
             "battle_active", "battle_unavailable", "catalog_unavailable", "terminal_invalid", "terminal_expired",
-            "client_missing", "request_conflict", "stale_revision")
+            "client_missing", "request_conflict", "stale_revision", "content_paused")
         val key = ERROR_PREFIX + if (reason in known) reason else "request_failed"
         try { send(player) } catch (_: RuntimeException) { /* Broken storage stays locked. */ }
         deliverError(player, key)

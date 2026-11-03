@@ -6,7 +6,9 @@ import com.cobblemon.mod.common.pokemon.Pokemon
 import com.google.gson.Gson
 import java.util.UUID
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
+import jbro.cobblemon.mcc.api.access.ContentAccessAction
 import jbro.cobblemon.mcc.api.access.ContentAccessDecision
+import jbro.cobblemon.mcc.api.access.MccContentSwitches
 import jbro.cobblemon.mcc.api.battle.ManagedPveBattles
 import jbro.cobblemon.mcc.api.news.MccNews
 import jbro.cobblemon.mcc.api.news.MccNewsEvent
@@ -55,6 +57,8 @@ object PwtServer {
             // Tournament navy with a trophy-gold crystal.
             HoloTerminalPalette(0x162A5A, 0x2848A8, 0xFFC844, 0xFFE38A, 0xFFE9A6, 0x3C6CE0, 0x78A0FF))
         BattleHubEntries.register(BattleHubEntry(Mod.CONTENT) { player, _ -> open(player) })
+        // A tournament entered before PWT was switched off is played to its end.
+        MccContentSwitches.registerRunProbe(Mod.CONTENT) { _, playerId -> runs[playerId] != null }
         PayloadTypeRegistry.playS2C().register(PwtStatePayload.TYPE, PwtStatePayload.CODEC)
         PayloadTypeRegistry.playC2S().register(PwtIntentPayload.TYPE, PwtIntentPayload.CODEC)
         ServerPlayNetworking.registerGlobalReceiver(PwtIntentPayload.TYPE) { payload, context -> handle(context.player(), payload) }
@@ -97,6 +101,8 @@ object PwtServer {
     }
 
     private fun enter(player: ServerPlayer, picked: List<UUID>) {
+        // A hub opened before PWT was switched off can still ask; the run does not exist yet, so this refuses it.
+        (BattleContentAccess.check(player, Mod.CONTENT, ContentAccessAction.START) as? ContentAccessDecision.Denied)?.let { error(it.code) }
         check(PwtLeagueGate.unlocked(player.server, player.uuid)) { "champion_required" }
         check(runs[player.uuid] == null) { "run_active" }
         check(BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) == null) { "battle_active" }

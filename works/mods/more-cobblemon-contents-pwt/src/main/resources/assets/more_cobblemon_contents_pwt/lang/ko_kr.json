@@ -41,6 +41,7 @@
   "screen.more_cobblemon_contents_pwt.forfeit.title": "대회 기권",
   "screen.more_cobblemon_contents_pwt.forfeit.message": "기권하면 이번 대회에서 탈락합니다. 계속할까요?",
   "screen.more_cobblemon_contents_pwt.error.champion_required": "포켓몬리그 챔피언만 참가할 수 있습니다.",
+  "screen.more_cobblemon_contents_pwt.error.content_paused": "PWT는 지금 쉬는 중입니다. 나중에 다시 참가해 주세요.",
   "screen.more_cobblemon_contents_pwt.error.run_active": "이미 대회에 참가하고 있습니다.",
   "screen.more_cobblemon_contents_pwt.error.battle_active": "대전이 끝난 뒤에 다시 시도하세요.",
   "screen.more_cobblemon_contents_pwt.error.catalog_unavailable": "대회 상대 정보를 불러오지 못했습니다.",

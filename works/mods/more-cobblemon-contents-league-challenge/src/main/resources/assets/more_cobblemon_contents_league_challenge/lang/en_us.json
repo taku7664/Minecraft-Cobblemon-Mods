@@ -55,6 +55,7 @@
   "config.more_cobblemon_contents_league_challenge.rewards": "Teams, trainers, rewards and appearances are replaceable data-pack definitions. Skins use local resource-pack textures.",
   "config.more_cobblemon_contents_league_challenge.reload": "Apply data packs with /reload (operator permission required). Invalid catalogs keep the last valid version; active runs keep their original teams.",
   "message.more_cobblemon_contents_league_challenge.champion_required": "Defeat the League Champion to unlock this facility.",
+  "message.more_cobblemon_contents_league_challenge.content_paused": "The League Challenge is taking a break right now. Please try again later.",
   "message.more_cobblemon_contents_league_challenge.request_failed": "The League request failed. Ask an administrator to check the server log.",
   "message.more_cobblemon_contents_league_challenge.integration_failed": "A League dependency is unavailable. New challenges are locked.",
   "message.more_cobblemon_contents_league_challenge.cap_disabled": "Cobbled Level Control's leveling restriction must be enabled.",

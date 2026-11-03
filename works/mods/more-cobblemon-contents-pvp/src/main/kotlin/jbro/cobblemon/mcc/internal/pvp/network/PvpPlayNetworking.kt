@@ -1,6 +1,8 @@
 package jbro.cobblemon.mcc.internal.pvp.network
 
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
+import jbro.cobblemon.mcc.api.access.ContentAccessDecision
+import jbro.cobblemon.mcc.api.access.MccContentSwitches
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
@@ -158,6 +160,10 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 open(player).status == PvpCommandStatus.APPLIED
             },
         )
+        // A room or a match already joined goes on while PvP is switched off; leaving it is always allowed.
+        MccContentSwitches.registerRunProbe(ManagedBattleContentIds.PVP) { _, playerId ->
+            rooms.roomFor(playerId) != null || sessions.challengeFor(playerId) != null
+        }
         PayloadTypeRegistry.playS2C().register(PvpSelectionStatePayload.TYPE, PvpSelectionStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(PvpSelectionRejectedPayload.TYPE, PvpSelectionRejectedPayload.CODEC)
         PayloadTypeRegistry.playS2C().register(PvpSelectionClosedPayload.TYPE, PvpSelectionClosedPayload.CODEC)
@@ -648,6 +654,14 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     }
 
     private fun handleRoomIntent(player: ServerPlayer, intent: PvpRoomIntent) {
+        // Coming into a room from outside is what a switched-off PvP refuses; members carry on.
+        if (intent is PvpRoomIntent.Create || intent is PvpRoomIntent.Join || intent is PvpRoomIntent.Observe) {
+            val paused = MccContentSwitches.check(player.server, player.uuid, ManagedBattleContentIds.PVP)
+            if (paused is ContentAccessDecision.Denied) {
+                ServerPlayNetworking.send(player, PvpRoomRejectedPayload(intent.requestId, paused.reasonKey, paused.arguments))
+                return
+            }
+        }
         when (intent) {
             is PvpRoomIntent.Refresh -> {
                 when (PvpRoomRefreshContract.response(hasRoomMembership = rooms.roomFor(player.uuid) != null)) {

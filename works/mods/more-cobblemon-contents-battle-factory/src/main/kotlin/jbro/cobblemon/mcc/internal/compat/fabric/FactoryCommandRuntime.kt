@@ -10,6 +10,8 @@ import net.minecraft.network.chat.Component
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
+import jbro.cobblemon.mcc.api.access.MccContentSwitches
+import jbro.cobblemon.mcc.internal.factory.FactoryRunPhase
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 
 import com.cobblemon.mod.common.battles.pokemon.BattlePokemon
@@ -165,6 +167,10 @@ internal object FactoryCommandRuntime : FactoryCommandBackend {
         MccCommandContributors.register { FactoryProgressCommands.build() }
         MccAdminSources.register(adminSource)
         BattleHubEntries.register(BattleHubEntry(ManagedBattleContentIds.BATTLE_FACTORY) { player, _ -> open(player) })
+        // A run goes on while the Factory is switched off; a finished one left on screen does not count.
+        MccContentSwitches.registerRunProbe(ManagedBattleContentIds.BATTLE_FACTORY) { _, playerId ->
+            sessions.snapshot(playerId)?.let { it.phase != FactoryRunPhase.COMPLETE } == true
+        }
         FactoryPlayNetworking.registerServer(this)
         ServerLifecycleEvents.SERVER_STARTING.register { server -> currentServer = server }
         ServerLifecycleEvents.SERVER_STOPPING.register { server ->

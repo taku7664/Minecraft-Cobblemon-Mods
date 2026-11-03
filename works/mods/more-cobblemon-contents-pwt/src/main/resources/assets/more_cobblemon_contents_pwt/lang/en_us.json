@@ -41,6 +41,7 @@
   "screen.more_cobblemon_contents_pwt.forfeit.title": "Forfeit the tournament",
   "screen.more_cobblemon_contents_pwt.forfeit.message": "Forfeiting knocks you out of this tournament. Continue?",
   "screen.more_cobblemon_contents_pwt.error.champion_required": "Only League Champions can enter.",
+  "screen.more_cobblemon_contents_pwt.error.content_paused": "The PWT is taking a break right now. Please enter again later.",
   "screen.more_cobblemon_contents_pwt.error.run_active": "You are already in a tournament.",
   "screen.more_cobblemon_contents_pwt.error.battle_active": "Try again after the battle.",
   "screen.more_cobblemon_contents_pwt.error.catalog_unavailable": "The tournament trainers could not be loaded.",
