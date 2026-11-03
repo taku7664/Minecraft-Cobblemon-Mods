@@ -19,7 +19,7 @@ internal object LegendRestore {
     private const val WINDOW_MILLIS = 24L * 60 * 60 * 1000
     /** A restored Legend may despawn again, but not forever: past this an operator looks. */
     private const val MAX_RESTORES = 2
-    private val VANISHED = Regex("사라|디스폰|증발|소멸|없어[졌짐]|어디\\s*갔")
+    private val VANISHED get() = PichuRules.current().regex("patterns.legendVanished")
 
     sealed interface Decision {
         data object None : Decision

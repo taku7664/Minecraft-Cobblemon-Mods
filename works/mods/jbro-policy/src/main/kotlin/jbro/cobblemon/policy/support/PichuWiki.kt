@@ -35,10 +35,10 @@ internal object PichuWiki {
     private const val DROP_SPECIES = 12
     private const val SPAWN_ROWS = 4
     private const val ROW_BIOMES = 8
+    private fun say(key: String, vararg values: Pair<String, Any?>) = PichuRules.current().text("ai.$key", *values)
+
     /** Pieces of question words ("어디서", "어떻게", "있어요") that match headings without saying what is asked. */
-    private val STOP = ("어디 디서 디에 어떻 떻게 뭐야 뭔가 무엇 엇인 방법 하나 나요 해요 돼요 되나 있나 나와 와요 주세 세요 알려 려줘 려주 " +
-        "인가 가요 는데 하면 할까 까요 언제 누가 얼마 마나 하는 는법 싶어 싶은 왜안 이에 에요 예요 있어 어요 있는 없어 뭐있 뭐가 되요 줘요 하죠")
-        .split(' ').toSet()
+    private val STOP: Set<String> get() = PichuRules.current().list("wiki.stopWords").toSet()
     private val NAV_ENTRY = Regex("""path: "([^"]+)", title: "([^"]+)", icon: "[^"]*", keywords: "([^"]*)"""")
     private val MAIN = Regex("<main[^>]*>(.*)</main>", RegexOption.DOT_MATCHES_ALL)
     private val H1 = Regex("<h1[^>]*>(.*?)</h1>", RegexOption.DOT_MATCHES_ALL)
@@ -90,8 +90,8 @@ internal object PichuWiki {
         return buildString {
             for (entry in named) append(speciesFacts(root, entry, legends[entry.get("id").asString])).append("\n\n")
             for ((item, species) in drops) {
-                append("# 도감 > 드롭 > ").append(item).append('\n').append(species.take(DROP_SPECIES).joinToString(", "))
-                if (species.size > DROP_SPECIES) append(" 외 ").append(species.size - DROP_SPECIES).append("종")
+                append(say("wikiDrop", "item" to item)).append('\n').append(species.take(DROP_SPECIES).joinToString(", "))
+                if (species.size > DROP_SPECIES) append(say("wikiDropMore", "count" to species.size - DROP_SPECIES))
                 append("\n\n")
             }
         }.trim().take(DEX_BUDGET)
@@ -99,21 +99,21 @@ internal object PichuWiki {
 
     private fun speciesFacts(root: Path, entry: JsonObject, legend: JsonObject?) = buildString {
         val name = entry.get("name").asString
-        append("# 도감 > ").append(name).append('\n')
+        append(say("wikiDex", "name" to name)).append('\n')
         val stats = entry.getAsJsonArray("stats").joinToString("/") { it.asString }
-        append("종족값(HP/공격/방어/특공/특방/스피드): ").append(stats).append('\n')
-        dropNames(entry).takeIf { it.isNotEmpty() }?.let { append("드롭: ").append(it.joinToString(", ")).append('\n') }
+        append(say("wikiStats", "stats" to stats)).append('\n')
+        dropNames(entry).takeIf { it.isNotEmpty() }?.let { append(say("wikiDrops", "drops" to it.joinToString(", "))).append('\n') }
         if (legend != null) {
-            append("전설 등급 조건: ").append(legend.get("rank").asString).append(", 희귀도: ").append(legend.get("rarity").asString).append('\n')
-            append("출현: ").append(spawnRow(legend)).append('\n')
+            append(say("wikiLegend", "rank" to legend.get("rank").asString, "rarity" to legend.get("rarity").asString)).append('\n')
+            append(say("wikiSpawn", "row" to spawnRow(legend))).append('\n')
         } else {
             val file = root.resolve("assets/data/dex/species/${entry.get("id").asString}.js")
             val text = if (Files.isRegularFile(file)) Files.readString(file) else ""
             val species = if (text.isEmpty()) null else JsonParser.parseString(text.substring(text.indexOf("= {") + 2, text.lastIndexOf('}') + 1)).asJsonObject
             val rows = species?.getAsJsonArray("spawns")?.map { it.asJsonObject }.orEmpty()
-            if (rows.isEmpty()) append("직접 출현 항목 없음\n")
-            for (row in rows.take(SPAWN_ROWS)) append("출현: ").append(spawnRow(row)).append('\n')
-            if (rows.size > SPAWN_ROWS) append("출현 항목 ").append(rows.size - SPAWN_ROWS).append("개 더 있음. 위키 도감에서 확인\n")
+            if (rows.isEmpty()) append(say("wikiNoSpawn")).append('\n')
+            for (row in rows.take(SPAWN_ROWS)) append(say("wikiSpawn", "row" to spawnRow(row))).append('\n')
+            if (rows.size > SPAWN_ROWS) append(say("wikiMoreSpawns", "count" to rows.size - SPAWN_ROWS)).append('\n')
         }
     }
 
@@ -128,8 +128,8 @@ internal object PichuWiki {
             row.get("bucket")?.asString,
             row.get("position")?.asString,
             row.getAsJsonArray("dimensions").map { it.asString }.takeIf { it.isNotEmpty() }?.joinToString(", "),
-            biomes.takeIf { it.isNotEmpty() }?.let { "바이옴 " + it.take(ROW_BIOMES).joinToString(", ") + if (it.size > ROW_BIOMES) " 외" else "" },
-            conditions.takeIf { it.isNotEmpty() }?.let { "조건 " + it.joinToString(", ") },
+            biomes.takeIf { it.isNotEmpty() }?.let { say("wikiBiomes", "biomes" to it.take(ROW_BIOMES).joinToString(", ") + if (it.size > ROW_BIOMES) say("wikiBiomesMore") else "") },
+            conditions.takeIf { it.isNotEmpty() }?.let { say("wikiConditions", "conditions" to it.joinToString(", ")) },
         ).joinToString(" · ")
     }
 
@@ -202,9 +202,9 @@ internal object PichuWiki {
         }
 
         return buildString {
-            append("위키 문서 목록: ").append(pages.joinToString(", ") { it.title }).append('\n')
-            if (weak) append("(질문과 확실히 맞는 위키 문서가 없어 가장 가까운 구간과 자주 묻는 질문을 넣었습니다.)\n")
-            else if (!matched) append("(질문과 맞는 위키 문서를 찾지 못해 자주 묻는 질문만 넣었습니다.)\n")
+            append(say("wikiPages", "pages" to pages.joinToString(", ") { it.title })).append('\n')
+            if (weak) append(say("wikiWeak")).append('\n')
+            else if (!matched) append(say("wikiUnmatched")).append('\n')
             for (page in chosen) for (section in page.sections) if (section in picked) {
                 append("\n# ").append(page.title).append(" > ").append(section.heading).append('\n').append(section.text).append('\n')
             }
@@ -217,7 +217,7 @@ internal object PichuWiki {
         val title = H1.find(main)?.groupValues?.get(1)?.let(::plain)
         val parts = main.replace(SCRIPT, " ").replace(H1, " ").split(Regex("<h2[^>]*>"))
         return title to parts.mapIndexedNotNull { index, part ->
-            val heading = if (index == 0) "개요" else plain(part.substringBefore("</h2>")).ifBlank { "개요" }
+            val heading = if (index == 0) say("wikiOverview") else plain(part.substringBefore("</h2>")).ifBlank { say("wikiOverview") }
             val text = text(if (index == 0) part else part.substringAfter("</h2>", ""))
             if (text.isBlank()) null else Section(heading, text)
         }

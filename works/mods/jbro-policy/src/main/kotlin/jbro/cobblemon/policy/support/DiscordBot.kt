@@ -333,23 +333,23 @@ internal object DiscordBot {
             command.replyAsync(options, caller).whenComplete { reply, failure ->
                 restWorker.execute(guarded {
                     editReply(client, applicationId, interactionToken, if (failure == null) reply
-                        else DiscordRest.message("명령을 처리하지 못했어요. 잠시 뒤에 다시 해 주세요."))
+                        else DiscordRest.message(DiscordText.say("failed")))
                 })
             }
             return
         }
         val reply = when {
-            command == null -> DiscordRest.message("모르는 명령이에요.")
+            command == null -> DiscordRest.message(DiscordText.say("unknownCommand"))
             misplaced != null -> DiscordRest.message(misplaced)
             refusal != null -> DiscordRest.message(refusal.reason)
-            live == null -> DiscordRest.message("서버가 아직 켜지는 중이에요. 잠시 뒤에 다시 해 주세요.")
+            live == null -> DiscordRest.message(DiscordText.say("starting"))
             else -> try {
                 live.submit(Supplier {
                     if (command is DiscordAdminCommand) command.run(live, options, caller) else command.reply(live, options, caller)
                 }).get(COMMAND_TIMEOUT_SECONDS, TimeUnit.SECONDS)
             } catch (failure: Exception) {
                 JbroPolicy.LOGGER.warn("Discord command /{} failed", command.name, failure)
-                DiscordRest.message("명령을 처리하지 못했어요. 잠시 뒤에 다시 해 주세요.")
+                DiscordRest.message(DiscordText.say("failed"))
             }
         }
         editReply(client, applicationId, interactionToken, reply)
@@ -361,7 +361,7 @@ internal object DiscordBot {
         JbroPolicy.LOGGER.warn("Discord refused a command reply ({}): {}", edited.status, edited.body.take(500))
         // Without a reply the command stays on "thinking" for good, so say something plain instead.
         client.request("PATCH", "/webhooks/$applicationId/$interactionToken/messages/@original",
-            DiscordRest.message("답을 만들지 못했어요. 운영진에게 알려 주세요."), authorized = false)
+            DiscordRest.message(DiscordText.say("noAnswer")), authorized = false)
     }
 
     /** Answers a button press; the only buttons are the inquiry reviews' "처리 완료" and "조치·명령어 보기". */

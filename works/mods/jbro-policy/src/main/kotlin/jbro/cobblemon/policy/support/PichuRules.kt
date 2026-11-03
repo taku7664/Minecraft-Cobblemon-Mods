@@ -33,6 +33,17 @@ internal class PichuRules private constructor(private val root: JsonObject) {
             .map { it.asJsonObject.let { tier -> tier.get("minShare").asDouble to tier.get("tone").asString } }
             .sortedBy { it.first }
 
+    /** The pattern at [path]; one that does not compile gives the bundled default's. */
+    fun regex(path: String): Regex {
+        val pattern = string(path)
+        return compiled.getOrPut(pattern) {
+            try { Regex(pattern) } catch (failure: Exception) {
+                warn("Invalid pattern at $path in the Pichu rules; using the default", failure)
+                Regex(defaults.string(path))
+            }
+        }
+    }
+
     private fun string(path: String) = element(path)?.takeIf { it.isJsonPrimitive }?.asString ?: path
 
     private fun element(path: String): JsonElement? =
@@ -44,6 +55,7 @@ internal class PichuRules private constructor(private val root: JsonObject) {
 
     companion object {
         private val PLACEHOLDER = Regex("\\{(\\w+)}")
+        private val compiled = java.util.concurrent.ConcurrentHashMap<String, Regex>()
         private val defaultText by lazy {
             requireNotNull(PichuRules::class.java.getResourceAsStream("/pichu-rules.json")).use {
                 String(it.readAllBytes(), StandardCharsets.UTF_8)

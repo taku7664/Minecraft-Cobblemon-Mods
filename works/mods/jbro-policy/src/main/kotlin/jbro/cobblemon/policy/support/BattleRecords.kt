@@ -45,7 +45,8 @@ internal object BattleRecords {
 
     class Found(val header: Header, val path: Path, val body: String) {
         /** One line for the operators' card. */
-        fun summary() = "${TIME.format(Instant.ofEpochMilli(header.start))} ${header.actors.joinToString(" vs ")} · ${header.turns}턴 · `${path.parent.fileName}/${path.fileName}`"
+        fun summary() = PichuRules.current().text("ai.battleSummary", "time" to TIME.format(Instant.ofEpochMilli(header.start)),
+            "actors" to header.actors.joinToString(" vs "), "turns" to header.turns, "file" to "${path.parent.fileName}/${path.fileName}")
     }
 
     fun register(gameDir: Path) {

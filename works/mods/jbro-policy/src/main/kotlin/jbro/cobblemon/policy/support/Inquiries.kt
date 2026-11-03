@@ -28,7 +28,7 @@ data class Inquiry(
     /** Eight hex digits that name the inquiry on its card and in its review. */
     val id: String = UUID.randomUUID().toString().take(8),
 ) {
-    val subject: String get() = "[빡켓몬 문의] $nickname ($accountName)"
+    val subject: String get() = Inquiries.subject(nickname, accountName)
     val time: String get() = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
         .format(ZonedDateTime.ofInstant(java.time.Instant.ofEpochMilli(at), ZoneId.of("Asia/Seoul")))
 }
@@ -42,7 +42,11 @@ object Inquiries {
     const val COOLDOWN_MILLIS = 5 * 60 * 1000L
     private const val KEY = "message.${JbroPolicy.MOD_ID}.inquiry."
 
-    enum class Via(val label: String) { COMMAND("명령어"), WIKI("위키") }
+    enum class Via {
+        COMMAND, WIKI;
+
+        val label: String get() = DiscordText.say("via" + name.lowercase().replaceFirstChar(Char::uppercase))
+    }
 
     sealed interface Outcome {
         data object Sent : Outcome
@@ -135,7 +139,7 @@ object Inquiries {
         else -> null
     }
 
-    internal fun subject(nickname: String, accountName: String) = "[빡켓몬 문의] $nickname ($accountName)"
+    internal fun subject(nickname: String, accountName: String) = DiscordText.say("inquirySubject", "nickname" to nickname, "account" to accountName)
 
     private fun tell(player: ServerPlayer, outcome: Outcome) {
         when (outcome) {

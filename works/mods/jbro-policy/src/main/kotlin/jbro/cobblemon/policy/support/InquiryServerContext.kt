@@ -60,12 +60,12 @@ internal object InquiryServerContext {
             remove("tips")
             remove("tipIntervalSeconds")
         }
-        documents += InquiryReferences.Document("loaded:jbro-policy (현재 적용 중 정책)", loadedPolicy.toString())
+        documents += InquiryReferences.Document(PichuRules.current().text("ai.loadedPolicy"), loadedPolicy.toString())
         for (item in BuiltInRegistries.ITEM) {
             val id = BuiltInRegistries.ITEM.getKey(item).toString()
             val name = translations[item.descriptionId].orEmpty()
             if (terms.any { id.contains(it, true) || name.contains(it, true) }) {
-                documents += InquiryReferences.Document("registry:item:$id", "$id $name 현재 아이템 레지스트리에 등록됨")
+                documents += InquiryReferences.Document("registry:item:$id", PichuRules.current().text("ai.registryItem", "id" to id, "name" to name))
             }
         }
         if (terms.isNotEmpty()) {
@@ -100,7 +100,7 @@ internal object InquiryServerContext {
         return server.submit(Supplier {
             JsonObject().apply {
                 addProperty("observed_at", Instant.now().toString())
-                addProperty("scope", "검토 시점의 문의자 본인 자료. 상자·목장·다른 플레이어·백업은 미조회. 없는 개체는 분실 확정이 아님")
+                addProperty("scope", PichuRules.current().text("ai.playerScope"))
                 val player = server.playerList.getPlayer(playerId)
                 addProperty("online", player != null)
                 if (player == null) return@apply
@@ -119,7 +119,7 @@ internal object InquiryServerContext {
                     val pc = Cobblemon.storage.getPC(player)
                     val boxes = pc.boxes.flatMapIndexed { index, box -> box.map { it.uuid to index + 1 } }.toMap()
                     list("pc", pc.toList(), boxes)
-                }.onFailure { addProperty("pc_error", "PC 자료 읽기 실패. PC는 미조회이며 빈 박스라는 뜻이 아님") }
+                }.onFailure { addProperty("pc_error", PichuRules.current().text("ai.pcError")) }
                 add("inventory", JsonArray().apply {
                     for (stack in player.inventory.items + player.inventory.offhand + player.inventory.armor + (0 until player.enderChestInventory.containerSize).map { player.enderChestInventory.getItem(it) }) {
                         if (stack.isEmpty) continue
@@ -144,7 +144,7 @@ internal object InquiryServerContext {
                         })
                     }
                 })
-                addProperty("inventory_scope", "inventory에는 소지품·방어구·보조손·엔더상자만 포함. 커서·열린 합성창 입력·바닥 아이템은 미조회이며 앞선 합성 성공은 현재 보관 위치의 증명이 아님")
+                addProperty("inventory_scope", PichuRules.current().text("ai.inventoryScope"))
                 add("nearby_pokemon", JsonArray().apply {
                     val entities = player.serverLevel().getEntitiesOfClass(PokemonEntity::class.java, player.boundingBox.inflate(96.0))
                     entities.filter { it.pokemon.getOwnerUUID() == null }.sortedBy { it.distanceToSqr(player) }.take(32).forEach { entity ->
@@ -154,7 +154,7 @@ internal object InquiryServerContext {
                         })
                     }
                 })
-                addProperty("nearby_scope", "현재 차원의 96블록 안에 로드된 야생 개체 중 가까운 32마리. 과거 출현·디스폰·미니맵 표시 여부는 확인하지 않음")
+                addProperty("nearby_scope", PichuRules.current().text("ai.nearbyScope"))
             }.toString()
         }).get(10, TimeUnit.SECONDS)
     }

@@ -175,7 +175,7 @@ internal object InquiryReview {
             playerId == owner.toString() && text.isNotBlank() &&
                 text.codePointCount(0, text.length) <= Inquiries.MAX_REASON_LENGTH && followUps.orEmpty().size < 3
 
-        fun inquiry() = Inquiry(nickname, accountName, UUID.fromString(playerId), reason + followUps.orEmpty().joinToString("", prefix = "") { "\n추가 설명: $it" }, Inquiries.Via.valueOf(via), at, id)
+        fun inquiry() = Inquiry(nickname, accountName, UUID.fromString(playerId), reason + followUps.orEmpty().joinToString("", prefix = "") { "\n" + PichuRules.current().text("texts.followUpLabel", "text" to it) }, Inquiries.Via.valueOf(via), at, id)
     }
 
     /** Whether [customId] names one of the inquiry reviews' buttons. */

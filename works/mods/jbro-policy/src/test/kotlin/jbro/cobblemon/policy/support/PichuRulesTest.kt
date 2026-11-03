@@ -74,6 +74,22 @@ class PichuRulesTest {
     }
 
     @Test
+    fun `bot wording and patterns follow the file and a broken pattern keeps the default`(@TempDir dir: Path) {
+        val file = dir.resolve("rules.json")
+        val warnings = mutableListOf<String>()
+        PichuRules.use(file) { message, _ -> warnings += message }
+        assertEquals("지금 2명 접속 중이에요.\n가, 나", DiscordText.say("onlineSome", "count" to 2, "names" to "가, 나"))
+        assertTrue(InquiryAutoResolve.tentative("광장 이동이 안 돼요"))
+        Files.writeString(file, """{"discord":{"onlineSome":"{count}명 있어요"},"patterns":{"failureReport":"먹통"}}""")
+        assertEquals("2명 있어요", DiscordText.say("onlineSome", "count" to 2, "names" to "가, 나"))
+        assertFalse(InquiryAutoResolve.tentative("광장 이동이 안 돼요"))
+        assertTrue(InquiryAutoResolve.tentative("광장이 먹통이에요"))
+        Files.writeString(file, """{"patterns":{"failureReport":"(안 돼"}}""")
+        assertTrue(InquiryAutoResolve.tentative("광장 이동이 안 돼요"))
+        assertEquals(1, warnings.size)
+    }
+
+    @Test
     fun `reply visibility can be set for any command at the next use`(@TempDir dir: Path) {
         val file = dir.resolve("replies.json")
         val visibility = DiscordReplyVisibility(file) { _, _ -> }
