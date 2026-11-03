@@ -9,9 +9,9 @@ object PwtRules {
     /** Battles run at this level; a Pokémon below it keeps its own level. */
     const val BATTLE_LEVEL = 50
     /** Battle points for winning the tournament; nothing for any other finish. */
-    const val WINNER_BP = 25L
-    /** AI skill per round (MCC's 0-5 scale): the quarterfinal Advanced, the semifinal and final Boss. */
-    val ROUND_SKILLS = listOf(4, 5, 5)
+    const val WINNER_BP = 20L
+    /** AI skill per round (MCC's 0-5 scale): Boss from the quarterfinal on. */
+    val ROUND_SKILLS = listOf(5, 5, 5)
 
     /** One party Pokémon offered for entry. */
     data class Candidate(val id: UUID, val speciesId: String, val heldItemId: String?, val legendaryClass: Boolean)
