@@ -1,8 +1,10 @@
 package jbro.cobblemon.mcc.internal.hub
 
 import java.nio.file.Files
+import jbro.cobblemon.mcc.api.reload.MccReloadResult
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -93,5 +95,20 @@ class BattleHubTabConfigTest {
         BattleHubTabConfigFile.load(path)
         assertEquals(BattleHubTabConfig.DEFAULT_COMMAND, BattleHubTabConfigFile.current.command)
         assertEquals("""{"command": [], "terminals": {}}""", Files.readString(path))
+    }
+
+    @Test
+    fun `a reload keeps the tabs in use when the file is broken`() {
+        val path = Files.createTempDirectory("hub-tabs").resolve("more-cobblemon-contents").resolve("hub_tabs.json")
+        Files.createDirectories(path.parent)
+        Files.writeString(path, """{"command": ["more_cobblemon_contents:shop"], "command_permission_level": 2, "terminals": {}}""")
+        assertInstanceOf(MccReloadResult.Applied::class.java, BattleHubTabConfigFile.load(path))
+        listOf("{", """{"command": [], "command_permission_level": 2, "terminals": {}}""").forEach { broken ->
+            Files.writeString(path, broken)
+            val result = BattleHubTabConfigFile.load(path)
+            assertInstanceOf(MccReloadResult.Kept::class.java, result, broken)
+            assertEquals(listOf(BattleHubIds.SHOP), BattleHubTabConfigFile.current.command, broken)
+            assertEquals(2, BattleHubTabConfigFile.current.commandPermission, broken)
+        }
     }
 }

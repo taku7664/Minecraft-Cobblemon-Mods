@@ -7,12 +7,15 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder
 import com.mojang.brigadier.context.CommandContext
 import java.util.UUID
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.reload.MccConfigReloads
+import jbro.cobblemon.mcc.api.reload.MccReloadResult
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.internal.bp.BattlePointService
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleForfeit
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173BattleRuleHooks
 import jbro.cobblemon.mcc.internal.compat.cobblemon173.Cobblemon173ManagedBattleTermination
 import jbro.cobblemon.mcc.internal.compat.fabric.BattlePointShopCatalogResources
+import jbro.cobblemon.mcc.internal.hub.BattleHubNetworking
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
 import net.minecraft.commands.CommandSourceStack
 import net.minecraft.commands.Commands
@@ -25,8 +28,8 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
 /**
- * The operator commands shared by every content: `/mcc status`, `/mcc records reset` and `/mcc battle`. Contents
- * take part through [MccAdminSources].
+ * The operator commands shared by every content: `/mcc status`, `/mcc records reset`, `/mcc battle` and
+ * `/mcc reload`. Contents take part through [MccAdminSources] and [MccConfigReloads].
  */
 internal object MccAdminCommands {
     private const val KEY = "command.${MoreCobblemonContents.MOD_ID}.admin"
@@ -36,6 +39,39 @@ internal object MccAdminCommands {
         MccCommandContributors.register { records() }
         MccCommandContributors.register { battle() }
         MccCommandContributors.register { scene() }
+        MccCommandContributors.register { reload() }
+    }
+
+    /**
+     * `/mcc reload`: rereads the config files MCC and its addons registered with [MccConfigReloads], without the data
+     * pack reload of `/reload`. Each file is reported; a rejected one keeps the values in use.
+     */
+    fun reload(): LiteralArgumentBuilder<CommandSourceStack> = Commands.literal("reload")
+        .requires(BattleProgressCommands::isAdmin)
+        .executes { command ->
+            val source = command.source
+            val server = source.server
+            val results = MccConfigReloads.reloadAll(server)
+            // Who may run `/mcc` can change with hub_tabs.json; resend the tree so clients offer the command as it now is.
+            server.playerList.players.forEach(server.commands::sendCommands)
+            BattleHubNetworking.refreshOpenHubs(server)
+            reloadLines(results).forEach { line(source, it) }
+            if (results.all { it is MccReloadResult.Applied }) 1 else 0
+        }
+
+    /** The reply to `/mcc reload`: a header, one line per file with its notes, and where data pack content reloads. */
+    internal fun reloadLines(results: List<MccReloadResult>): List<Component> = buildList {
+        add(Component.translatable("$KEY.reload.header", results.count { it is MccReloadResult.Applied }, results.size))
+        results.forEach { result ->
+            when (result) {
+                is MccReloadResult.Applied -> {
+                    add(Component.translatable("$KEY.reload.applied", result.file))
+                    result.notes.forEach { add(Component.translatable("$KEY.reload.note", it)) }
+                }
+                is MccReloadResult.Kept -> add(Component.translatable("$KEY.reload.kept", result.file, result.reason))
+            }
+        }
+        add(Component.translatable("$KEY.reload.datapacks"))
     }
 
     /** `/mcc scene test`: plays a battle scene on the nearest living entity (or the caller) to check the look. */

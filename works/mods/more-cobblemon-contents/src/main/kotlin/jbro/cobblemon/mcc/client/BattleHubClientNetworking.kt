@@ -13,7 +13,10 @@ internal object BattleHubClientNetworking {
     fun register() {
         ClientPlayNetworking.registerGlobalReceiver(BattleHubAccessPayload.TYPE) { payload, context ->
             context.client().execute {
+                val changed = MccBattleHubClientState.deniedById != payload.denied
                 MccBattleHubClientState.deniedById = payload.denied
+                // A content switched off or on while the hub is open locks or unlocks its tab right away.
+                if (changed) MccHubScreen.current?.rebuild()
             }
         }
         MccClientSessionReset.onReset("battle hub header") { MccBattleHubClientState.clear() }

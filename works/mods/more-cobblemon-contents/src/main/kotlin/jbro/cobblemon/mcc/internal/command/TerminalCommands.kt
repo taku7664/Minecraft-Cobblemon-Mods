@@ -14,7 +14,7 @@ import net.minecraft.resources.ResourceLocation
 /**
  * Opens the same configured tabs as a terminal, without requiring a physical block. Operators only: players open these
  * at the plaza terminals, and an NPC opens one for a player through a dialogue command run as the server. `shop` opens
- * the `/mcc` tabs on the shop tab, for a shopkeeper NPC.
+ * the `/mcc` tabs on the shop tab, for a shopkeeper NPC. A terminal whose contents are all switched off does not open.
  */
 internal object TerminalCommands {
     private const val KEY = "command.${MoreCobblemonContents.MOD_ID}.terminal"
@@ -59,6 +59,11 @@ internal object TerminalCommands {
         val terminal = HoloTerminals.all().firstOrNull { it.id == id }
             ?: throw SimpleCommandExceptionType(Component.translatable("$KEY.unavailable", id.toString())).create()
         val player = if (targeted) EntityArgument.getPlayer(context, "player") else context.source.playerOrException
+        // An NPC runs this as the server, so the player hears why the content is closed, not only the command source.
+        BattleHubNetworking.pausedTerminal(player, terminal)?.let { message ->
+            if (context.source.player != player) player.sendSystemMessage(message)
+            throw SimpleCommandExceptionType(message).create()
+        }
         val opened = homes[id.toString()]?.let { BattleHubNetworking.openTerminalCommand(player, terminal, it) }
             ?: BattleHubNetworking.openTerminalCommand(player, terminal)
         if (!opened) {
