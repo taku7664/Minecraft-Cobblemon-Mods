@@ -5,6 +5,7 @@ import com.cobblemon.mod.common.api.pokemon.PokemonProperties
 import java.util.UUID
 import jbro.cobblemon.policy.JbroPolicy
 import jbro.cobblemon.policy.plaza.Plaza
+import jbro.cobblemon.policy.support.InquiryVerdict
 import jbro.cobblemon.policy.support.KoreanText
 import net.minecraft.server.MinecraftServer
 
@@ -41,6 +42,31 @@ internal object LegendRestore {
         recent.firstOrNull { it.state == LegendSpawnLog.State.DESPAWNED && it.restores < MAX_RESTORES }?.let { return Decision.Restore(it) }
         recent.firstOrNull { it.state == LegendSpawnLog.State.ALIVE }?.let { return Decision.StillThere(it) }
         return Decision.None
+    }
+
+    /**
+     * The Legend an operator can be asked to spawn again when no despawn record settles it, as for one spawned before
+     * [LegendSpawnLog] began: [text] must say it vanished and name only it, and it must not have been caught or fainted.
+     */
+    fun proposable(text: String, entries: List<LegendSpawnLog.Entry>, names: Map<String, String>, now: Long): String? {
+        if (!VANISHED.containsMatchIn(text)) return null
+        val squeezed = squeeze(text)
+        val named = names.filterValues { it.isNotEmpty() && squeeze(it) in squeezed }.keys.singleOrNull() ?: return null
+        val ended = entries.any { it.legend == named && it.state == LegendSpawnLog.State.ENDED && now - it.spawnedAt in 0..WINDOW_MILLIS }
+        return named.takeUnless { ended }
+    }
+
+    /** The command to put to an operator for [text] from [playerId], filled in by the server. Call on the server thread. */
+    fun proposal(server: MinecraftServer, playerId: UUID, text: String): InquiryVerdict.SuggestedCommand? {
+        val names = LegendCatalog.all().associate { it.id to (KoreanText.translate(it.nameKey) ?: "") }
+        val id = proposable(text, LegendSpawnLog.get(server).of(playerId), names, System.currentTimeMillis()) ?: return null
+        val legend = LegendCatalog[id] ?: return null
+        val player = server.playerList.getPlayer(playerId) ?: return null
+        if (LegendRecords.get(server).has(playerId, id) || LegendRanks.check(player, legend.rank) != LegendRanks.Verdict.Allowed) return null
+        val cap = LegendRanks.levelCap(player)
+        val spec = listOfNotNull(legend.species, legend.aspect, cap?.let { "level=$it" }).joinToString(" ")
+        return InquiryVerdict.SuggestedCommand(command = "/spawnpokemonfor ${player.gameProfile.name} $spec",
+            why = "${names[id]}${subject(names[id])} 사라졌다는 문의예요. 디스폰 기록이 없어 문의 내용으로만 판단했고, 승인하면 ${cap?.let { "레벨 $it" } ?: "야생 레벨"}로 바로 앞에 소환해요.")
     }
 
     private fun squeeze(text: String) = text.lowercase().replace(Regex("[^0-9a-z가-힣]"), "")

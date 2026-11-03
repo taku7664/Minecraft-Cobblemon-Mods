@@ -9,7 +9,7 @@ import org.junit.jupiter.api.Test
 
 class LegendRestoreTest {
     private val owner = UUID.randomUUID()
-    private val names = mapOf("reshiram" to "레시라무", "tapukoko" to "카푸꼬꼬꼭", "typenull" to "타입:널")
+    private val names = mapOf("reshiram" to "레시라무", "tapukoko" to "카푸꼬꼬꼭", "typenull" to "타입:널", "zeraora" to "제라오라")
     private val now = 100L * 24 * 60 * 60 * 1000
 
     private fun entry(legend: String, state: State, ageHours: Long = 1, restores: Int = 0) =
@@ -52,6 +52,22 @@ class LegendRestoreTest {
         assertEquals(LegendRestore.Decision.None, decide("전설 사라졌어요", entry("reshiram", State.DESPAWNED, ageHours = 25)))
         assertEquals(LegendRestore.Decision.None, decide("전설 사라졌어요", entry("reshiram", State.DESPAWNED, restores = 2)))
         assertTrue(decide("전설 사라졌어요", entry("reshiram", State.DESPAWNED, restores = 1)) is LegendRestore.Decision.Restore)
+    }
+
+    /** The inquiry that got a catch-record lookup for its approval button on the live server. */
+    @Test fun `a named Legend without a record is put to an operator`() {
+        assertEquals("zeraora", LegendRestore.proposable("어제 야생에서 나타난 제라오라를 못잡았는데 사라졌다 당장 리스폰시키도록", emptyList(), names, now))
+    }
+
+    @Test fun `no spawn is proposed without one vanished Legend named`() {
+        assertEquals(null, LegendRestore.proposable("전설이 사라졌어요", emptyList(), names, now))
+        assertEquals(null, LegendRestore.proposable("제라오라 어떻게 잡아요", emptyList(), names, now))
+        assertEquals(null, LegendRestore.proposable("제라오라랑 레시라무 사라졌어요", emptyList(), names, now))
+    }
+
+    @Test fun `a caught or fainted Legend is not proposed again`() {
+        assertEquals(null, LegendRestore.proposable("제라오라 사라졌어요", listOf(entry("zeraora", State.ENDED)), names, now))
+        assertEquals("zeraora", LegendRestore.proposable("제라오라 사라졌어요", listOf(entry("reshiram", State.ENDED)), names, now))
     }
 
     @Test fun `a Legend still in the world is pointed at instead of spawned twice`() {

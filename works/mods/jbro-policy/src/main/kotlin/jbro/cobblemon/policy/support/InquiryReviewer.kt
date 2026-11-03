@@ -115,10 +115,7 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
 
         /** The operator commands the reviewer may suggest, as the server's mods define them. */
         private val COMMANDS = listOf(
-            "/bp get <플레이어>: BP 잔액 확인 (접속 중일 때)",
-            "/bp history <플레이어> <개수>: 최근 BP 내역 확인 (접속 중일 때)",
             "/bp add|remove <플레이어> <양> <사유>, /bp set <플레이어> <양> <사유>: BP 지급·회수·설정 (접속 중일 때)",
-            "/legends <전설 포켓몬> <플레이어>: 그 전설을 잡았는지 확인",
             "/legends reset <전설 포켓몬> <플레이어>: 그 전설의 포획 기록 초기화",
             "/give <플레이어> <아이템> [개수], /tp, /gamemode 등 마인크래프트 기본 명령",
         // Indented like the prompt's own lines, which trimIndent then strips together.
@@ -170,7 +167,7 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
             - 상점(shop): bp_history의 SHOP_PURCHASE와 잔액 변화, 그 시각의 오류 로그를 본다.
             - 배틀 오류(battle): <battles>에 그 시각 전후에 끝난 그 플레이어의 전투 기록이 있으면 턴 순서대로 먼저 본다. 어느 턴에 무슨 일이 있었는지 근거로 옮겨라. 그 시각의 WARN/ERROR 줄과 스택트레이스, 배틀 관련 줄도 본다. 원인 후보로 예외 이름과 처음 나오는 모드 패키지를 적어라.
             - 아이템·포켓몬 분실(loss): live_player의 party·pc·inventory의 개체 UUID와 종을 먼저 찾는다. 찾으면 보관 위치를 안내하고, 없으면 사라진 종·시각·직전 행동을 질문해라. 상자·목장·오프라인·백업 미조회는 명시한다. 원래 개체 데이터 없이 새 개체 소환을 복구라고 제안하지 마라.
-            - 전설 포켓몬(legend): sections.legends(잡은 전설, 리그 등급과 잡을 수 있는 등급)와 로그를 본다.
+            - 전설 포켓몬(legend): sections.legends(잡은 전설, 리그 등급과 잡을 수 있는 등급)와 로그를 본다. 전설이 사라졌다는 문의의 재소환은 서버가 기록과 레벨캡으로 따로 판단해 운영자에게 묻는다. 소환 명령을 직접 만들지 마라.
             - 접속·렉(connection): 접속·퇴장 줄, "Can't keep up" 경고, 연결 끊김 사유를 본다.
             - 신고(report): 그 시각의 채팅과 해당 플레이어 줄을 근거로 옮기고, 판단은 운영자에게 맡겨라.
             - 서버 사용법·질문(question): reference에서 규칙·획득 경로·제작법·목록을 찾아 질문 자체에 답한다. 자료로 답이 확인되면 match, resolution=auto, 조치·명령은 빈 배열이다. 근거에 실제 reference 원문 문장을 인용한다. 답이 없으면 모른다고 말하고 operator로 둔다.
@@ -182,7 +179,7 @@ internal class InquiryReviewer(private val settings: InquiryReviewSettings, priv
             - evidence: 판단의 근거가 된 로그 줄이나 플레이어 자료 항목을 고치지 말고 그대로 옮겨라. 근거가 없으면 빈 배열로 둬라.
             - operatorDetail: 운영자에게 보낼 설명. 무슨 일이 있었는지와 원인 후보를 쓰고, 기록으로 확인한 것과 추측을 나눠서 써라.
             - suggestedActions: 운영자가 할 만한 조치. 운영자가 직접 판단해서 실행하니, 이미 실행했다고 쓰지 마라.
-            - suggestedCommands: suggestedActions 중 명령어로 할 수 있는 것. 값이 모두 확인된 명령은 운영자에게 "이렇게 처리해도 될까요?"라고 묻는 승인 버튼에 그대로 올라가고, 승인하면 바로 실행된다. command에는 "/"로 시작하는 한 줄을, why에는 그 명령이 무엇을 하는지 한 줄로 쓴다. 복구 대상의 원본·지급 여부가 미확인일 때 지급 명령을 제안하지 마라. 아래 목록의 명령과 마인크래프트 기본 명령만 쓰고, 목록에 없는 명령을 지어내지 마라. 플레이어 자리에는 플레이어 아이디(${inquiry.accountName})를 그대로 넣어라. 로그로 확인하지 못한 수치(지급할 BP 양 등)는 짐작해서 넣지 말고 <양>처럼 꺾쇠로 비워 둬라. 맞는 명령이 없으면 빈 배열로 둬라.
+            - suggestedCommands: 플레이어가 요청한 일을 실제로 처리하는 명령만 쓴다. 잔액·기록을 확인하는 조회 명령은 처리가 아니니 쓰지 마라. 그 자료는 이미 받았다. 값이 모두 확인된 명령은 운영자에게 "이렇게 처리해도 될까요?"라고 묻는 승인 버튼에 그대로 올라가고, 승인하면 바로 실행된다. command에는 "/"로 시작하는 한 줄을, why에는 그 명령이 무엇을 하는지 한 줄로 쓴다. 복구 대상의 원본·지급 여부가 미확인일 때 지급 명령을 제안하지 마라. 아래 목록의 명령과 마인크래프트 기본 명령만 쓰고, 목록에 없는 명령을 지어내지 마라. 플레이어 자리에는 플레이어 아이디(${inquiry.accountName})를 그대로 넣어라. 로그로 확인하지 못한 수치(지급할 BP 양 등)는 짐작해서 넣지 말고 <양>처럼 꺾쇠로 비워 둬라. 맞는 명령이 없으면 빈 배열로 둬라.
               $COMMANDS
             - resolution: 기록으로 확실하게 결론이 나서 운영자가 볼 필요가 없으면 "auto", 조금이라도 모호하거나 운영자의 판단이 필요하면 "operator". 자동 종결은 근거가 있는 question 답변만 허용한다. 신고·건의·오류·복구·보상과 unknown은 항상 operator다.
             - autoCommands: 항상 빈 배열이다. AI가 만든 명령으로 지급·회수·아이템 지급·개체 복구를 실행하지 않는다.

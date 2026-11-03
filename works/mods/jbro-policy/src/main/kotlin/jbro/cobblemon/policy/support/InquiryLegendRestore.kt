@@ -10,13 +10,20 @@ import net.minecraft.server.MinecraftServer
 /** Runs [LegendRestore] for an inquiry on the server thread, from the review worker. */
 internal object InquiryLegendRestore {
     /** Null when the inquiry does not ask for a Legend back, or it could not be done and an operator should look. */
-    fun attempt(server: MinecraftServer, inquiry: Inquiry): LegendRestore.Outcome? {
-        val future = CompletableFuture<LegendRestore.Outcome?>()
+    fun attempt(server: MinecraftServer, inquiry: Inquiry): LegendRestore.Outcome? =
+        onServer(server, inquiry) { LegendRestore.attempt(server, inquiry.playerId, inquiry.reason) }
+
+    /** The spawn to ask an operator to approve for this inquiry, or null when there is none to ask about. */
+    fun proposal(server: MinecraftServer, inquiry: Inquiry): InquiryVerdict.SuggestedCommand? =
+        onServer(server, inquiry) { LegendRestore.proposal(server, inquiry.playerId, inquiry.reason) }
+
+    private fun <T : Any> onServer(server: MinecraftServer, inquiry: Inquiry, action: () -> T?): T? {
+        val future = CompletableFuture<T?>()
         val mayStart = AtomicBoolean(true)
         server.execute {
             if (!mayStart.compareAndSet(true, false)) return@execute
             try {
-                future.complete(LegendRestore.attempt(server, inquiry.playerId, inquiry.reason))
+                future.complete(action())
             } catch (failure: Exception) {
                 JbroPolicy.LOGGER.warn("Could not restore a Legend for inquiry {}", inquiry.id, failure)
                 future.complete(null)

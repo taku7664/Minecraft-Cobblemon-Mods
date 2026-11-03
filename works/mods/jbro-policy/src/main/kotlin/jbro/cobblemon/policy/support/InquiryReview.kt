@@ -269,9 +269,11 @@ internal object InquiryReview {
         }
         val followedUp = !record.followUps.isNullOrEmpty()
         val verdict = InquiryAutoResolve.guard(inquiry.reason, answer.verdict, strict = followedUp)
-        val proposal = InquiryProposal.executable(verdict.suggestedCommands, inquiry.accountName)
+        // A vanished Legend gets the server's own spawn at the level cap, not whatever the review came up with.
+        val spawn = server?.let { InquiryLegendRestore.proposal(it, inquiry) }
+        val proposal = spawn?.let { listOf(it) } ?: InquiryProposal.executable(verdict.suggestedCommands, inquiry.accountName)
         val saved = record.copy(conversationId = answer.conversationId, reviewed = true, tentative = false,
-            suggestedActions = verdict.suggestedActions, suggestedCommands = verdict.suggestedCommands, proposal = proposal)
+            suggestedActions = verdict.suggestedActions, suggestedCommands = listOfNotNull(spawn) + verdict.suggestedCommands, proposal = proposal)
         if (!save(saved)) return
         val handling = settle(inquiry, verdict, reference)
         val tentative = !handling.handedOver && handling.ran.isEmpty() && !handling.changed && InquiryAutoResolve.tentative(inquiry.reason)

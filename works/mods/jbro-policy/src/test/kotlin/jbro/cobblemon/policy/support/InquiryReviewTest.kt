@@ -253,7 +253,8 @@ class InquiryReviewTest {
     @Test
     fun `the prompt lists the commands at the prompt's own indent and the schema stays ASCII`() {
         val prompt = InquiryReviewer.prompt(inquiry, InquiryLogWindow.Window("", 0, false), 30, 5)
-        assertTrue(prompt.lines().any { it.startsWith("  - /bp get <플레이어>") })
+        assertTrue(prompt.lines().any { it.startsWith("  - /bp add|remove <플레이어>") })
+        assertTrue("/bp get" !in prompt && "/bp history" !in prompt && "/legends <전설 포켓몬>" !in prompt)
         assertTrue(prompt.lines().any { it.startsWith("- suggestedCommands:") })
         assertTrue(InquiryReviewer.SCHEMA.all { it.code < 128 })
         assertTrue("suggestedCommands" in InquiryReviewer.SCHEMA)
