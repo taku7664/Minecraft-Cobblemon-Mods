@@ -1,0 +1,9 @@
+{
+  "cobblemon_battle_speed.command.current": "Battle speed: level %s (%sx)",
+  "cobblemon_battle_speed.command.changed": "Battle speed set to level %s (%sx).",
+  "cobblemon_battle_speed.command.invalid_level": "Battle speed levels go from 1 to %s.",
+  "cobblemon_battle_speed.command.disabled": "Battle speed is turned off.",
+  "cobblemon_battle_speed.command.not_applied": "Battle speed does not apply to your current battle.",
+  "cobblemon_battle_speed.command.reloaded": "Reloaded the battle speed config.",
+  "cobblemon_battle_speed.command.reload_failed": "Could not load the battle speed config, keeping the previous one: %s"
+}

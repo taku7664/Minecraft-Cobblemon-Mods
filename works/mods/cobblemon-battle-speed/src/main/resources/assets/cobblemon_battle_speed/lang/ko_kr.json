@@ -1,0 +1,9 @@
+{
+  "cobblemon_battle_speed.command.current": "현재 배틀 배속: %s단계 (%s배)",
+  "cobblemon_battle_speed.command.changed": "배틀 배속을 %s단계 (%s배)로 바꿨습니다.",
+  "cobblemon_battle_speed.command.invalid_level": "배속 단계는 1부터 %s까지입니다.",
+  "cobblemon_battle_speed.command.disabled": "배틀 배속이 꺼져 있습니다.",
+  "cobblemon_battle_speed.command.not_applied": "지금 하는 배틀에는 배속이 적용되지 않습니다.",
+  "cobblemon_battle_speed.command.reloaded": "배틀 배속 설정을 다시 불러왔습니다.",
+  "cobblemon_battle_speed.command.reload_failed": "배틀 배속 설정을 불러오지 못해 이전 설정을 유지합니다: %s"
+}
