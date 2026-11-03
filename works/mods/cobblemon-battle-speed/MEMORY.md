@@ -1,5 +1,12 @@
 # cobblemon-battle-speed 작업 기록
 
+## [2026-11-03 21:15] 0.2.0 개발 배치와 커밋 실수 (실게임 화면 미확인)
+
+- **커밋 실수:** `ddaae2216`에서 `config/` 소스 패키지를 넣으려고 `git add -f works/mods/cobblemon-battle-speed`를 쓰는 바람에, 무시되던 `build/` 정션 안의 class·JAR·임시 파일 77개가 같이 들어가 `main`에 푸시됐다. 바로 `4f2eac401`로 지웠다(강제 푸시는 하지 않음, 이력에는 남아 있다). 강제 추가는 `config/` 아래 파일 경로만 지정할 것.
+- 병합: `main` = `4f2eac401`. 남은 모듈 파일 39개는 빌드에 쓴 작업 트리 소스와 내용이 같고, 루트 `build.gradle.kts`·`gradle/`·`gradlew`도 같아서 빌드본을 재사용했다.
+- `develop-product/{server,client}/mods/cobblemon-battle-speed-0.2.0.jar` 설치. SHA-256 `10b716506c49c14b74d388c287072f0d8ab1c56e486a155de6b2360bcb4b27f2`로 빌드본과 같고 `jar --validate` 통과. 이전 0.1.0은 `develop-product/deployment-backups/20261103-battle-speed-0.2.0/{server,client}`로 옮겼다. 배치 전 java 프로세스·25566 리스너 없음 확인. 개발 클라이언트에 Mod Menu 11.0.4·Cloth Config 15.0.140 있음. `recordDecisions`는 `true`.
+- 개발 서버는 꺼진 그대로다. PPakemon·deploy-product·운영·VPS는 그대로다.
+
 ## [2026-11-03 21:05] 0.2.0: Mod Menu 설정 화면 (실게임 화면 미확인)
 
 - **경위:** 사용자가 Mod Menu에서 설정 버튼이 없는 걸 보고 지적했다. 앞서 "설정 화면은 만들지 않았다"고 답하고 만들지 묻는 질문을 남겼는데, 사용자는 권한 질문에만 답해 그대로 넘어갔다. 화면을 만들지 묻는 질문은 다른 답에 묻히지 않게 따로 확인할 것.
