@@ -15,7 +15,7 @@ A core mod and content mods for Cobblemon battle facilities.
 Each content mod registers a hologram terminal through `HoloTerminals.register` (`api.terminal`): an ID, its
 default tabs and a colour palette. Like `/mcc`, a terminal opens the hub on the dashboard when it is listed. The server reads which tabs each way into the hub shows
 from `config/more-cobblemon-contents/hub_tabs.json`, written with the defaults on first start and read again on
-`/reload`:
+`/reload` and `/mcc reload`:
 
 ```json
 {
@@ -35,6 +35,41 @@ BP; every other command needs level 2. `terminals` is keyed by
 terminal block ID. A missing entry takes its default, and a broken one
 falls back to its default with a warning in the log. The server refuses to open a content the hub was not opened
 with, so a tab left out cannot be reached by a modified client either.
+
+A file with mistakes, or one that does not parse, keeps the tabs in use (at first start: the defaults, or each broken
+entry's default) and stays as the admin wrote it.
+
+## Content switches
+
+`config/more-cobblemon-contents/content_switches.json` turns contents on and off. It lists every registered hub
+entry that is a content (not the dashboard or the shop) under `contents`, all `true` at first; a missing file or
+entry is on. `MccContentSwitches.check` refuses a switched-off content, and `BattleContentAccess.check` applies it
+before any other policy, so the hub tab lock, the dashboard note, OPEN/MUTATE checks and the battle engine's START
+check all follow it. The hub also locks and refuses entries registered with `accessContentId = null` (PvP).
+
+A switch only turns away players with no run under way, so a run started before the switch goes on to its end.
+Every content registers what counts as its run:
+
+```kotlin
+MccContentSwitches.registerRunProbe(ManagedBattleContentIds.BATTLE_TOWER) { server, playerId ->
+    sessions.current(playerId)?.runStarted == true
+}
+```
+
+A content that writes its run before the first battle (the League, PWT) or lets players into something without a
+battle (PvP rooms) must check before it does: `BattleContentAccess.check(player, id, ContentAccessAction.START)`
+or `MccContentSwitches.check(...)`. The denial is `screen.more_cobblemon_contents.access.paused` with the code
+`content_paused`. A probe that throws counts as no run.
+
+## Reloading config files
+
+`/mcc reload` (operator level 2) rereads the config files registered with `MccConfigReloads.register(name) { server -> ... }`
+and replies with one line per file: applied (with notes) or kept with the reason. A reloader returns
+`MccReloadResult.Applied` or `MccReloadResult.Kept` and must leave its last good values in use when it rejects a
+file; one that throws is reported under its name. The core registers `hub_tabs.json`, `content_switches.json` and
+`bp-shop.json`. Data pack resources are not reread: the server keeps its packs open, and a zip pack replaced on disk
+would be read stale or broken, so data pack content still needs `/reload`. `/mcc reload` resends the command tree
+and refreshes the access state of open hubs.
 
 ## Dashboard cards
 

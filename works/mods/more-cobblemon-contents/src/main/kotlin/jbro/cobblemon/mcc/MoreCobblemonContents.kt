@@ -38,6 +38,7 @@ object MoreCobblemonContents : ModInitializer {
             ManagedBattleContentIds.PVP), HoloTerminalPalette.MCC)
         HoloTerminalInteractions.install(BattleHubNetworking::openTerminal)
         BattleHubTabConfigFile.register()
+        jbro.cobblemon.mcc.internal.hub.ContentSwitchConfigFile.register()
         BattlePointShopCatalogResources.register()
         ShopPlayNetworking.registerServer()
         BattleHubNetworking.registerServer()

@@ -12,6 +12,7 @@ import jbro.cobblemon.mcc.internal.hub.BattleHubEntry
 import jbro.cobblemon.mcc.internal.hub.BattleHubEntries
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
 import jbro.cobblemon.mcc.api.access.ContentAccessDecision
+import jbro.cobblemon.mcc.api.access.MccContentSwitches
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
@@ -141,6 +142,10 @@ internal object TowerPlayNetworking : BattleTowerApplicationBackend {
                 open(player, entryContext = terminal?.let(::terminalEntryContext))
             },
         )
+        // A streak whose first battle has started goes on while the Tower is switched off; a locked team does not.
+        MccContentSwitches.registerRunProbe(ManagedBattleContentIds.BATTLE_TOWER) { _, playerId ->
+            sessions.current(playerId)?.runStarted == true
+        }
         PayloadTypeRegistry.playS2C().register(TowerPlayStatePayload.TYPE, TowerPlayStatePayload.CODEC)
         PayloadTypeRegistry.playS2C().register(TowerPlayRejectedPayload.TYPE, TowerPlayRejectedPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(TowerPlayIntentPayload.TYPE, TowerPlayIntentPayload.CODEC)

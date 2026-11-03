@@ -19,8 +19,12 @@ object BattleContentAccess {
             ContentAccessPolicies { MoreCobblemonContents.LOGGER.error("Content access provider failed", it) }
         }.register(contentIds, policy)
 
-    fun check(player: ServerPlayer, contentId: String, action: ContentAccessAction): ContentAccessDecision =
-        servers[player.server]?.check(player.uuid, contentId, action) ?: ContentAccessDecision.Allowed
+    /** A content an admin switched off ([MccContentSwitches]) is refused first, whatever the other policies say. */
+    fun check(player: ServerPlayer, contentId: String, action: ContentAccessAction): ContentAccessDecision {
+        val switched = MccContentSwitches.check(player.server, player.uuid, contentId)
+        if (switched is ContentAccessDecision.Denied) return switched
+        return servers[player.server]?.check(player.uuid, contentId, action) ?: ContentAccessDecision.Allowed
+    }
 
     fun allow(player: ServerPlayer, contentId: String, action: ContentAccessAction): Boolean {
         val result = check(player, contentId, action)

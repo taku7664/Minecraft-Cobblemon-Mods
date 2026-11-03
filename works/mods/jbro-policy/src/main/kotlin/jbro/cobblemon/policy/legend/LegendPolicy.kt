@@ -15,9 +15,11 @@ import com.cobblemon.mod.common.entity.pokemon.PokemonEntity
 import com.cobblemon.mod.common.pokemon.Pokemon
 import java.util.UUID
 import jbro.cobblemon.policy.JbroPolicy
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerEntityEvents
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.world.entity.Entity
 
 /**
  * Wild Legends belong to the player whose spawner made them: only that
@@ -53,6 +55,29 @@ object LegendPolicy {
             val legend = legendOf(event.pokemon) ?: return@subscribe
             event.pokemon.persistentData.remove(OWNER_KEY)
             LegendRecords.get(event.player.server).add(event.player.uuid, legend.id)
+            LegendSpawnLog.get(event.player.server).end(event.pokemon.uuid, LegendSpawnLog.State.ENDED)
+        }
+        CobblemonEvents.BATTLE_FAINTED.subscribe { event ->
+            val pokemon = event.killed.originalPokemon
+            val server = event.battle.players.firstOrNull()?.server ?: return@subscribe
+            if (legendOf(pokemon) != null) LegendSpawnLog.get(server).end(pokemon.uuid, LegendSpawnLog.State.ENDED)
+        }
+        ServerEntityEvents.ENTITY_UNLOAD.register { entity, level ->
+            val pokemon = (entity as? PokemonEntity)?.pokemon ?: return@register
+            if (ownerOf(pokemon) == null || legendOf(pokemon) == null) return@register
+            val server = level.server
+            when (entity.removalReason) {
+                // The despawner discards; a capture discards too, and its own event settles that one.
+                Entity.RemovalReason.DISCARDED -> {
+                    LegendSpawnLog.get(server).end(pokemon.uuid, LegendSpawnLog.State.DESPAWNED)
+                    JbroPolicy.LOGGER.info("Legend {} of {} was removed at {} {} {}", pokemon.species.resourceIdentifier.path, ownerOf(pokemon), entity.blockX, entity.blockY, entity.blockZ)
+                }
+                Entity.RemovalReason.KILLED -> LegendSpawnLog.get(server).end(pokemon.uuid, LegendSpawnLog.State.ENDED)
+                Entity.RemovalReason.UNLOADED_TO_CHUNK -> if (server.isRunning) {
+                    LegendSpawnLog.get(server).moved(pokemon.uuid, level.dimension().location().toString(), entity.blockX, entity.blockZ)
+                }
+                else -> {}
+            }
         }
     }
 
@@ -98,6 +123,8 @@ object LegendPolicy {
         val legend = legendOf(pokemon) ?: return
         if (ownerOf(pokemon) != null) return
         pokemon.persistentData.putUUID(OWNER_KEY, player.uuid)
+        LegendSpawnLog.get(player.server).add(LegendSpawnLog.Entry(pokemon.uuid, player.uuid, legend.id, pokemon.shiny, System.currentTimeMillis(),
+            dimension = player.serverLevel().dimension().location().toString(), x = player.blockX, z = player.blockZ))
         player.server.playerList.broadcastSystemMessage(Component.translatable(
             "legend.${JbroPolicy.MOD_ID}.appeared.${legend.id}", player.displayName, Component.translatable(legend.nameKey),
         ).withStyle(ChatFormatting.LIGHT_PURPLE), false)

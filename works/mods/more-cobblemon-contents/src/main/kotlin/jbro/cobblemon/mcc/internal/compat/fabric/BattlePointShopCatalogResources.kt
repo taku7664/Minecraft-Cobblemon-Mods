@@ -1,6 +1,8 @@
 package jbro.cobblemon.mcc.internal.compat.fabric
 
 import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.reload.MccConfigReloads
+import jbro.cobblemon.mcc.api.reload.MccReloadResult
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogFile
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogReloadOutcome
 import jbro.cobblemon.mcc.internal.bp.shop.BattlePointShopCatalogResourceReloader
@@ -16,11 +18,12 @@ import net.minecraft.server.packs.resources.ResourceManager
 
 internal object BattlePointShopCatalogResources {
     const val catalogPath = "mcc-bp-shop.json"
+    private const val FILE = "bp-shop.json"
     private val listenerId = ResourceLocation.fromNamespaceAndPath(MoreCobblemonContents.MOD_ID, "bp_shop_catalog")
     val store = BattlePointShopCatalogStore(::itemExists)
     private val reloader = BattlePointShopCatalogResourceReloader(store)
     private val files by lazy {
-        BattlePointShopCatalogFile(FabricLoader.getInstance().configDir.resolve("more-cobblemon-contents/bp-shop.json"))
+        BattlePointShopCatalogFile(FabricLoader.getInstance().configDir.resolve("more-cobblemon-contents/$FILE"))
     }
 
     fun register() {
@@ -42,6 +45,33 @@ internal object BattlePointShopCatalogResources {
                 }
             },
         )
+        MccConfigReloads.register(FILE) { server -> listOf(reloadConfig(server.resourceManager)) }
+    }
+
+    /**
+     * `/mcc reload`: the reread `/reload` does, with the packs already loaded. Only a missing file reads from them, to
+     * write MCC's own defaults out of the mod JAR, so a data pack changed on disk is never read half replaced.
+     */
+    private fun reloadConfig(resourceManager: ResourceManager): MccReloadResult {
+        val report = try {
+            reload(resourceManager)
+        } catch (failure: Exception) {
+            reportReloadFailureSafely(failure)
+            return MccReloadResult.Kept(FILE, failure.message ?: failure.javaClass.simpleName)
+        } catch (failure: LinkageError) {
+            reportReloadFailureSafely(failure)
+            return MccReloadResult.Kept(FILE, failure.message ?: failure.javaClass.simpleName)
+        }
+        reportOutcomeSafely(report)
+        return when (val outcome = report.outcome) {
+            BattlePointShopCatalogReloadOutcome.MissingResource -> MccReloadResult.Kept(FILE, "the file is missing")
+            is BattlePointShopCatalogReloadOutcome.ReadFailed ->
+                MccReloadResult.Kept(FILE, outcome.cause.message ?: outcome.cause.javaClass.simpleName)
+            is BattlePointShopCatalogReloadOutcome.Applied ->
+                MccReloadResult.Applied(FILE, listOf("${outcome.catalog.entries().size} entries"))
+            is BattlePointShopCatalogReloadOutcome.Rejected ->
+                MccReloadResult.Kept(FILE, outcome.issues.joinToString("; ") { "${it.path}: ${it.message}" })
+        }
     }
 
     private fun reload(resourceManager: ResourceManager): ReloadReport {

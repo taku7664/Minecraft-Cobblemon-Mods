@@ -29,7 +29,7 @@ internal object DiscordNews {
             catchNews(event.player.gameProfile.name, name, legend = legend != null, shiny = event.pokemon.shiny)
                 ?.let(::post)
         }
-        Announcements.onBroadcast { _, message -> post("📢 [공지] " + KoreanText.render(message)) }
+        Announcements.onBroadcast { _, message -> post(DiscordText.say("newsNotice", "message" to KoreanText.render(message))) }
     }
 
     /** Posts [text] to the news channel, when there is one. */
@@ -48,17 +48,17 @@ internal object DiscordNews {
 
     /** The news line for a catch, or null for an everyday Pokémon. */
     internal fun catchNews(player: String, species: String, legend: Boolean, shiny: Boolean): String? = when {
-        legend && shiny -> "🌟 ${player}님이 이로치 전설의 포켓몬 ${species}을(를) 잡았습니다!"
-        legend -> "✨ ${player}님이 전설의 포켓몬 ${species}을(를) 잡았습니다!"
-        shiny -> "🌟 ${player}님이 이로치 ${species}을(를) 잡았습니다!"
+        legend && shiny -> DiscordText.say("newsShinyLegend", "player" to player, "species" to species)
+        legend -> DiscordText.say("newsLegend", "player" to player, "species" to species)
+        shiny -> DiscordText.say("newsShiny", "player" to player, "species" to species)
         else -> null
     }
 
     /** The emoji in front of a More Cobblemon Contents news kind. */
     fun emoji(kind: String): String = when (kind.substringAfter(':')) {
-        "champion", "hard_champion" -> "🏆"
-        "win_streak" -> "🔥"
-        "highest_floor" -> "🏭"
-        else -> "📣"
+        "champion", "hard_champion" -> DiscordText.say("newsIconChampion")
+        "win_streak" -> DiscordText.say("newsIconStreak")
+        "highest_floor" -> DiscordText.say("newsIconFloor")
+        else -> DiscordText.say("newsIconOther")
     }
 }

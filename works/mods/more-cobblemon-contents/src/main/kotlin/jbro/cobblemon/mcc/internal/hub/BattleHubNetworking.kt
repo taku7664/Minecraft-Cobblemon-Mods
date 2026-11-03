@@ -4,11 +4,13 @@ import jbro.cobblemon.mcc.MoreCobblemonContents
 import jbro.cobblemon.mcc.api.access.BattleContentAccess
 import jbro.cobblemon.mcc.api.access.ContentAccessAction
 import jbro.cobblemon.mcc.api.access.ContentAccessDecision
+import jbro.cobblemon.mcc.api.access.MccContentSwitches
 import jbro.cobblemon.mcc.api.terminal.HoloTerminal
 import jbro.cobblemon.mcc.api.hub.MccDashboardCard
 import jbro.cobblemon.mcc.api.hub.MccDashboardContext
 import jbro.cobblemon.mcc.api.hub.MccDashboardSections
 import jbro.cobblemon.mcc.internal.bp.BattlePointService
+import jbro.cobblemon.mcc.internal.compat.fabric.HoloBattleTerminalIds
 import jbro.cobblemon.mcc.internal.presentation.attemptServerUiOperation
 import jbro.cobblemon.mcc.internal.record.BattleRecordService
 import jbro.cobblemon.mcc.internal.terminal.TerminalInteractionResult
@@ -17,6 +19,7 @@ import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.network.chat.Component
+import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
 object BattleHubNetworking {
@@ -37,8 +40,14 @@ object BattleHubNetworking {
                 reportFailure = { failure -> reportFailure(player, "content ${payload.contentId}", failure) },
             ) {
                 // A tab the hub was not opened with stays closed, whatever the client asks for.
-                val session = sessionReaching(player, payload.contentId)
-                session != null && BattleHubEntries.get(payload.contentId)?.open?.invoke(player, session.terminal) == true
+                val session = sessionReaching(player, payload.contentId) ?: return@attemptServerUiOperation false
+                // A content switched off since the hub opened says so instead of opening.
+                val paused = MccContentSwitches.check(player.server, player.uuid, payload.contentId)
+                if (paused is ContentAccessDecision.Denied) {
+                    player.sendSystemMessage(Component.translatable(paused.reasonKey, *paused.arguments.toTypedArray()))
+                    return@attemptServerUiOperation true
+                }
+                BattleHubEntries.get(payload.contentId)?.open?.invoke(player, session.terminal) == true
             }
             if (!opened) {
                 attemptServerUiOperation(
@@ -66,15 +75,43 @@ object BattleHubNetworking {
     fun openShopCommand(player: ServerPlayer): Boolean =
         open(player, BattleHubTabConfigFile.current.command, BattleHubIds.SHOP, null)
 
-    /** Opens the hub from [terminal]; the verified [use] stays attached to the entries opened during this hub session. */
+    /**
+     * Opens the hub from [terminal]; the verified [use] stays attached to the entries opened during this hub session.
+     * A terminal whose contents are all switched off tells the player so instead.
+     */
     fun openTerminal(player: ServerPlayer, terminal: HoloTerminal, use: TerminalInteractionResult.Verified): Boolean {
-        val tabs = BattleHubTabConfigFile.current.terminalTabs(terminal.id.toString(), terminal.defaultTabs)
-        return open(player, tabs, BattleHubIds.DASHBOARD, use)
+        pausedTerminal(player, terminal)?.let { message ->
+            player.sendSystemMessage(message)
+            return true
+        }
+        return open(player, terminalTabs(terminal), BattleHubIds.DASHBOARD, use)
     }
+
+    /**
+     * Why [terminal] is closed to [player]: it shows contents and every one of them is switched off for them. The MCC
+     * terminal is the hub `/mcc` opens, so like `/mcc` it stays open and only locks the tabs that are off.
+     */
+    fun pausedTerminal(player: ServerPlayer, terminal: HoloTerminal): Component? {
+        if (terminal.id == HoloBattleTerminalIds.id) return null
+        val contents = terminalTabs(terminal).filter(ContentSwitchConfigFile::switchable)
+        if (contents.isEmpty() || contents.any { MccContentSwitches.check(player.server, player.uuid, it) is ContentAccessDecision.Allowed }) {
+            return null
+        }
+        val names = Component.empty()
+        contents.forEachIndexed { index, contentId ->
+            if (index > 0) names.append(", ")
+            names.append(Component.translatableWithFallback(
+                "screen.${MoreCobblemonContents.MOD_ID}.hub.tab.${contentId.substringAfter(':')}", contentId))
+        }
+        return Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.hub.paused", names)
+    }
+
+    private fun terminalTabs(terminal: HoloTerminal): List<String> =
+        BattleHubTabConfigFile.current.terminalTabs(terminal.id.toString(), terminal.defaultTabs)
 
     /** NPC/server commands share terminal tabs, but the session has no block identity or distance restriction. */
     fun openTerminalCommand(player: ServerPlayer, terminal: HoloTerminal, home: String = BattleHubIds.DASHBOARD): Boolean =
-        open(player, BattleHubTabConfigFile.current.terminalTabs(terminal.id.toString(), terminal.defaultTabs), home, null)
+        open(player, terminalTabs(terminal), home, null)
 
     /** Shows [configured] on [home], or on the first tab when the list leaves [home] out. */
     private fun open(player: ServerPlayer, configured: List<String>, home: String, terminal: TerminalInteractionResult.Verified?): Boolean {
@@ -100,9 +137,10 @@ object BattleHubNetworking {
             if (!ServerPlayNetworking.canSend(player, BattleHubHeaderStatePayload.TYPE)) return@attemptServerUiOperation false
             ServerPlayNetworking.send(player, BattleHubHeaderStatePayload(balance(player)))
             if (ServerPlayNetworking.canSend(player, BattleHubAccessPayload.TYPE)) {
+                // An entry no policy gates, such as PvP, is still locked while it is switched off.
                 val denied = BattleHubEntries.all().mapNotNull { entry ->
-                    val accessContentId = entry.accessContentId ?: return@mapNotNull null
-                    val decision = BattleContentAccess.check(player, accessContentId, ContentAccessAction.OPEN)
+                    val decision = entry.accessContentId?.let { BattleContentAccess.check(player, it, ContentAccessAction.OPEN) }
+                        ?: MccContentSwitches.check(player.server, player.uuid, entry.contentId)
                     (decision as? ContentAccessDecision.Denied)?.let { entry.contentId to it }
                 }.toMap()
                 ServerPlayNetworking.send(player, BattleHubAccessPayload(denied))
@@ -148,6 +186,18 @@ object BattleHubNetworking {
     }
 
     fun clear() = sessions.clear()
+
+    /** Resends what may change with a config reload, the locked tabs and the dashboard notes, to every open hub. */
+    fun refreshOpenHubs(server: MinecraftServer) {
+        sessions.keys.toList().forEach { playerId ->
+            val player = server.playerList.getPlayer(playerId) ?: return@forEach
+            sendHeader(player)
+            attemptServerUiOperation(reportFailure = { failure -> reportFailure(player, "dashboard refresh", failure) }) {
+                sendDashboard(player)
+                true
+            }
+        }
+    }
 
     /** Development hub captures open the hub on the client alone; this lets the server open [tabs] for it. */
     internal fun openForCapture(player: ServerPlayer, tabs: List<String>) {

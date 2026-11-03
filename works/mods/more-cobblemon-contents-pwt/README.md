@@ -44,6 +44,10 @@ MCC에 포켓몬 월드 토너먼트(PWT)를 추가하는 애드온입니다. �
 
 기본 상대 17명은 `works/tools/pwt/generate_trainers.py`의 표에서 만듭니다. 표를 고친 뒤 스크립트를 다시 실행하고, 스킨을 바꿨다면 `works/tools/generate_managed_trainer_variations.py`도 실행합니다. 데이터팩 변경 후 관리자 권한으로 `/reload`를 실행합니다.
 
+## 대회 쉬기
+
+본체의 `content_switches.json`에서 `"more_cobblemon_contents:pwt": false`로 두고 `/mcc reload`하면 재시작 없이 PWT를 쉬게 할 수 있습니다. 이미 시작한 대회는 끝까지 진행되고, 새로 시작하는 것만 막힙니다. 쉬는 동안 PWT 탭은 잠기고, PWT 터미널과 `/mcc terminal pwt`는 열리지 않은 채 "지금은 쉬는 중" 안내가 나갑니다.
+
 ## 라이선스와 배포 설명
 
 이 모드의 자체 코드와 아이콘은 [MIT License](LICENSE)로 제공합니다. 트레이너 스킨 11종은 Planet Minecraft 제작자의 팬 스킨이며, 제작자와 원본 페이지는 `textures/npcs/pwt/CREDITS.txt`에 있습니다.

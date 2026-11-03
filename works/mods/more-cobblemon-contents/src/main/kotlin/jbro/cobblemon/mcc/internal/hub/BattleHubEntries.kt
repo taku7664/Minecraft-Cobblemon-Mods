@@ -10,6 +10,9 @@ object BattleHubIds {
     const val DASHBOARD: String = "${MoreCobblemonContents.MOD_ID}:dashboard"
     const val SHOP: String = "${MoreCobblemonContents.MOD_ID}:shop"
     const val BOSS_RAID: String = "${MoreCobblemonContents.MOD_ID}:boss_raid"
+
+    /** The hub's own screens; content switches never close them. */
+    internal val OWNED: Set<String> = setOf(DASHBOARD, SHOP, BOSS_RAID)
 }
 
 /**

@@ -54,6 +54,8 @@ object JbroPolicy : ModInitializer {
         jbro.cobblemon.policy.support.PendingItems.register()
         jbro.cobblemon.policy.api.OperatorWhisper.register()
         LegendPolicy.register()
+        jbro.cobblemon.policy.support.BattleRecords.register(FabricLoader.getInstance().gameDir)
+        jbro.cobblemon.policy.legend.LegendDespawnProtection.register()
         jbro.cobblemon.policy.legend.RareSpawnNotice.register()
         LegendCommand.register()
         SpawnForCommand.register()
@@ -67,6 +69,7 @@ object JbroPolicy : ModInitializer {
         Announcements.register()
         Tips.register(config.tipIntervalSeconds, config.tips)
         val configDir = FabricLoader.getInstance().configDir
+        jbro.cobblemon.policy.support.PichuRules.use(configDir.resolve("jbro-policy-pichu.json")) { message, failure -> LOGGER.warn(message, failure) }
         val discord = DiscordSettings.load(configDir.resolve("jbro-policy-discord.json")) { message, failure -> LOGGER.warn(message, failure) }
         WelcomeKit.inviteUrl = discord.inviteUrl
         jbro.cobblemon.policy.menu.MenuLinks.inviteUrl = discord.inviteUrl

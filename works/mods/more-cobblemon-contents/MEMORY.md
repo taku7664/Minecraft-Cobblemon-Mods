@@ -2,6 +2,27 @@
 
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 
+## [2026-11-03 14:21] 개발 배포 (main `15a54ee20`)
+
+- **범위:** `/mcc reload`와 콘텐츠 켜기·끄기. `origin/main`에 fast-forward로 반영한 뒤 `git archive`로 F에 꺼내 `remapJar`(EXIT 0).
+- **JAR SHA-256:** `8f3ec112db48acc968aa875f61d560b72b79495310d057bd34cecbd1fcd30138`. 빌드본과 개발 서버·클라이언트 설치본이 같다. `unzip -t`, `jar --validate` 통과.
+- **함께 배치:** MCC 본체와 애드온 5개(타워·팩토리·리그·PWT·PvP)를 같이 바꿨다. 애드온이 새 MCC API(`MccContentSwitches`)를 쓰므로 따로 바꾸면 안 된다. 이전 JAR은 `develop-product/deployment-backups/20261103-142059-mcc-content-switches/`.
+- **설정:** 개발 서버 `openrouter.json`의 `recordDecisions: true` 확인. `content_switches.json`은 다음 서버 시작 때 생긴다.
+- **확인 안 함:** 서버는 켜지 않았고 배치본을 게임에 올려 보지 않았다. 운영(VPS)·PPakemon 프로필·`deploy-product`에는 넣지 않았다.
+
+## [2026-11-03 13:20] `/mcc reload`와 콘텐츠 켜기·끄기 (단위 테스트, 빌드·배치·실게임 안 함)
+
+- **배경:** 2026-11-03 운영 중 PWT를 잠깐 막을 방법이 없어 VPS의 `pwt_guide.json` 대사를 휴업 대사로 바꿔 막았다(원본은 VPS `~/.local/share/ppakemon-backups/manual/pwt-guide-open.json`). 설정은 `/reload`(데이터팩 전체)로만 다시 읽혔다.
+- **`/mcc reload`(권한 2):** `MccConfigReloads`에 등록된 설정 파일만 다시 읽고 파일마다 적용/이전 값 유지와 이유를 답한다. 본체는 `hub_tabs.json`, `content_switches.json`, `bp-shop.json`을 등록한다. 애드온은 현재 config 폴더 파일이 없어 등록한 것이 없고, 생기면 같은 API로 등록한다. 명령 트리 재전송과 열린 허브의 잠금 상태 갱신도 한다. 기존 `/reload` 경로는 그대로 둔다.
+- **잘못된 파일:** 공통 로더(`internal/reload/ConfigFileLoader.kt`)가 파싱 실패·항목 오류 모두 마지막 정상 값을 유지하고 파일은 건드리지 않는다. `hub_tabs.json`도 이 규칙으로 바뀌었다(이전엔 오류 항목만 기본값). 첫 로드는 예전처럼 기본값.
+- **데이터팩은 제외:** 리그·타워·팩토리·PWT 카탈로그는 `ResourceManager`에서 읽는다. 서버는 데이터팩 ZIP을 열어 둔 채 재사용하므로 디스크에서 ZIP을 바꾼 뒤 `server.resourceManager`로 다시 읽으면 옛 내용이나 깨진 내용을 읽을 수 있다(VPS는 ZIP 팩을 교체해 쓴다). CLC 레벨캡 데이터와 어긋날 위험도 있다. 그래서 `/reload`로 남겼다.
+- **콘텐츠 스위치:** `content_switches.json`의 `contents`에 허브 항목(대시보드·상점 제외)을 등록 순서대로 `true`로 쓴다. ID 목록은 `BattleHubEntries`에서 얻는다. `BattleContentAccess.check`가 다른 정책보다 먼저 적용하고, 허브는 `accessContentId = null`인 PvP도 잠근다. 허브 탭 잠금·탭 열기 거부·전용 터미널과 `/mcc terminal` 거부(MCC 기본 터미널은 `/mcc`와 같은 허브라 열고 탭만 잠금)·새 도전 거부.
+- **진행 중 도전은 끝까지 허용(결정):** PWT·리그는 접속을 끊으면 진행이 사라지는데, 막아 두면 이어 갈 수 없어 결국 잃는다. 끄기는 점검용이므로 남의 진행을 빼앗지 않게 했다. 애드온마다 `ContentRunProbe`로 "진행 중"을 알리고, 진행 중인 플레이어는 스위치를 통과한다. 판정이 예외를 내면 진행 없음(거부)으로 본다. 즉시 멈춰야 하면 `/mcc battle end`.
+- **API 호환:** 기존 공개 시그니처는 바꾸지 않았다(새 객체·`BattleHubIds.OWNED` 추가만). 다만 애드온이 새 API를 쓰므로 애드온 새 JAR은 새 MCC JAR과 함께 배포해야 한다.
+- **주의:** 패키지 이름을 `config`로 만들면 저장소 `.gitignore`의 `config/`에 걸려 커밋에서 빠진다. 그래서 `api/reload`, `internal/reload`다.
+- **확인:** F 경로 Gradle(`-Ptests`, 7클래스)에서 32/32 통과: `ContentSwitchPolicyTest` 4, `ContentSwitchConfigTest` 7, `ConfigReloadRegistryTest` 2, `BattleHubTabConfigTest` 10, `MccAdminCommandsTest` 2, `ContentAccessPoliciesTest` 3, `BattleContentCommandsTest` 4. 애드온 5개 `compileKotlin` 성공. 테스트 JVM이 모듈 폴더에 `logs/latest.log`를 만들어 지웠다(다음에도 생기면 지울 것).
+- **확인 안 함:** 빌드·JAR 배치·서버 기동·실게임(탭 잠금 표시, 터미널 안내, 진행 중 도전 통과). VPS는 새 JAR 재시작이 필요해 적용 대기.
+
 ## [2026-11-02 09:06] 개발 배포 (main `ce289e4e3`)
 
 - **범위:** `/mcc terminal pwt`(`openTerminalCommand`의 `home` 파라미터). 이 함수는 MCC 안에서만 쓴다.

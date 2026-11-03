@@ -90,8 +90,8 @@ internal object DiscordLinks {
 
     private fun verify(settings: DiscordSettings) = object : DiscordCommand {
         override val name = "verify"
-        override val description = "마크에서 /디코인증으로 받은 코드로 마인크래프트 계정을 연결한다"
-        override val options = JsonArray().apply { add(DiscordCommands.stringOption("code", "마크에서 받은 6자리 코드")) }
+        override val description get() = DiscordText.say("verifyDescription")
+        override val options = JsonArray().apply { add(DiscordCommands.stringOption("code", DiscordText.say("verifyOption"))) }
         override val ephemeral = true
         override val anyChannel = true
 
@@ -100,8 +100,8 @@ internal object DiscordLinks {
         override fun reply(server: MinecraftServer, options: Map<String, String>, caller: DiscordCaller): JsonObject {
             val code = options["code"].orEmpty().trim()
             val pending = codes[code]?.takeIf { it.expiresAt > System.currentTimeMillis() }
-                ?: return DiscordRest.message("코드가 맞지 않거나 시간이 지났어요. 마크에서 /디코인증을 다시 입력해 주세요.")
-            if (caller.guildId.isBlank()) return DiscordRest.message("디스코드 서버 채널에서 입력해 주세요.")
+                ?: return DiscordRest.message(DiscordText.say("verifyBadCode"))
+            if (caller.guildId.isBlank()) return DiscordRest.message(DiscordText.say("verifyGuildOnly"))
             codes.remove(code)
             val previous = Store.get(server).link(pending.player, caller.userId)
             byPlayer.entries.removeIf { it.value == caller.userId }
@@ -112,7 +112,7 @@ internal object DiscordLinks {
             DiscordBot.later { rest -> grant(rest, settings, caller, pending.nickname) }
             if (previous != null && previous != caller.userId) DiscordRankRoles.clear(previous)
             DiscordRankRoles.refresh(server, pending.player)
-            return DiscordRest.message("인증됐어요! 마인크래프트 계정 **${pending.accountName}**과 연결했어요.")
+            return DiscordRest.message(DiscordText.say("verifyDone", "account" to pending.accountName))
         }
     }
 

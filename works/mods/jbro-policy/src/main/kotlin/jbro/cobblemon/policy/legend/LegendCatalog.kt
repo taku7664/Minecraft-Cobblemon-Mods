@@ -125,6 +125,8 @@ internal object LegendCatalog {
     /** A Legend by [id], such as `zapdos` or `zapdos-galar`, with or without the `cobblemon:` namespace. */
     operator fun get(id: String): Legend? = byId[id.substringAfter(':').lowercase()]
 
+    fun all(): List<Legend> = entries
+
     /** Whether some form of [species] is a Legend of its own, so its aspects decide which Legend a Pokemon is. */
     fun hasForms(species: String): Boolean = bySpecies[key(species)].orEmpty().any { it.aspect != null }
 

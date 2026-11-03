@@ -173,7 +173,7 @@ internal object DiscordWebhook {
         }
     }
 
-    internal fun threadName(inquiry: Inquiry) = "문의 ${inquiry.id} · ${inquiry.nickname}".take(100)
+    internal fun threadName(inquiry: Inquiry) = DiscordText.say("inquiryThread", "id" to inquiry.id, "nickname" to inquiry.nickname).take(100)
 
     private const val PRIVATE_THREAD = 12
     private const val WEEK_MINUTES = 10080
@@ -193,7 +193,7 @@ internal object DiscordWebhook {
 
     internal fun payload(inquiry: Inquiry, webhook: Boolean = true) = JsonObject().apply {
         // A webhook takes its post's name here; the bot posts under its own.
-        if (webhook) addProperty("username", "빡켓몬 문의")
+        if (webhook) addProperty("username", DiscordText.say("inquiryUsername"))
         add("allowed_mentions", JsonObject().apply { add("parse", JsonArray()) })
         add("embeds", JsonArray().apply {
             add(JsonObject().apply {
@@ -201,13 +201,13 @@ internal object DiscordWebhook {
                 addProperty("description", inquiry.reason)
                 addProperty("color", COLOR)
                 add("fields", JsonArray().apply {
-                    add(field("닉네임", inquiry.nickname))
-                    add(field("아이디", inquiry.accountName))
-                    add(field("경로", inquiry.via.label))
+                    add(field(DiscordText.say("inquiryNickname"), inquiry.nickname))
+                    add(field(DiscordText.say("inquiryAccount"), inquiry.accountName))
+                    add(field(DiscordText.say("inquiryVia"), inquiry.via.label))
                     add(field("UUID", inquiry.playerId.toString(), inline = false))
-                    add(field("시각", "${inquiry.time} (KST)", inline = false))
+                    add(field(DiscordText.say("inquiryTime"), "${inquiry.time} (KST)", inline = false))
                 })
-                add("footer", JsonObject().apply { addProperty("text", "문의 번호 ${inquiry.id}") })
+                add("footer", JsonObject().apply { addProperty("text", DiscordText.say("inquiryFooter", "id" to inquiry.id)) })
             })
         })
     }

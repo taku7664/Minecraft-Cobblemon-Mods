@@ -55,6 +55,7 @@
   "config.more_cobblemon_contents_league_challenge.rewards": "팀·관장·보상·외형은 데이터팩으로 교체합니다. 스킨은 리소스팩 텍스처를 사용합니다.",
   "config.more_cobblemon_contents_league_challenge.reload": "데이터팩 적용: 관리자 권한으로 /reload. 잘못된 데이터는 이전 유효 버전을 유지하고, 진행 중인 연전의 팀은 바뀌지 않습니다.",
   "message.more_cobblemon_contents_league_challenge.champion_required": "리그 챔피언을 쓰러뜨려야 이 시설을 이용할 수 있습니다.",
+  "message.more_cobblemon_contents_league_challenge.content_paused": "리그 챌린지는 지금 쉬는 중입니다. 나중에 다시 도전해 주세요.",
   "message.more_cobblemon_contents_league_challenge.request_failed": "리그 요청을 처리하지 못했습니다. 관리자에게 서버 로그 확인을 요청하세요.",
   "message.more_cobblemon_contents_league_challenge.integration_failed": "리그 연동 모드를 사용할 수 없어 새 도전이 잠겼습니다.",
   "message.more_cobblemon_contents_league_challenge.cap_disabled": "Cobbled Level Control의 레벨 제한을 활성화해야 합니다.",

@@ -69,7 +69,7 @@ internal object DiscordAdminAccess {
     fun channelRefusal(settings: DiscordSettings, command: DiscordCommand, channelId: String): String? = when {
         command is DiscordAdminCommand || command.anyChannel -> null
         settings.commandChannelId.isBlank() || channelId == settings.commandChannelId -> null
-        else -> "봇 명령은 <#${settings.commandChannelId}> 채널에서 써 주세요."
+        else -> DiscordText.say("commandChannel", "channel" to settings.commandChannelId)
     }
 
     sealed interface Verdict {
@@ -78,11 +78,11 @@ internal object DiscordAdminAccess {
     }
 
     fun check(settings: DiscordSettings, caller: DiscordCaller, command: String): Verdict = when {
-        settings.adminChannelId.isBlank() -> Verdict.Refused("관리자 채널이 설정되지 않아 관리자 명령이 꺼져 있어요.")
-        caller.channelId != settings.adminChannelId -> Verdict.Refused("관리자 명령은 관리자 채널에서만 쓸 수 있어요.")
+        settings.adminChannelId.isBlank() -> Verdict.Refused(DiscordText.say("adminNoChannel"))
+        caller.channelId != settings.adminChannelId -> Verdict.Refused(DiscordText.say("adminWrongChannel"))
         (listOf(caller.userId) + caller.roleIds).none { id ->
             settings.adminAccess[id]?.let { ALL in it || command in it } == true
-        } -> Verdict.Refused("/$command 명령을 쓸 권한이 없어요.")
+        } -> Verdict.Refused(DiscordText.say("adminNoPermission", "command" to command))
         else -> Verdict.Allowed
     }
 }
@@ -104,7 +104,7 @@ internal object DiscordCommands {
 
     fun registerBuiltIns() = add(object : DiscordCommand {
         override val name = "접속자"
-        override val description = "지금 서버에 접속한 트레이너"
+        override val description get() = DiscordText.say("onlineDescription")
         override val ephemeral = true
 
         override fun reply(server: MinecraftServer, options: Map<String, String>): JsonObject {
@@ -112,7 +112,7 @@ internal object DiscordCommands {
             val names = server.playerList.players
                 .map { player -> KoreanText.render(player.displayName ?: player.name).ifBlank { player.gameProfile.name } }
                 .sortedBy { it.lowercase() }
-            val text = if (names.isEmpty()) "지금은 접속한 트레이너가 없어요." else "지금 ${names.size}명 접속 중이에요.\n" + names.joinToString(", ")
+            val text = if (names.isEmpty()) DiscordText.say("onlineNone") else DiscordText.say("onlineSome", "count" to names.size, "names" to names.joinToString(", "))
             return DiscordRest.message(text)
         }
     })

@@ -1,5 +1,17 @@
 # MEMORY
 
+## [2026-11-03 14:21] 개발 배포 (main `15a54ee20`)
+
+- **범위:** `/mcc reload`와 콘텐츠 켜기·끄기. `origin/main`에 fast-forward로 반영한 뒤 `git archive`로 F에 꺼내 `remapJar`(EXIT 0).
+- **JAR SHA-256:** `66666e8225af6468793457626a43f11eec4908c2419dbcd38a388b1909952176`. 빌드본과 개발 서버·클라이언트 설치본이 같다. `unzip -t`, `jar --validate` 통과.
+- **확인 안 함:** 서버는 켜지 않았고 배치본을 게임에 올려 보지 않았다. 운영(VPS)·PPakemon 프로필·`deploy-product`에는 넣지 않았다.
+
+## [2026-11-03 13:20] 콘텐츠 켜기·끄기 연결 (컴파일, 실게임 안 함)
+
+- MCC `content_switches.json`에서 PvP를 끄면 새 도전을 막고, 진행 중인 도전은 끝까지 둔다(근거는 MCC MEMORY 같은 날 항목). 진행 판정: 방에 있거나 대전 세션이 있을 때.
+- 방 만들기·들어가기·관전 들어가기(`Create`/`Join`/`Observe`)만 거부한다. 방 안 사람은 시작·나가기 모두 그대로.
+- **확인:** 애드온 `compileKotlin`과 MCC 관련 단위 테스트 32/32 통과(MCC 같은 날 항목). 이 애드온의 단위 테스트는 돌리지 않았다. 실게임·배치는 하지 않았다.
+
 ## [2026-10-26 22:05] `f11b0f73` 개발 서버·클라 배포: PvP 결과 전체채팅 알림 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
 - main `f11b0f738`(병합 커밋, origin/main 동기화)을 `git archive`로 F에 꺼내 `:more-cobblemon-contents-pvp:unitTest`·`remapJar` 빌드(EXIT 0, 244/244 통과). `unzip -t`·JDK 21 `jar --validate` 통과, JAR 안 문구가 승자 기준(`…승리했습니다!`)인 것을 확인했다.

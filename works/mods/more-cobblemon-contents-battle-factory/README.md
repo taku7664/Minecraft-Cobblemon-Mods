@@ -34,6 +34,8 @@
 
 대여 포켓몬과 팩토리 콘텐츠는 서버 데이터팩의 `mcc-battle-factory/` 아래에서 정의합니다. 서버 데이터팩 변경 후 관리자 권한으로 `/reload`를 실행합니다.
 
+본체의 `content_switches.json`에서 `"more_cobblemon_contents:battle_factory": false`로 두고 `/mcc reload`하면 재시작 없이 배틀팩토리를 쉬게 할 수 있습니다. 이미 시작한 대여 도전은 끝까지 진행되고, 새로 시작하는 것만 막힙니다.
+
 ## 문제 해결
 
 - 모드가 로드되지 않으면 클라이언트·서버의 모드 구성과 필수 의존성을 확인하세요.

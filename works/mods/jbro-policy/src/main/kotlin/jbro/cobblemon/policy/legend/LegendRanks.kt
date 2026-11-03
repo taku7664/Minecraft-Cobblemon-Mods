@@ -27,6 +27,15 @@ internal object LegendRanks {
         return if (rank.ordinal >= LeagueRank.valueOf(needed.name).ordinal) Verdict.Allowed else Verdict.TooLow(needed)
     }
 
+    /** The level cap [player] has unlocked; null without League Challenge or when it cannot be read. */
+    fun levelCap(player: ServerPlayer): Int? {
+        if (!leagueLoaded) return null
+        return try { LeagueRanks.levelCap(player.server, player.uuid) } catch (failure: RuntimeException) {
+            JbroPolicy.LOGGER.warn("Could not read the level cap of {}", player.uuid, failure)
+            null
+        }
+    }
+
     /** League Challenge's own translation of the rank name. */
     fun name(rank: LegendRank): Component =
         Component.translatable("screen.more_cobblemon_contents_league_challenge.home.rank." + rank.name.lowercase())

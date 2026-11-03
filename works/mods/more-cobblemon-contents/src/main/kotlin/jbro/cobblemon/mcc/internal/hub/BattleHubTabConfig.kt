@@ -5,11 +5,13 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
-import java.nio.file.Files
 import java.nio.file.Path
-import jbro.cobblemon.mcc.MoreCobblemonContents
+import jbro.cobblemon.mcc.api.reload.MccConfigReloads
+import jbro.cobblemon.mcc.api.reload.MccReloadResult
 import jbro.cobblemon.mcc.api.presentation.ManagedBattleContentIds
 import jbro.cobblemon.mcc.api.terminal.HoloTerminals
+import jbro.cobblemon.mcc.internal.reload.ConfigRead
+import jbro.cobblemon.mcc.internal.reload.loadConfigFile
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.loader.api.FabricLoader
 
@@ -92,11 +94,17 @@ internal data class BattleHubTabConfig(
     }
 }
 
-/** The server's hub tab config, read from `config/more-cobblemon-contents/hub_tabs.json` at start and on `/reload`. */
+/**
+ * The server's hub tab config, read from `config/more-cobblemon-contents/hub_tabs.json` at start, on `/reload` and on
+ * `/mcc reload`. A file with mistakes keeps the tabs in use; see [loadConfigFile].
+ */
 internal object BattleHubTabConfigFile {
+    const val FILE = "hub_tabs.json"
+
     @Volatile
     var current: BattleHubTabConfig = BattleHubTabConfig.defaults(emptyMap())
         private set
+    private var loaded = false
 
     fun register() {
         ServerLifecycleEvents.SERVER_STARTING.register { load() }
@@ -106,28 +114,17 @@ internal object BattleHubTabConfigFile {
             // Who may run `/mcc` can change with the file; resend the tree so clients offer the command as it now is.
             server.playerList.players.forEach(server.commands::sendCommands)
         }
+        // `/mcc reload` resends the command tree itself, once for every file.
+        MccConfigReloads.register(FILE) { listOf(load()) }
     }
 
-    fun load(path: Path = FabricLoader.getInstance().configDir.resolve("more-cobblemon-contents").resolve("hub_tabs.json")) {
+    fun load(path: Path = FabricLoader.getInstance().configDir.resolve("more-cobblemon-contents").resolve(FILE)): MccReloadResult {
         val defaults = HoloTerminals.all().associate { it.id.toString() to it.defaultTabs }
-        current = try {
-            if (Files.notExists(path)) {
-                BattleHubTabConfig.defaults(defaults).also { save(path, it) }
-            } else {
-                val read = BattleHubTabConfig.read(Files.readString(path), defaults)
-                read.problems.forEach { MoreCobblemonContents.LOGGER.warn("Hub tab config {}: {}", path, it) }
-                // Only fill in missing entries; a file with mistakes is left for the admin to fix.
-                if (read.incomplete && read.problems.isEmpty()) save(path, read.config)
-                read.config
-            }
-        } catch (failure: Exception) {
-            MoreCobblemonContents.LOGGER.error("Hub tab config {} could not be read; using the defaults", path, failure)
-            BattleHubTabConfig.defaults(defaults)
+        val load = loadConfigFile(path, FILE, current.takeIf { loaded }, { BattleHubTabConfig.defaults(defaults) }, BattleHubTabConfig::write) { json ->
+            BattleHubTabConfig.read(json, defaults).let { ConfigRead(it.config, it.incomplete, it.problems) }
         }
-    }
-
-    private fun save(path: Path, config: BattleHubTabConfig) {
-        Files.createDirectories(path.parent)
-        Files.writeString(path, BattleHubTabConfig.write(config))
+        current = load.config
+        loaded = true
+        return load.result
     }
 }
