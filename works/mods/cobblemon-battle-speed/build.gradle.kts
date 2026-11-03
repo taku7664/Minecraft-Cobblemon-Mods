@@ -8,6 +8,11 @@ group = "jbro.cobblemon"
 
 base { archivesName.set("cobblemon-battle-speed") }
 
+repositories {
+    maven("https://maven.terraformersmc.com/releases/")
+    maven("https://maven.shedaniel.me/")
+}
+
 dependencies {
     minecraft("com.mojang:minecraft:${property("minecraft_version")}")
     mappings(loom.officialMojangMappings())
@@ -15,6 +20,9 @@ dependencies {
     modImplementation("net.fabricmc.fabric-api:fabric-api:${property("fabric_api_version")}")
     modImplementation("net.fabricmc:fabric-language-kotlin:${property("fabric_kotlin_version")}")
     modImplementation("maven.modrinth:cobblemon:${property("cobblemon_version_id")}")
+    // Optional: the settings screen only exists when both are installed.
+    modCompileOnly("com.terraformersmc:modmenu:11.0.3")
+    modCompileOnly("me.shedaniel.cloth:cloth-config-fabric:15.0.140")
 
     testImplementation("org.junit.jupiter:junit-jupiter:5.11.4")
     testImplementation("com.google.code.gson:gson:2.11.0")

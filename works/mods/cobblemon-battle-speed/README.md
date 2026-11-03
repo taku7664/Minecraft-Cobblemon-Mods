@@ -5,7 +5,15 @@ PvE 배틀의 실제 진행을 1·2·3·4배속으로 빠르게 합니다. 애�
 - 대상: 플레이어 대 야생, 플레이어 대 NPC 배틀. PvP는 기본값에서 항상 1배속입니다.
 - 플레이어마다 자기 배속을 고르며, 선택은 월드에 저장됩니다(`world/data/cobblemon_battle_speed_players.json`).
 - 배틀 도중에 바꾸면 그다음 대기부터 바로 적용됩니다.
-- 의존 모드: Cobblemon 1.8.1, Fabric API, Fabric Language Kotlin.
+- 의존 모드: Cobblemon 1.8.1, Fabric API, Fabric Language Kotlin. 설정 화면은 Mod Menu와 Cloth Config가 있을 때만 생깁니다(선택).
+
+## 설정 화면 (Mod Menu)
+
+Mod Menu에서 이 모드의 설정 버튼을 누르면 열립니다. 값은 모두 서버에 저장되므로 월드나 서버에 들어간 뒤에 열어야 합니다.
+
+- **내 배속**: 누구나 볼 수 있습니다. 슬라이더로 단계를 고르고 저장하면 `/battlespeed <단계>`와 똑같이 처리됩니다.
+- **서버 설정 (OP)**: `permissions.reload` 권한이 있는 플레이어에게만 보입니다. 아래 JSON 항목을 전부 화면에서 고칠 수 있고, 저장하면 서버가 권한을 다시 확인한 뒤 JSON 파일에 쓰고 바로 적용합니다. 진행 중인 배틀과 다른 플레이어의 화면에도 반영됩니다.
+- 접속 전이거나 서버에 이 모드가 없으면 안내 문구만 나옵니다. Cloth Config가 없으면 안내 화면이 뜨고, 명령어는 그대로 쓸 수 있습니다.
 
 ## 명령어
 

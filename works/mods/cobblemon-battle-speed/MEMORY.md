@@ -1,5 +1,14 @@
 # cobblemon-battle-speed 작업 기록
 
+## [2026-11-03 21:05] 0.2.0: Mod Menu 설정 화면 (실게임 화면 미확인)
+
+- **경위:** 사용자가 Mod Menu에서 설정 버튼이 없는 걸 보고 지적했다. 앞서 "설정 화면은 만들지 않았다"고 답하고 만들지 묻는 질문을 남겼는데, 사용자는 권한 질문에만 답해 그대로 넘어갔다. 화면을 만들지 묻는 질문은 다른 답에 묻히지 않게 따로 확인할 것.
+- **구조:** 설정은 서버에 있으므로 화면도 서버를 거친다. 접속 시·단계 변경 시·설정 적용 시 서버가 `sync`(내 단계 + 설정 JSON)를 보낸다. 화면의 "내 배속"은 `set_level`을 보내 명령어와 같은 `BattleSpeedService.changeLevel`을 탄다. "서버 설정"은 `permissions.reload` 권한이 있을 때만 보이고, 저장하면 설정 JSON 전체를 `save_config`로 보낸다. 서버는 권한을 다시 확인하고 `fromJson`으로 정규화한 뒤 임시 파일 경유로 저장하고 `applyConfig`(배틀 배속 재전송 + 전원 sync)한다. 화면에서 숨기는 건 겉모양일 뿐이고 권한 판단은 서버가 한다.
+- Mod Menu·Cloth Config는 `modCompileOnly` 선택 의존성이다. Cloth가 없으면 안내 화면만 뜬다. 아이콘(빨리감기 + 단계 막대)과 Mod Menu 한국어 이름·설명(`modmenu.*Translation.*`)도 넣었다.
+- **빌드:** `:cobblemon-battle-speed:unitTest :cobblemon-battle-speed:remapJar` 성공, 단위 테스트 24개 통과(설정 JSON 왕복·저장 테스트 추가).
+- **서버 기동:** 임시 폴더에서 0.2.0으로 `Done`, 콘솔 `reload` 성공, 서버 mixin 4개 적용 확인. 임시 폴더는 지웠다.
+- **미확인:** 실제 클라이언트에서 설정 버튼·화면이 열리는지, 저장이 서버에 반영되는지.
+
 ## [2026-11-03 16:50] 개발 서버·클라이언트 배치 (서버 기동·실게임 미확인)
 
 - `feature/battle-speed`를 `origin/main`에 병합해 `8d76fea5f`로 푸시했다(충돌 없음). 로컬 `main`은 다른 워크트리(`F:\AI\worktrees\codex-legend-despawn-20261102`)가 체크아웃 중이라 옮기지 않았다.

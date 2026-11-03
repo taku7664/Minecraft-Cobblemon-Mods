@@ -4,16 +4,19 @@ import com.cobblemon.mod.common.api.battles.model.PokemonBattle;
 import com.cobblemon.mod.common.api.battles.model.actor.BattleActor;
 import com.cobblemon.mod.common.battles.BattleRegistry;
 import com.cobblemon.mod.common.battles.BattleSide;
+import jbro.cobblemon.battlespeed.BattleSpeed;
 import jbro.cobblemon.battlespeed.config.BattleSpeedConfig;
 import jbro.cobblemon.battlespeed.core.BattleSpeedPolicy;
 import jbro.cobblemon.battlespeed.core.BattleSpeedPolicy.Kind;
 import jbro.cobblemon.battlespeed.core.BattleSpeedPolicy.Participant;
 import jbro.cobblemon.battlespeed.core.SpeedScope;
 import jbro.cobblemon.battlespeed.network.BattleSpeedPayload;
+import jbro.cobblemon.battlespeed.network.BattleSpeedSyncPayload;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -55,6 +58,63 @@ public final class BattleSpeedService {
     public static int levelOf(UUID player) {
         var current = config;
         return current.clampLevel(store.level(player).orElse(current.defaultLevel));
+    }
+
+    public enum LevelChange { CHANGED, DISABLED, INVALID_LEVEL }
+
+    /** Sets a player's level, from the command or the settings screen alike. */
+    public static LevelChange changeLevel(ServerPlayer player, int level) {
+        var current = config;
+        if (!current.enabled) {
+            return LevelChange.DISABLED;
+        }
+        if (level < 1 || level > current.levelCount()) {
+            return LevelChange.INVALID_LEVEL;
+        }
+        var currentStore = store;
+        currentStore.set(player.getUUID(), level);
+        try {
+            currentStore.save();
+        } catch (IOException exception) {
+            BattleSpeed.LOGGER.warn("Could not save battle speed choices", exception);
+        }
+        sync(player);
+        var battle = BattleRegistry.getBattleByParticipatingPlayer(player);
+        if (battle != null && eligible(battle)) {
+            broadcast(battle);
+        }
+        return LevelChange.CHANGED;
+    }
+
+    /** Whether the player is fighting a battle the speed-up does not apply to. */
+    public static boolean inIneligibleBattle(ServerPlayer player) {
+        var battle = BattleRegistry.getBattleByParticipatingPlayer(player);
+        return battle != null && !eligible(battle);
+    }
+
+    /** Puts a new config in force and tells every client: battle speeds and settings screens. */
+    public static void applyConfig(BattleSpeedConfig newConfig) {
+        config = newConfig;
+        broadcastAll();
+        syncAll();
+    }
+
+    /** Sends a player their level and the config for the settings screen. */
+    public static void sync(ServerPlayer player) {
+        if (!ServerPlayNetworking.canSend(player, BattleSpeedSyncPayload.TYPE)) {
+            return;
+        }
+        ServerPlayNetworking.send(player, new BattleSpeedSyncPayload(levelOf(player.getUUID()), config.toJson()));
+    }
+
+    public static void syncAll() {
+        MinecraftServer current = server;
+        if (current == null) {
+            return;
+        }
+        for (ServerPlayer player : current.getPlayerList().getPlayers()) {
+            sync(player);
+        }
     }
 
     public static List<List<Participant>> sidesOf(PokemonBattle battle) {

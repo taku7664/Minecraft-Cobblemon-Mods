@@ -6,6 +6,7 @@
   "description": "Speeds up the actual progress of PvE Cobblemon battles in configurable steps, not just the animations.",
   "authors": ["jbro"],
   "license": "MIT",
+  "icon": "assets/cobblemon_battle_speed/icon.png",
   "environment": "*",
   "entrypoints": {
     "main": [
@@ -13,6 +14,9 @@
     ],
     "client": [
       "jbro.cobblemon.battlespeed.client.BattleSpeedClient"
+    ],
+    "modmenu": [
+      "jbro.cobblemon.battlespeed.client.BattleSpeedModMenu"
     ]
   },
   "mixins": [
@@ -24,5 +28,9 @@
     "minecraft": "~1.21.1",
     "java": ">=21",
     "cobblemon": ">=1.8.1 <1.9.0"
+  },
+  "suggests": {
+    "modmenu": "*",
+    "cloth-config": "*"
   }
 }

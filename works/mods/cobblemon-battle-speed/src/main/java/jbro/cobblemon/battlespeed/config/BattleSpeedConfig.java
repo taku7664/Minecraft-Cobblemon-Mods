@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -160,6 +161,14 @@ public final class BattleSpeedConfig {
             return defaults;
         }
         return fromJson(Files.readString(path, StandardCharsets.UTF_8));
+    }
+
+    /** Writes the config through a temporary file so a crash mid-write never leaves half a file. */
+    public void save(Path path) throws IOException {
+        Files.createDirectories(path.getParent());
+        Path temp = path.resolveSibling(path.getFileName() + ".tmp");
+        Files.writeString(temp, toJson(), StandardCharsets.UTF_8);
+        Files.move(temp, path, StandardCopyOption.REPLACE_EXISTING, StandardCopyOption.ATOMIC_MOVE);
     }
 
     private static Part normalizedPart(Part part) {

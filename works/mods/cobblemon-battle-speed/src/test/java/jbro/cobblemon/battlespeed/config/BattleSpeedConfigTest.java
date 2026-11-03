@@ -80,4 +80,25 @@ class BattleSpeedConfigTest {
         assertEquals(created.speeds, reread.speeds);
         assertEquals(created.toJson(), reread.toJson());
     }
+
+    @Test
+    void screenEditsSurviveTheJsonTripAndSave(@TempDir Path dir) throws Exception {
+        // The settings screen edits a copy, sends it as JSON, and the server saves what it parses.
+        var edited = BattleSpeedConfig.fromJson(new BattleSpeedConfig().normalized().toJson());
+        edited.speeds = List.of(1.0, 1.5, 2.5);
+        edited.battles.npc = false;
+        edited.apply.moveEffects.enabled = false;
+        edited.apply.clientAnimations.multiplier = 1.25;
+        edited.permissions.change = 2;
+
+        Path file = dir.resolve("cobblemon_battle_speed.json");
+        BattleSpeedConfig.fromJson(edited.normalized().toJson()).save(file);
+        var saved = BattleSpeedConfig.loadOrCreate(file);
+        assertEquals(List.of(1.0, 1.5, 2.5), saved.speeds);
+        assertFalse(saved.battles.npc);
+        assertFalse(saved.apply.moveEffects.enabled);
+        assertEquals(1.25, saved.apply.clientAnimations.multiplier);
+        assertEquals(2, saved.permissions.change);
+        assertTrue(Files.notExists(dir.resolve("cobblemon_battle_speed.json.tmp")));
+    }
 }

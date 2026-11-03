@@ -5,7 +5,11 @@ import com.cobblemon.mod.common.api.events.CobblemonEvents;
 import com.cobblemon.mod.common.api.events.battles.BattleStartedEvent;
 import jbro.cobblemon.battlespeed.config.BattleSpeedConfig;
 import jbro.cobblemon.battlespeed.network.BattleSpeedPayload;
+import jbro.cobblemon.battlespeed.network.BattleSpeedSaveConfigPayload;
+import jbro.cobblemon.battlespeed.network.BattleSpeedSetLevelPayload;
+import jbro.cobblemon.battlespeed.network.BattleSpeedSyncPayload;
 import jbro.cobblemon.battlespeed.server.BattleSpeedCommands;
+import jbro.cobblemon.battlespeed.server.BattleSpeedServerNetworking;
 import jbro.cobblemon.battlespeed.server.BattleSpeedService;
 import jbro.cobblemon.battlespeed.server.PlayerSpeedStore;
 import net.fabricmc.api.ModInitializer;
@@ -30,9 +34,13 @@ public final class BattleSpeed implements ModInitializer {
     @Override
     public void onInitialize() {
         PayloadTypeRegistry.playS2C().register(BattleSpeedPayload.TYPE, BattleSpeedPayload.CODEC);
+        PayloadTypeRegistry.playS2C().register(BattleSpeedSyncPayload.TYPE, BattleSpeedSyncPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(BattleSpeedSetLevelPayload.TYPE, BattleSpeedSetLevelPayload.CODEC);
+        PayloadTypeRegistry.playC2S().register(BattleSpeedSaveConfigPayload.TYPE, BattleSpeedSaveConfigPayload.CODEC);
+        BattleSpeedServerNetworking.register();
 
         try {
-            reloadConfig();
+            BattleSpeedService.setConfig(readConfig());
         } catch (IOException | IllegalArgumentException exception) {
             LOGGER.error("Could not load {}, battles run at the built-in defaults", configPath(), exception);
         }
@@ -59,9 +67,13 @@ public final class BattleSpeed implements ModInitializer {
         );
     }
 
-    /** Reads the config file again; on failure the previous config stays in use and the error is thrown. */
-    public static void reloadConfig() throws IOException {
-        BattleSpeedService.setConfig(BattleSpeedConfig.loadOrCreate(configPath()));
+    /** Reads the config file, creating it with defaults first; throws when the file is broken. */
+    public static BattleSpeedConfig readConfig() throws IOException {
+        return BattleSpeedConfig.loadOrCreate(configPath());
+    }
+
+    public static void writeConfig(BattleSpeedConfig config) throws IOException {
+        config.save(configPath());
     }
 
     private static Path configPath() {
