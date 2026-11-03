@@ -1,5 +1,12 @@
 # MEMORY — more-cobblemon-contents-league-challenge
 
+## [2026-11-03 13:20] 콘텐츠 켜기·끄기 연결 (컴파일, 실게임 안 함)
+
+- MCC `content_switches.json`에서 리그 챌린지를 끄면 새 도전을 막고, 진행 중인 도전은 끝까지 둔다(근거는 MCC MEMORY 같은 날 항목). 진행 판정: 어느 지방이든 `run != null`.
+- `START`는 진행을 저장한 뒤 전투를 띄우므로 전투 시작 검사로는 못 막는다. `handle`의 START에서 먼저 검사한다(오류 키 `content_paused`).
+- **`active`와의 관계(제안):** 지방 `active`는 공개 여부(레벨캡 계산에서도 빠지고, 진행 중 전투 결과를 버림)라 그대로 두고, 일시 중지는 리그 전체 스위치로 한다. 지방별 일시 중지가 필요하면 `content_switches.json`에 `league_regions` 같은 항목을 더해 "탭은 보이되 도전만 막고 레벨캡은 유지"로 만드는 안을 제안했다(미구현).
+- **확인:** 애드온 `compileKotlin`과 MCC 관련 단위 테스트 32/32 통과(MCC 같은 날 항목). 이 애드온의 단위 테스트는 돌리지 않았다. 실게임·배치는 하지 않았다.
+
 ## [2026-10-25 17:49] 마리 하드 우라오스 일격의 태세 고정·VPS 무중단 리로드
 
 - **원인·지시:** 빡대리님이 마리가 물라오스를 사용한다고 지적하고 즉시 악라오스로 고정하도록 지시했다. 기존 팀은 암흑강타를 넣었지만 폼 지정이 없었다. VPS Cobblemon 1.8.1의 `species_features/wushu_style.json`은 키 `wushu_style`, 선택지 `single_strike`/`rapid_strike`, 기본값 `random`이므로 폼을 무작위로 생성할 수 있었다.

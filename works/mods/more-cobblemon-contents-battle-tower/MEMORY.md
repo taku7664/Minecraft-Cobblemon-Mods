@@ -1,5 +1,11 @@
 # more-cobblemon-contents-battle-tower 작업 기록
 
+## [2026-11-03 13:20] 콘텐츠 켜기·끄기 연결 (컴파일, 실게임 안 함)
+
+- MCC `content_switches.json`에서 배틀타워를 끄면 새 도전을 막고, 진행 중인 도전은 끝까지 둔다(근거는 MCC MEMORY 같은 날 항목). 진행 판정: `sessions.current(id)?.runStarted == true`(첫 전투를 시작한 연승만, 팀 고정만 한 상태는 아님).
+- 새 시작은 기존 MUTATE 검사(포기·은퇴는 계속 허용)와 OPEN 검사가 스위치를 함께 거른다.
+- **확인:** 애드온 `compileKotlin`과 MCC 관련 단위 테스트 32/32 통과(MCC 같은 날 항목). 이 애드온의 단위 테스트는 돌리지 않았다. 실게임·배치는 하지 않았다.
+
 ## [2026-10-18 13:50] `6bc4fd51` 개발 서버·클라 배포: MCC 애드온 피드백 수정 (빌드·해시 확인, 서버 기동·실게임 미확인)
 
 - `origin/main` `6bc4fd51`을 워크트리 `.claude/worktrees/mcc-addon-feedback`에서 `remapJar`로 빌드했다(EXIT 0, Kotlin in-process, 빌드 출력 `F:/AI/builds/mcc-addon-feedback`). 세 모듈을 한 번에 `assemble`하면 2G 힙에서 GC 과부하로 데몬이 멈춰, 모듈별 `remapJar`로 나눴다. `unzip -t`와 JDK 21 `jar --validate`를 통과했다.

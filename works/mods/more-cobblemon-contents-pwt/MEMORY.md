@@ -1,5 +1,12 @@
 # MEMORY
 
+## [2026-11-03 13:20] 콘텐츠 켜기·끄기 연결 (컴파일, 실게임 안 함)
+
+- MCC `content_switches.json`에서 PWT를 끄면 새 도전을 막고, 진행 중인 도전은 끝까지 둔다(근거는 MCC MEMORY 같은 날 항목). 진행 판정: `runs[playerId] != null`.
+- `enter`에서 START 검사를 먼저 한다. 대회가 만들어진 뒤에는 전투 시작 검사가 통과되므로 여기서 막아야 한다. 오류 키 `content_paused`.
+- **VPS 임시 조치 되돌리기:** VPS `config/cobblemon_npc/dialogues/pwt_guide.json`을 `~/.local/share/ppakemon-backups/manual/pwt-guide-open.json`으로 되돌리고 `npc reload`. 새 JAR 적용 뒤에는 `content_switches.json`의 PWT를 `false`로 두는 방식으로 대신한다.
+- **확인:** 애드온 `compileKotlin`과 MCC 관련 단위 테스트 32/32 통과(MCC 같은 날 항목). 이 애드온의 단위 테스트는 돌리지 않았다. 실게임·배치는 하지 않았다.
+
 ## [2026-11-02 09:06] 개발 배포 (main `ce289e4e3`)
 
 - **범위:** `/mcc terminal pwt`, 우승 후 헤더 BP, 규칙 칸, 트로피 아이콘. `cobblemon-ui`와 MCC를 함께 배치했다.
