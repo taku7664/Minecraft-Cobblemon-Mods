@@ -1,3 +1,7 @@
+## [2026-11-03 08:30] 1.5.0 릴리스 반영 (배치·해시 확인, 실게임 미실행)
+
+- 0.1.22(셰이더 키 4개 해제, `keybindings-iris-shader-keys-v1`)를 개발 클라이언트, PPakemon, `deploy-product/client`, 1.5.0 모드팩에 넣었다. 단위 테스트 94/94 통과. 실제 게임에서 키가 해제되는지는 보지 않았다.
+
 # PPakemon Client Setup MEMORY
 
 작업 내역과 결정은 `[YYYY-MM-DD HH:MM]` 형식으로 최신 항목을 위에 기록한다.
