@@ -7,6 +7,13 @@
 
 # 작업 기록
 
+## [2026-11-03 11:00] 기본 사용법 전 문서 보강과 `basics.html` 신설 (문구·데이터 대조, VPS 무중단 교체, 실게임 미실행)
+
+- **사용자 지시:** 기믹 하나가 아니라 위키 전체에 "하는 법"을 채운다. 문서 전체를 읽고 빠진 곳을 찾았다.
+- **변경:** `basics.html` 신설(내보내기, 배틀, 포획, 회복, PC, 지닌 물건, 교환, 타입 상성). `leveling`에 진화, `survival`에 규토리·낚시·포켓스낵·화석, `legends`에 잡는 순서, `natures`·`evs`·`ivs-abilities`·`leveling`·`survival`에 아이템 쓰는 법을 넣었다. `getting-started`·`growth`·`league`에서 연결했다.
+- **근거:** Cobblemon 번역(`cobblemon.ui.evolve.hint`, `battle.ui.capture`, `capture.not_single`, `ui.interact.*`, 회복 장치 설명), 종 데이터의 진화 방식, 레시피(`poke_rod`, `poke_snack`, 화석 기계), 루트 테이블(형판, 화석), VPS `main.json`(`defaultFaintTimer` 300, `faintAwakenHealthPercent` 0.2, `tradeMaxDistance` 12). 타입 상성은 표준 상성표를 직접 쓴 것이고 게임 데이터와 대조하지 않았다.
+- **실게임 미확인:** 기본 조작 전부(`R`로 되돌리기, 배틀 메뉴 "잡는다", 우클릭으로 아이템 쓰기, 플레이어 휠), 화석 기계 배치, 낚시 진행. 화석 기계 배치는 코블몬 공식 구조 기억에 일부 의존한다. 연결의끈은 BP 상점에 있지만 Cobblemon 데이터에서 효과를 찾지 못해 문서에 쓰지 않았다.
+
 ## [2026-11-03 10:20] FAQ 추가를 되돌리고 기믹 쓰는 법을 해당 문서에 넣음 (문구·코드 대조, VPS 무중단 교체, 실게임 미실행)
 
 - **사용자 지시:** 질문 내용을 FAQ로 만들지 말고, 다이맥스·메가진화 하는 법처럼 해당 콘텐츠 문서에 적는다. 앞으로 질문 기반 보강은 FAQ가 아니라 주제 문서에 넣는다.
