@@ -7,6 +7,7 @@ import jbro.cobblemon.policy.JbroPolicy
 import jbro.cobblemon.policy.plaza.Plaza
 import jbro.cobblemon.policy.support.InquiryVerdict
 import jbro.cobblemon.policy.support.KoreanText
+import jbro.cobblemon.policy.support.PichuRules
 import net.minecraft.server.MinecraftServer
 
 /**
@@ -28,6 +29,16 @@ internal object LegendRestore {
 
     class Outcome(val message: String, val changed: Boolean, val ran: String? = null)
 
+    /** What an inquiry the spawn log cannot settle alone puts to an operator. */
+    class Ask(val command: InquiryVerdict.SuggestedCommand?, val note: String?, val source: UUID?)
+
+    sealed interface Proposable {
+        /** Not about a vanished Legend, or its record shows it is alive, caught or fainted. */
+        data object None : Proposable
+        data class NoRecord(val legend: String?) : Proposable
+        data class Despawned(val entry: LegendSpawnLog.Entry) : Proposable
+    }
+
     /**
      * What [text] asks for, given [entries] of its writer. It must say a Legend vanished, naming one or at least saying
      * "전설"; a Legend it names other than theirs asks for nothing. [names] holds each Legend id's Korean name.
@@ -45,42 +56,70 @@ internal object LegendRestore {
     }
 
     /**
-     * The Legend an operator can be asked to spawn again when no despawn record settles it, as for one spawned before
-     * [LegendSpawnLog] began: [text] must say it vanished and name only it, and it must not have been caught or fainted.
+     * Whether an operator can be asked to spawn again the Legend [text] says vanished. Only a spawn log entry showing the
+     * despawn counts: the player's words alone must never put a free Legend up for approval.
      */
-    fun proposable(text: String, entries: List<LegendSpawnLog.Entry>, names: Map<String, String>, now: Long): String? {
-        if (!VANISHED.containsMatchIn(text)) return null
+    fun proposable(text: String, entries: List<LegendSpawnLog.Entry>, names: Map<String, String>): Proposable {
+        if (!VANISHED.containsMatchIn(text)) return Proposable.None
         val squeezed = squeeze(text)
-        val named = names.filterValues { it.isNotEmpty() && squeeze(it) in squeezed }.keys.singleOrNull() ?: return null
-        val ended = entries.any { it.legend == named && it.state == LegendSpawnLog.State.ENDED && now - it.spawnedAt in 0..WINDOW_MILLIS }
-        return named.takeUnless { ended }
-    }
-
-    /** The command to put to an operator for [text] from [playerId], filled in by the server. Call on the server thread. */
-    fun proposal(server: MinecraftServer, playerId: UUID, text: String): InquiryVerdict.SuggestedCommand? {
-        val names = LegendCatalog.all().associate { it.id to (KoreanText.translate(it.nameKey) ?: "") }
-        val id = proposable(text, LegendSpawnLog.get(server).of(playerId), names, System.currentTimeMillis()) ?: return null
-        val legend = LegendCatalog[id] ?: return null
-        val player = server.playerList.getPlayer(playerId) ?: return null
-        if (LegendRecords.get(server).has(playerId, id) || LegendRanks.check(player, legend.rank) != LegendRanks.Verdict.Allowed) return null
-        val cap = LegendRanks.levelCap(player)
-        val spec = listOfNotNull(legend.species, legend.aspect, cap?.let { "level=$it" }).joinToString(" ")
-        return InquiryVerdict.SuggestedCommand(command = "/spawnpokemonfor ${player.gameProfile.name} $spec",
-            why = "${names[id]}${subject(names[id])} 사라졌다는 문의예요. 디스폰 기록이 없어 문의 내용으로만 판단했고, 승인하면 ${cap?.let { "레벨 $it" } ?: "야생 레벨"}로 바로 앞에 소환해요.")
+        val named = names.filterValues { it.isNotEmpty() && squeeze(it) in squeezed }.keys
+        if (named.size > 1 || (named.isEmpty() && "전설" !in squeezed)) return Proposable.None
+        val newest = entries.filter { named.isEmpty() || it.legend in named }.maxByOrNull { it.spawnedAt }
+            ?: return Proposable.NoRecord(named.singleOrNull())
+        return if (newest.state == LegendSpawnLog.State.DESPAWNED) Proposable.Despawned(newest) else Proposable.None
     }
 
     private fun squeeze(text: String) = text.lowercase().replace(Regex("[^0-9a-z가-힣]"), "")
 
+    /** What to put to an operator for [text] from [playerId], filled in by the server. Call on the server thread. */
+    fun proposal(server: MinecraftServer, playerId: UUID, text: String): Ask? {
+        val rules = PichuRules.current()
+        if (!rules.flag("legendProposal.enabled")) return null
+        val names = names()
+        return when (val found = proposable(text, LegendSpawnLog.get(server).of(playerId), names)) {
+            Proposable.None -> null
+            is Proposable.NoRecord -> Ask(null, rules.text("legendProposal.noRecord",
+                "name" to (found.legend?.let(names::get) ?: rules.text("legendProposal.anyLegend"))), null)
+            is Proposable.Despawned -> {
+                val entry = found.entry
+                val legend = LegendCatalog[entry.legend] ?: return null
+                val player = server.playerList.getPlayer(playerId) ?: return null
+                if (LegendRecords.get(server).has(playerId, legend.id) || LegendRanks.check(player, legend.rank) != LegendRanks.Verdict.Allowed) return null
+                val cap = LegendRanks.levelCap(player)
+                val spec = listOfNotNull(legend.species, legend.aspect, cap?.let { "level=$it" }, "shiny=yes".takeIf { entry.shiny }).joinToString(" ")
+                val level = cap?.let { rules.text("legendProposal.levelCap", "cap" to it) } ?: rules.text("legendProposal.levelWild")
+                Ask(InquiryVerdict.SuggestedCommand(
+                    rules.text("legendProposal.command", "player" to player.gameProfile.name, "spec" to spec),
+                    rules.text("legendProposal.why", "name" to names[entry.legend], "level" to level)), null, entry.pokemon)
+            }
+        }
+    }
+
+    /** Whether the despawn behind a waiting proposal still stands. Call on the server thread. */
+    fun stillGone(server: MinecraftServer, source: UUID): Boolean {
+        val log = LegendSpawnLog.get(server)
+        val entry = log.entry(source) ?: return false
+        val newest = log.of(entry.owner).filter { it.legend == entry.legend }.maxByOrNull { it.spawnedAt }
+        return newest?.pokemon == source && entry.state == LegendSpawnLog.State.DESPAWNED && !LegendRecords.get(server).has(entry.owner, entry.legend)
+    }
+
+    /** Counts the spawn an approved proposal just made as a restore of [source], when it did spawn. Call on the server thread. */
+    fun continued(server: MinecraftServer, source: UUID) {
+        val log = LegendSpawnLog.get(server)
+        val entry = log.entry(source) ?: return
+        val spawned = log.of(entry.owner).filter { it.legend == entry.legend }.maxByOrNull { it.spawnedAt } ?: return
+        if (spawned.pokemon != source) log.restored(source, spawned.pokemon)
+    }
+
     /** Acts on [text] from [playerId]; null when it does not ask for a Legend back. Call on the server thread. */
     fun attempt(server: MinecraftServer, playerId: UUID, text: String): Outcome? {
-        val names = LegendCatalog.all().associate { it.id to (KoreanText.translate(it.nameKey) ?: "") }
+        val names = names()
         val log = LegendSpawnLog.get(server)
         return when (val decision = decide(text, log.of(playerId), names, System.currentTimeMillis())) {
             Decision.None -> null
             is Decision.StillThere -> {
                 val entry = decision.entry
-                Outcome("${names[entry.legend]}${subject(names[entry.legend])} 아직 사라진 기록이 없어요. " +
-                    "마지막으로 확인한 곳은 X ${entry.x}, Z ${entry.z} 근처예요. 그쪽으로 가면 다시 만날 수 있어요.", false)
+                Outcome(say("legendStillThere", "subject" to subject(names[entry.legend]), "x" to entry.x, "z" to entry.z), false)
             }
             is Decision.Restore -> restore(server, playerId, decision.entry, names[decision.entry.legend].orEmpty())
         }
@@ -89,27 +128,31 @@ internal object LegendRestore {
     private fun restore(server: MinecraftServer, playerId: UUID, entry: LegendSpawnLog.Entry, name: String): Outcome? {
         val legend = LegendCatalog[entry.legend] ?: return null
         val player = server.playerList.getPlayer(playerId)
-            ?: return Outcome("$name${subject(name)} 사라진 기록을 확인했어요. 게임에 접속한 상태로 다시 문의해 주세요.", false)
+            ?: return Outcome(say("legendOffline", "subject" to subject(name)), false)
         if (LegendRecords.get(server).has(playerId, legend.id) || LegendRanks.check(player, legend.rank) != LegendRanks.Verdict.Allowed) return null
         val level = player.serverLevel()
         if (Plaza.isPlaza(level) || level.dimension().location().toString() == "myroom:rooms") {
-            return Outcome("$name${subject(name)} 사라진 기록을 확인했어요. 광장이나 마이룸에서는 부를 수 없어서, 밖으로 나간 뒤 다시 문의해 주세요.", false)
+            return Outcome(say("legendRestricted", "subject" to subject(name)), false)
         }
         if (Cobblemon.battleRegistry.getBattleByParticipatingPlayer(player) != null) {
-            return Outcome("$name${subject(name)} 사라진 기록을 확인했어요. 배틀이 끝난 뒤 다시 문의해 주세요.", false)
+            return Outcome(say("legendInBattle", "subject" to subject(name)), false)
         }
         val cap = LegendRanks.levelCap(player)
         val spec = listOfNotNull(legend.species, legend.aspect, cap?.let { "level=$it" }, "shiny=yes".takeIf { entry.shiny }).joinToString(" ")
         val spawned = SpawnForCommand.spawn(player, PokemonProperties.parse(spec)) ?: return null
         LegendSpawnLog.get(server).restored(entry.pokemon, spawned.entity.pokemon.uuid)
         JbroPolicy.LOGGER.info("Restored despawned Legend {} for {} at level {}", legend.id, player.gameProfile.name, spawned.entity.pokemon.level)
-        return Outcome("$name${subject(name)} 사라진 기록을 확인해서 레벨 ${spawned.entity.pokemon.level}로 바로 앞에 다시 불렀어요.", true,
+        return Outcome(say("legendRestored", "subject" to subject(name), "level" to spawned.entity.pokemon.level), true,
             "spawnpokemonfor ${player.gameProfile.name} $spec")
     }
 
-    /** 이 or 가, by whether [name] ends on a final consonant. */
+    private fun names() = LegendCatalog.all().associate { it.id to (KoreanText.translate(it.nameKey) ?: "") }
+
+    private fun say(key: String, vararg values: Pair<String, Any?>) = PichuRules.current().text("texts.$key", *values)
+
+    /** [name] with 이 or 가, by whether it ends on a final consonant. */
     private fun subject(name: String?): String {
-        val last = name?.lastOrNull() ?: return "이"
-        return if (last in '가'..'힣' && (last - '가') % 28 == 0) "가" else "이"
+        val last = name?.lastOrNull() ?: return "${name.orEmpty()}이"
+        return if (last in '가'..'힣' && (last - '가') % 28 == 0) "${name}가" else "${name}이"
     }
 }

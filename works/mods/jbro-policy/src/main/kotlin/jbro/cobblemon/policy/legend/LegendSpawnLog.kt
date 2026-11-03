@@ -41,6 +41,8 @@ class LegendSpawnLog private constructor(private val entries: MutableMap<UUID, E
 
     fun of(owner: UUID): List<Entry> = entries.values.filter { it.owner == owner }
 
+    fun entry(pokemon: UUID): Entry? = entries[pokemon]
+
     fun add(entry: Entry) {
         val oldest = entry.spawnedAt - KEPT_MILLIS
         entries.values.removeIf { it.spawnedAt < oldest }

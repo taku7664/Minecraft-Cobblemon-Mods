@@ -12,6 +12,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import jbro.cobblemon.policy.JbroPolicy
+import jbro.cobblemon.policy.legend.LegendRestore
 import jbro.cobblemon.policy.api.OperatorWhisper
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.server.MinecraftServer
@@ -143,6 +144,8 @@ internal object InquiryReview {
 
     val active: Boolean get() = reviewer != null
 
+    private fun say(key: String, vararg values: Pair<String, Any?>) = PichuRules.current().text("texts.$key", *values)
+
     /** One open inquiry, as kept on disk. */
     data class Record(
         val id: String,
@@ -165,6 +168,8 @@ internal object InquiryReview {
         val proposal: List<InquiryVerdict.SuggestedCommand>? = null,
         /** Answered, and kept open a few days so a follow-up can still reach an operator. */
         val tentative: Boolean = false,
+        /** The despawned Legend's spawn record, when the proposal spawns it again. */
+        val legendSource: String? = null,
     ) {
         fun acceptsFollowUp(owner: UUID, text: String): Boolean =
             playerId == owner.toString() && text.isNotBlank() &&
@@ -226,7 +231,7 @@ internal object InquiryReview {
                 val updated = record.copy(followUps = record.followUps.orEmpty() + text, reviewed = false)
                 if (!save(updated)) return@supplyAsync false
                 post(record.cardChannelId ?: discord.inquiryChannelId,
-                    DiscordRest.message("문의 $id 추가 설명: $text"))
+                    DiscordRest.message(say("followUpPosted", "id" to id, "text" to text)))
                 review(updated)
                 true
             }
@@ -251,10 +256,10 @@ internal object InquiryReview {
             val currentServer = server ?: error("Server unavailable")
             val wiki = runCatching { PichuWiki.reference(PichuWiki.directory(gameDir), inquiry.reason) }.getOrDefault("")
             val installed = runCatching { InquiryServerContext.reference(currentServer, gameDir, inquiry.reason) }
-                .getOrElse { "서버 설치 자료를 조회하지 못했어요." }
+                .getOrElse { say("installedUnavailable") }
             reference = listOf(wiki, installed).filter { it.isNotBlank() }.joinToString("\n")
             val livePlayer = runCatching { InquiryServerContext.player(currentServer, inquiry.playerId, inquiry.reason) }
-                .getOrElse { "플레이어 현재 자료 조회 실패. 파티·PC·인벤토리는 미확인이에요." }
+                .getOrElse { say("playerUnavailable") }
             reviewer.review(InquiryReviewer.prompt(inquiry, collected, settings.minutesBefore, settings.minutesAfter,
                 data?.take(PLAYER_DATA_CHARACTERS), reference, livePlayer,
                 battles.joinToString("\n\n") { "${it.summary()}\n${it.body}" }.ifEmpty { null }))
@@ -269,11 +274,11 @@ internal object InquiryReview {
         }
         val followedUp = !record.followUps.isNullOrEmpty()
         val verdict = InquiryAutoResolve.guard(inquiry.reason, answer.verdict, strict = followedUp)
-        // A vanished Legend gets the server's own spawn at the level cap, not whatever the review came up with.
-        val spawn = server?.let { InquiryLegendRestore.proposal(it, inquiry) }
-        val proposal = spawn?.let { listOf(it) } ?: InquiryProposal.executable(verdict.suggestedCommands, inquiry.accountName)
+        // A vanished Legend gets the server's answer from its spawn record, not whatever the review came up with.
+        val legend = server?.let { InquiryLegendRestore.proposal(it, inquiry) }
+        val proposal = if (legend != null) listOfNotNull(legend.command) else InquiryProposal.executable(verdict.suggestedCommands, inquiry.accountName)
         val saved = record.copy(conversationId = answer.conversationId, reviewed = true, tentative = false,
-            suggestedActions = verdict.suggestedActions, suggestedCommands = listOfNotNull(spawn) + verdict.suggestedCommands, proposal = proposal)
+            suggestedActions = verdict.suggestedActions, suggestedCommands = listOfNotNull(legend?.command) + verdict.suggestedCommands, proposal = proposal, legendSource = legend?.source?.toString())
         if (!save(saved)) return
         val handling = settle(inquiry, verdict, reference)
         val tentative = !handling.handedOver && handling.ran.isEmpty() && !handling.changed && InquiryAutoResolve.tentative(inquiry.reason)
@@ -283,14 +288,14 @@ internal object InquiryReview {
         }
         val answerText = InquiryReviewer.reply(handling.answer ?: verdict.playerSummary, handling.handedOver, handling.changed) +
             when {
-                handling.handedOver -> " 추가 설명은 /문의추가 ${record.id} <내용>으로 보내 주세요."
-                tentative -> " 그래도 안 되면 /문의추가 ${record.id} 뒤에 어떻게 안 되는지 적어 주세요. 그때는 운영자에게 넘겨요."
+                handling.handedOver -> say("followUpHandedOver", "id" to record.id)
+                tentative -> say("followUpTentative", "id" to record.id)
                 else -> ""
             }
         server?.execute { OperatorWhisper.send(server ?: return@execute, inquiry.playerId, answerText, inquiry.reason) }
         post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, answerText))
         val asking = if (handling.handedOver) proposal else emptyList()
-        val card = DiscordRest.message(embed = reviewEmbed(inquiry, verdict, handling, answerText, asking, battles.map { it.summary() }))
+        val card = DiscordRest.message(embed = reviewEmbed(inquiry, verdict, handling, answerText, asking, battles.map { it.summary() }, legend?.note))
         if (handling.handedOver) {
             post(discord.adminChannelId, card.withButton(record.id, actions = true, approve = asking.isNotEmpty()))
         } else if (tentative) {
@@ -312,19 +317,19 @@ internal object InquiryReview {
     private const val PLAYER_DATA_CHARACTERS = 20_000
 
     private fun settle(inquiry: Inquiry, verdict: InquiryVerdict, reference: String): Handling {
-        if (!settings.autoResolve) return Handling(true, emptyList(), "자동 처리가 꺼져 있어요")
+        if (!settings.autoResolve) return Handling(true, emptyList(), say("autoOff"))
         server?.let { InquiryLegendRestore.attempt(it, inquiry) }?.let { restored ->
             return Handling(false, listOfNotNull(restored.ran), restored.message, restored.message, restored.changed)
         }
         if (withContents && verdict.autoCommands.isEmpty() &&
             verdict.category in setOf(InquiryVerdict.Category.REWARD, InquiryVerdict.Category.SHOP)) {
-            val activeServer = server ?: return Handling(true, emptyList(), "서버 확인이 필요해요")
+            val activeServer = server ?: return Handling(true, emptyList(), say("serverNeeded"))
             val result = InquiryCompensation.attempt(activeServer, inquiry, verdict.category, settings.minutesBefore, settings.minutesAfter)
             return Handling(!result.handled, emptyList(), result.message, result.message, result.changed)
         }
         return when (val plan = InquiryAutoResolve.plan(verdict, reference)) {
             is InquiryAutoResolve.Plan.HandOver -> Handling(true, emptyList(), plan.why)
-            InquiryAutoResolve.Plan.Explain -> Handling(false, emptyList(), "서버 자료에 근거한 답변으로 마무리했어요")
+            InquiryAutoResolve.Plan.Explain -> Handling(false, emptyList(), say("answered"))
         }
     }
 
@@ -351,7 +356,7 @@ internal object InquiryReview {
         JbroPolicy.LOGGER.info("Discord {} closing inquiry {} by {}", if (refusal == null) "ran" else "refused", id, caller)
         if (refusal != null) return ephemeral(refusal.reason)
         resolve(id)
-        return updatedCard(message, "처리", "✅ ${caller.userName}님이 처리 완료했어요.", done = true, JsonArray())
+        return updatedCard(message, say("fieldHandled"), say("closedBy", "user" to caller.userName), done = true, JsonArray())
     }
 
     /** The card with one more field and new buttons, as the answer to a press. */
@@ -374,31 +379,41 @@ internal object InquiryReview {
         val refusal = DiscordAdminAccess.check(discord, caller, APPROVE_PERMISSION) as? DiscordAdminAccess.Verdict.Refused
         JbroPolicy.LOGGER.info("Discord {} approving inquiry {} by {}", if (refusal == null) "ran" else "refused", id, caller)
         if (refusal != null) return ephemeral(refusal.reason)
-        val activeServer = server ?: return ephemeral("서버가 켜져 있을 때만 실행할 수 있어요.")
+        val activeServer = server ?: return ephemeral(say("serverOff"))
         // Taken off the record first, so a second press finds nothing to run.
-        val (record, commands) = takeProposal(id) ?: return ephemeral("이미 결정했거나 찾을 수 없는 제안이에요.")
+        val (record, commands) = takeProposal(id) ?: return ephemeral(say("proposalGone"))
+        val source = record.legendSource?.let(UUID::fromString)
+        val settledSince = say("legendSettled")
         val future = CompletableFuture<String>()
         activeServer.execute {
+            // The Legend may have been caught or spawned again while the card waited.
+            if (source != null && !LegendRestore.stillGone(activeServer, source)) {
+                future.complete(settledSince)
+                return@execute
+            }
             future.complete(commands.joinToString("\n") { command ->
                 val text = command.command.removePrefix("/")
                 JbroPolicy.LOGGER.info("Inquiry {} approved command: {}", id, text)
-                "/$text → " + runCatching { DiscordAdminCommands.runCommand(activeServer, text) }.getOrElse { "실패: ${it.message}" }
+                "/$text → " + runCatching { DiscordAdminCommands.runCommand(activeServer, text) }.getOrElse { say("runFailed", "reason" to it.message) }
             })
+            source?.let { LegendRestore.continued(activeServer, it) }
         }
-        val result = try { future.get(APPROVAL_WAIT_SECONDS, TimeUnit.SECONDS) } catch (_: Exception) { "서버가 아직 처리 중이라 결과를 받지 못했어요. 게임 안에서 확인해 주세요." }
+        val result = try { future.get(APPROVAL_WAIT_SECONDS, TimeUnit.SECONDS) } catch (_: Exception) { say("stillRunning") }
         resolve(id)
-        val notice = "운영자 승인을 받아 처리했어요."
-        activeServer.execute { OperatorWhisper.send(activeServer, UUID.fromString(record.playerId), notice, record.reason) }
-        worker.execute { post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, notice)) }
-        return updatedCard(message, "처리", "✅ ${caller.userName}님이 승인해서 실행했어요.\n${result.take(900)}", done = true, JsonArray())
+        if (result != settledSince) {
+            val notice = say("approvedNotice")
+            activeServer.execute { OperatorWhisper.send(activeServer, UUID.fromString(record.playerId), notice, record.reason) }
+            worker.execute { post(record.cardChannelId ?: discord.inquiryChannelId, reply(record.cardMessageId, notice)) }
+        }
+        return updatedCard(message, say("fieldHandled"), say("approvedBy", "user" to caller.userName) + "\n" + result.take(900), done = true, JsonArray())
     }
 
     /** Declines the proposal; the inquiry stays open for an operator to settle by hand. */
     private fun reject(id: String, caller: DiscordCaller, message: JsonObject?): JsonObject {
         val refusal = DiscordAdminAccess.check(discord, caller, RESOLVE_PERMISSION) as? DiscordAdminAccess.Verdict.Refused
         if (refusal != null) return ephemeral(refusal.reason)
-        takeProposal(id) ?: return ephemeral("이미 결정했거나 찾을 수 없는 제안이에요.")
-        return updatedCard(message, "피츄 제안 결과", "❌ ${caller.userName}님이 거절했어요. 실행하지 않았어요.", done = false,
+        takeProposal(id) ?: return ephemeral(say("proposalGone"))
+        return updatedCard(message, say("fieldProposalResult"), say("rejectedBy", "user" to caller.userName), done = false,
             JsonObject().withButton(id, actions = true).getAsJsonArray("components"))
     }
 
@@ -415,18 +430,18 @@ internal object InquiryReview {
         val refusal = DiscordAdminAccess.check(discord, caller, RESOLVE_PERMISSION) as? DiscordAdminAccess.Verdict.Refused
         if (refusal != null) return ephemeral(refusal.reason)
         val record = (if (ID.matches(id) && ::records.isInitialized) load(records.resolve("$id.json")) else null)
-            ?: return ephemeral("이미 처리했거나 찾을 수 없는 문의예요.")
+            ?: return ephemeral(say("inquiryGone"))
         return ephemeral(actionsText(id, record.suggestedActions.orEmpty(), record.suggestedCommands.orEmpty()))
     }
 
     /** Actions as bullets, then each command in its own code block, under Discord's 2000 characters. */
     internal fun actionsText(id: String, actions: List<String>, commands: List<InquiryVerdict.SuggestedCommand>): String {
-        val text = StringBuilder("**문의 $id 권장 조치** · 나에게만 보여요\n")
+        val text = StringBuilder(say("actionsTitle", "id" to id)).append('\n')
         text.append(if (actions.isEmpty()) "-\n" else actions.joinToString("\n", postfix = "\n") { "• $it" })
         if (commands.isEmpty()) {
-            text.append("\n제안할 명령어가 없어요.")
+            text.append('\n').append(say("actionsNoCommands"))
         } else {
-            text.append("\n**명령어** · 꺾쇠(<>) 자리는 채워서 쓰세요. 승인 버튼을 누르기 전에는 실행되지 않아요.\n")
+            text.append('\n').append(say("actionsCommands")).append('\n')
             for (command in commands) {
                 val block = (if (command.why.isBlank()) "" else "${command.why}\n") + "```\n${command.command}\n```\n"
                 if (text.length + block.length > 1990) break
@@ -488,11 +503,11 @@ internal object InquiryReview {
                 addProperty("type", 1)
                 add("components", JsonArray().apply {
                     if (approve) {
-                        add(button(1, "승인하고 실행", APPROVE_PREFIX + id))
-                        add(button(4, "거절", REJECT_PREFIX + id))
+                        add(button(1, say("buttonApprove"), APPROVE_PREFIX + id))
+                        add(button(4, say("buttonReject"), REJECT_PREFIX + id))
                     }
-                    add(button(3, "처리 완료", BUTTON_PREFIX + id))
-                    if (actions) add(button(2, "조치·명령어 보기", ACTIONS_PREFIX + id))
+                    add(button(3, say("buttonDone"), BUTTON_PREFIX + id))
+                    if (actions) add(button(2, say("buttonActions"), ACTIONS_PREFIX + id))
                 })
             })
         })
@@ -506,9 +521,9 @@ internal object InquiryReview {
     }
 
     internal fun reviewEmbed(inquiry: Inquiry, verdict: InquiryVerdict, handling: Handling? = null, answer: String = verdict.playerSummary,
-        proposal: List<InquiryVerdict.SuggestedCommand> = emptyList(), battles: List<String> = emptyList()) = JsonObject().apply {
+        proposal: List<InquiryVerdict.SuggestedCommand> = emptyList(), battles: List<String> = emptyList(), legendNote: String? = null) = JsonObject().apply {
         val settled = handling != null && !handling.handedOver
-        addProperty("title", "${if (settled) "🤖 피츄 자동 처리" else "문의 검토"} · ${inquiry.nickname} (${inquiry.accountName})".take(256))
+        addProperty("title", say(if (settled) "cardTitleSettled" else "cardTitle", "nickname" to inquiry.nickname, "account" to inquiry.accountName).take(256))
         addProperty("description", "**${verdict.verdict.label}**\n\n${verdict.operatorDetail}".take(4096))
         addProperty("color", if (settled) COLOR_DONE else when (verdict.verdict) {
             InquiryVerdict.Verdict.MATCH -> COLOR_MATCH
@@ -516,34 +531,35 @@ internal object InquiryReview {
             InquiryVerdict.Verdict.UNKNOWN -> COLOR_UNKNOWN
         })
         add("fields", JsonArray().apply {
-            add(field("문의", inquiry.reason, inline = false))
-            add(field("유형", verdict.category.label))
-            if (handling != null) add(field("피츄 처리", buildString {
-                append(if (handling.handedOver) "🙋 관리자 확인 필요 · " else "✅ ").append(handling.note)
+            add(field(say("fieldInquiry"), inquiry.reason, inline = false))
+            add(field(say("fieldCategory"), verdict.category.label))
+            if (handling != null) add(field(say("fieldPichu"), buildString {
+                append(say(if (handling.handedOver) "handlingHandedOver" else "handlingSettled")).append(handling.note)
                 if (handling.ran.isNotEmpty()) append("\n").append(handling.ran.joinToString("\n") { "`/$it`" })
             }, inline = false))
-            add(field("근거 자료", if (verdict.evidence.isEmpty()) "-" else codeBlock(verdict.evidence), inline = false))
-            add(field("권장 조치", verdict.suggestedActions.joinToString("\n") { "• $it" }, inline = false))
-            if (proposal.isNotEmpty()) add(field("피츄 제안", InquiryProposal.question(proposal), inline = false))
-            if (battles.isNotEmpty()) add(field("전투 기록", battles.joinToString("\n"), inline = false))
-            add(field("플레이어에게 보낸 답", answer, inline = false))
+            add(field(say("fieldEvidence"), if (verdict.evidence.isEmpty()) "-" else codeBlock(verdict.evidence), inline = false))
+            add(field(say("fieldActions"), verdict.suggestedActions.joinToString("\n") { "• $it" }, inline = false))
+            if (proposal.isNotEmpty()) add(field(say("fieldProposal"), InquiryProposal.question(proposal), inline = false))
+            if (legendNote != null) add(field(say("fieldProposal"), legendNote, inline = false))
+            if (battles.isNotEmpty()) add(field(say("fieldBattles"), battles.joinToString("\n"), inline = false))
+            add(field(say("fieldAnswer"), answer, inline = false))
             add(field("UUID", inquiry.playerId.toString()))
-            add(field("시각", "${inquiry.time} (KST)"))
+            add(field(say("fieldTime"), "${inquiry.time} (KST)"))
         })
         add("footer", JsonObject().apply {
-            addProperty("text", "문의 번호 ${inquiry.id} · " + if (settled) "운영자가 할 일은 없어요" else "승인하기 전에는 아무것도 실행되지 않아요")
+            addProperty("text", say(if (settled) "footerSettled" else "footerOpen", "id" to inquiry.id))
         })
     }
 
     private fun failedEmbed(inquiry: Inquiry, reason: String) = JsonObject().apply {
-        addProperty("title", "문의 검토 실패 · ${inquiry.nickname} (${inquiry.accountName})".take(256))
-        addProperty("description", "자동 검토를 하지 못했어요. 플레이어에게는 아무것도 보내지 않았으니 직접 확인해 주세요.\n\n`${reason.take(500)}`")
+        addProperty("title", say("failedTitle", "nickname" to inquiry.nickname, "account" to inquiry.accountName).take(256))
+        addProperty("description", say("failedBody") + "\n\n`${reason.take(500)}`")
         addProperty("color", COLOR_UNKNOWN)
         add("fields", JsonArray().apply {
-            add(field("문의", inquiry.reason, inline = false))
-            add(field("시각", "${inquiry.time} (KST)"))
+            add(field(say("fieldInquiry"), inquiry.reason, inline = false))
+            add(field(say("fieldTime"), "${inquiry.time} (KST)"))
         })
-        add("footer", JsonObject().apply { addProperty("text", "문의 번호 ${inquiry.id}") })
+        add("footer", JsonObject().apply { addProperty("text", say("footerFailed", "id" to inquiry.id)) })
     }
 
     /** Log lines in a code block, cut to fit one embed field. */

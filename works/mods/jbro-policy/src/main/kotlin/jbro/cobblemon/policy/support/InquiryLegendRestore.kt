@@ -13,8 +13,8 @@ internal object InquiryLegendRestore {
     fun attempt(server: MinecraftServer, inquiry: Inquiry): LegendRestore.Outcome? =
         onServer(server, inquiry) { LegendRestore.attempt(server, inquiry.playerId, inquiry.reason) }
 
-    /** The spawn to ask an operator to approve for this inquiry, or null when there is none to ask about. */
-    fun proposal(server: MinecraftServer, inquiry: Inquiry): InquiryVerdict.SuggestedCommand? =
+    /** What to put to an operator for this inquiry, or null when it is not about a Legend to spawn. */
+    fun proposal(server: MinecraftServer, inquiry: Inquiry): LegendRestore.Ask? =
         onServer(server, inquiry) { LegendRestore.proposal(server, inquiry.playerId, inquiry.reason) }
 
     private fun <T : Any> onServer(server: MinecraftServer, inquiry: Inquiry, action: () -> T?): T? {

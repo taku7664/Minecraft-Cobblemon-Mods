@@ -54,20 +54,34 @@ class LegendRestoreTest {
         assertTrue(decide("전설 사라졌어요", entry("reshiram", State.DESPAWNED, restores = 1)) is LegendRestore.Decision.Restore)
     }
 
+    private fun proposable(text: String, vararg entries: Entry) = LegendRestore.proposable(text, entries.toList(), names)
+
     /** The inquiry that got a catch-record lookup for its approval button on the live server. */
-    @Test fun `a named Legend without a record is put to an operator`() {
-        assertEquals("zeraora", LegendRestore.proposable("어제 야생에서 나타난 제라오라를 못잡았는데 사라졌다 당장 리스폰시키도록", emptyList(), names, now))
+    @Test fun `a player's word alone never proposes a spawn`() {
+        assertEquals(LegendRestore.Proposable.NoRecord("zeraora"), proposable("어제 야생에서 나타난 제라오라를 못잡았는데 사라졌다 당장 리스폰시키도록"))
+        assertEquals(LegendRestore.Proposable.NoRecord(null), proposable("전설이 사라졌어요"))
+        assertEquals(LegendRestore.Proposable.NoRecord("zeraora"), proposable("제라오라 사라졌어요", entry("reshiram", State.DESPAWNED)))
     }
 
-    @Test fun `no spawn is proposed without one vanished Legend named`() {
-        assertEquals(null, LegendRestore.proposable("전설이 사라졌어요", emptyList(), names, now))
-        assertEquals(null, LegendRestore.proposable("제라오라 어떻게 잡아요", emptyList(), names, now))
-        assertEquals(null, LegendRestore.proposable("제라오라랑 레시라무 사라졌어요", emptyList(), names, now))
+    @Test fun `a recorded despawn past the automatic limits goes to an operator`() {
+        val old = entry("zeraora", State.DESPAWNED, ageHours = 30)
+        assertEquals(LegendRestore.Proposable.Despawned(old), proposable("제라오라 사라졌어요", old))
+        assertEquals(LegendRestore.Proposable.Despawned(old), proposable("전설이 사라졌어요", old))
+        val repeated = entry("zeraora", State.DESPAWNED, restores = 2)
+        assertEquals(LegendRestore.Proposable.Despawned(repeated), proposable("제라오라 사라졌어요", repeated))
     }
 
-    @Test fun `a caught or fainted Legend is not proposed again`() {
-        assertEquals(null, LegendRestore.proposable("제라오라 사라졌어요", listOf(entry("zeraora", State.ENDED)), names, now))
-        assertEquals("zeraora", LegendRestore.proposable("제라오라 사라졌어요", listOf(entry("reshiram", State.ENDED)), names, now))
+    @Test fun `only the Legend's newest record counts and it must show a despawn`() {
+        val alive = entry("zeraora", State.ALIVE, ageHours = 30)
+        assertEquals(LegendRestore.Proposable.None, proposable("제라오라 사라졌어요", alive))
+        assertEquals(LegendRestore.Proposable.None, proposable("제라오라 사라졌어요", entry("zeraora", State.ENDED)))
+        assertEquals(LegendRestore.Proposable.None, proposable("제라오라 사라졌어요", entry("zeraora", State.DESPAWNED, ageHours = 5), entry("zeraora", State.ENDED, ageHours = 1)))
+    }
+
+    @Test fun `other inquiries propose nothing`() {
+        assertEquals(LegendRestore.Proposable.None, proposable("제라오라 어떻게 잡아요"))
+        assertEquals(LegendRestore.Proposable.None, proposable("제라오라랑 레시라무 사라졌어요"))
+        assertEquals(LegendRestore.Proposable.None, proposable("제 킹크랩이 사라졌어요"))
     }
 
     @Test fun `a Legend still in the world is pointed at instead of spawned twice`() {

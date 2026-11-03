@@ -16,7 +16,7 @@ internal object InquiryCompensation {
 
     fun attempt(server: MinecraftServer, inquiry: Inquiry, category: InquiryVerdict.Category, before: Long, after: Long): Outcome {
         val ids = identities(inquiry.reason)
-        if (ids.size > 1) return Outcome(false, false, "거래 번호가 여러 개여서 자동 복구하지 않았어요. 한 거래씩 확인이 필요해요.")
+        if (ids.size > 1) return Outcome(false, false, PichuRules.current().text("texts.compensationManyIds"))
         val future = CompletableFuture<Outcome>()
         val mayStart = AtomicBoolean(true)
         server.execute {
@@ -27,17 +27,17 @@ internal object InquiryCompensation {
                     inquiry.at - before * 60_000, inquiry.at + after * 60_000, ids.singleOrNull())
                 future.complete(Outcome(result.handled, result.changed, result.message))
             } catch (_: Exception) {
-                future.complete(Outcome(false, false, "원거래 처리 결과를 확인하지 못해 관리자 확인이 필요해요."))
+                future.complete(Outcome(false, false, PichuRules.current().text("texts.compensationUnknown")))
             } catch (failure: LinkageError) {
                 jbro.cobblemon.policy.JbroPolicy.LOGGER.warn("MCC compensation API is unavailable; both server mods need compatible versions", failure)
-                future.complete(Outcome(false, false, "서버의 복구 기능을 사용할 수 없어 관리자 확인이 필요해요."))
+                future.complete(Outcome(false, false, PichuRules.current().text("texts.compensationUnavailable")))
             }
         }
         return try { future.get(10, TimeUnit.SECONDS) } catch (_: Exception) {
             // A queued mutation cannot start after we report a timeout. An already running one keeps its journal guard.
             val cancelledBeforeStart = mayStart.compareAndSet(true, false)
-            Outcome(false, false, if (cancelledBeforeStart) "서버 확인이 지연되어 자동 복구를 시작하지 않았어요."
-                else "서버의 복구 처리 결과를 아직 확인하지 못했어요. 추가 지급 전 관리자 확인이 필요해요.")
+            Outcome(false, false, if (cancelledBeforeStart) PichuRules.current().text("texts.compensationDelayed")
+                else PichuRules.current().text("texts.compensationPending"))
         }
     }
 }

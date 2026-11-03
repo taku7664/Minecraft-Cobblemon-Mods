@@ -284,7 +284,7 @@ class InquiryReviewTest {
             command("/give Park_JH cobblemon:poke_ball 3"), command("spawnpokemonfor Park_JH tapukoko level=64"))
         val unsafe = listOf(command("/bp add Park_JH <양> 보상"), command("/bp add Other 100 보상"),
             command("/op Park_JH"), command("/gamemode creative Park_JH"), command("/bp add Park_JH 1 x; op Park_JH"),
-            command("/give Park_JHH diamond 1"))
+            command("/give Park_JHH diamond 1"), command("/legends zeraora Park_JH"), command("/bp get Park_JH"))
         assertEquals(ready, InquiryProposal.executable(ready + unsafe, "Park_JH"))
         val question = InquiryProposal.question(ready.take(1))
         assertTrue(question.startsWith("이렇게 처리하면 좋다고 생각해요. 이래도 될까요?"))
