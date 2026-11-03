@@ -1,5 +1,11 @@
 # more-cobblemon-contents-battle-tower 작업 기록
 
+## [2026-11-03 14:21] 개발 배포 (main `15a54ee20`)
+
+- **범위:** `/mcc reload`와 콘텐츠 켜기·끄기. `origin/main`에 fast-forward로 반영한 뒤 `git archive`로 F에 꺼내 `remapJar`(EXIT 0).
+- **JAR SHA-256:** `cdfc1d59fde8b2e5c5b9ffabebeeb67dba68c52f2c226b2ed67d56a3ec98ecf4`. 빌드본과 개발 서버·클라이언트 설치본이 같다. `unzip -t`, `jar --validate` 통과.
+- **확인 안 함:** 서버는 켜지 않았고 배치본을 게임에 올려 보지 않았다. 운영(VPS)·PPakemon 프로필·`deploy-product`에는 넣지 않았다.
+
 ## [2026-11-03 13:20] 콘텐츠 켜기·끄기 연결 (컴파일, 실게임 안 함)
 
 - MCC `content_switches.json`에서 배틀타워를 끄면 새 도전을 막고, 진행 중인 도전은 끝까지 둔다(근거는 MCC MEMORY 같은 날 항목). 진행 판정: `sessions.current(id)?.runStarted == true`(첫 전투를 시작한 연승만, 팀 고정만 한 상태는 아님).

@@ -2,6 +2,14 @@
 
 작업 내역과 이슈를 `[YYYY-MM-DD HH:MM]` 형식으로 기록한다. 최신 항목을 위에 추가한다.
 
+## [2026-11-03 14:21] 개발 배포 (main `15a54ee20`)
+
+- **범위:** `/mcc reload`와 콘텐츠 켜기·끄기. `origin/main`에 fast-forward로 반영한 뒤 `git archive`로 F에 꺼내 `remapJar`(EXIT 0).
+- **JAR SHA-256:** `8f3ec112db48acc968aa875f61d560b72b79495310d057bd34cecbd1fcd30138`. 빌드본과 개발 서버·클라이언트 설치본이 같다. `unzip -t`, `jar --validate` 통과.
+- **함께 배치:** MCC 본체와 애드온 5개(타워·팩토리·리그·PWT·PvP)를 같이 바꿨다. 애드온이 새 MCC API(`MccContentSwitches`)를 쓰므로 따로 바꾸면 안 된다. 이전 JAR은 `develop-product/deployment-backups/20261103-142059-mcc-content-switches/`.
+- **설정:** 개발 서버 `openrouter.json`의 `recordDecisions: true` 확인. `content_switches.json`은 다음 서버 시작 때 생긴다.
+- **확인 안 함:** 서버는 켜지 않았고 배치본을 게임에 올려 보지 않았다. 운영(VPS)·PPakemon 프로필·`deploy-product`에는 넣지 않았다.
+
 ## [2026-11-03 13:20] `/mcc reload`와 콘텐츠 켜기·끄기 (단위 테스트, 빌드·배치·실게임 안 함)
 
 - **배경:** 2026-11-03 운영 중 PWT를 잠깐 막을 방법이 없어 VPS의 `pwt_guide.json` 대사를 휴업 대사로 바꿔 막았다(원본은 VPS `~/.local/share/ppakemon-backups/manual/pwt-guide-open.json`). 설정은 `/reload`(데이터팩 전체)로만 다시 읽혔다.

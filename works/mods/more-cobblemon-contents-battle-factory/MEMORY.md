@@ -1,5 +1,11 @@
 # more-cobblemon-contents-battle-factory 작업 기록
 
+## [2026-11-03 14:21] 개발 배포 (main `15a54ee20`)
+
+- **범위:** `/mcc reload`와 콘텐츠 켜기·끄기. `origin/main`에 fast-forward로 반영한 뒤 `git archive`로 F에 꺼내 `remapJar`(EXIT 0).
+- **JAR SHA-256:** `629c7307b358914668758a65a4b75844efd0e611f61406cead006586a1cb709e`. 빌드본과 개발 서버·클라이언트 설치본이 같다. `unzip -t`, `jar --validate` 통과.
+- **확인 안 함:** 서버는 켜지 않았고 배치본을 게임에 올려 보지 않았다. 운영(VPS)·PPakemon 프로필·`deploy-product`에는 넣지 않았다.
+
 ## [2026-11-03 13:20] 콘텐츠 켜기·끄기 연결 (컴파일, 실게임 안 함)
 
 - MCC `content_switches.json`에서 배틀팩토리를 끄면 새 도전을 막고, 진행 중인 도전은 끝까지 둔다(근거는 MCC MEMORY 같은 날 항목). 진행 판정: 세션이 있고 `COMPLETE`가 아닐 때(끝난 세션이 화면에 남아 있어도 진행으로 보지 않음).
