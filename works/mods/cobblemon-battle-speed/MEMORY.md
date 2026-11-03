@@ -1,5 +1,14 @@
 # cobblemon-battle-speed 작업 기록
 
+## [2026-11-03 16:50] 개발 서버·클라이언트 배치 (서버 기동·실게임 미확인)
+
+- `feature/battle-speed`를 `origin/main`에 병합해 `8d76fea5f`로 푸시했다(충돌 없음). 로컬 `main`은 다른 워크트리(`F:\AI\worktrees\codex-legend-despawn-20261102`)가 체크아웃 중이라 옮기지 않았다.
+- 빌드본 재사용: 모듈 소스·`settings.gradle.kts`·`gradle.properties`는 브랜치와 병합 `main`이 같고, 루트 `build.gradle.kts`·`gradle/`·`gradlew`는 빌드 당시 체크아웃 `aa0fab224`와 병합 `main`이 같다. 빌드 뒤 바뀐 건 JAR에 안 들어가는 README·MEMORY뿐이다.
+- `develop-product/{server,client}/mods/cobblemon-battle-speed-0.1.0.jar` 새로 설치. SHA-256 `c9cc7a75e736749ee4d349f2d7eee57c2033f304b2ea29b703c97f7550e026ea`로 빌드본과 세 곳 모두 같고 `unzip -t` 통과. 새 파일이라 백업할 이전 JAR은 없다. 배치 전 25566 리스너·java 프로세스 없음 확인. 개발 서버 `openrouter.json`의 `recordDecisions`는 `true`.
+- 서버·클라이언트 둘 다 필요하다. 서버만 있으면 진행은 빨라지지만 체력바가 원래 속도로 줄고, 클라이언트만 있으면 아무 일도 안 일어난다.
+- 개발 서버는 꺼진 상태 그대로 두었다. PPakemon 프로필·deploy-product·운영·VPS는 그대로다.
+- **미확인:** 개발 서버 기동, 실게임 배틀 배속, 클라이언트 mixin 적용.
+
 ## [2026-11-03 16:20] 새 모드: PvE 배틀 진행 배속 (실게임 미확인)
 
 - **요청:** 애니메이션이 아니라 실제 진행이 빨라지는 배틀 배속. PvE만, 최대 4배속, 1·2·3·4단계. 전부 JSON으로 조정하고 명령어로도 바꿀 수 있게. 다른 모드에 넣지 말고 따로 모드로.
