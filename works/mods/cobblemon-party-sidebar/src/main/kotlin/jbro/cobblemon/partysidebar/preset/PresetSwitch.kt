@@ -6,7 +6,6 @@ import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.toitem.api.PokemonItemData
 import net.minecraft.core.NonNullList
 import net.minecraft.core.RegistryAccess
-import net.minecraft.world.Container
 import net.minecraft.world.item.ItemStack
 import java.util.UUID
 
@@ -35,8 +34,9 @@ interface PokemonPacker {
  * The moving part of a preset switch, apart from the player so a test can run it on real Cobblemon stores.
  *
  * The party's borrowed items go back to [itemStorage], the Pokemon [target] does not use go into the Pokemon storage
- * ([pokemonItems], behind [pokemonStorage]) as items, its own come out of the Pokemon storage or [inventory], and its
- * borrowed items are lent out again. The PC is only read, to refuse a Pokemon that is already there.
+ * ([pokemonItems], behind [pokemonStorage]) as items, its own come out of the Pokemon storage, and its borrowed items
+ * are lent out again. A Pokemon item the player took out into the inventory is theirs and stays there. The PC is only
+ * read, to refuse a Pokemon that is already there.
  */
 class PresetSwitch(
     private val party: PartyStore,
@@ -44,7 +44,6 @@ class PresetSwitch(
     private val pokemonItems: NonNullList<ItemStack>,
     private val pokemonStorage: StorageContainer,
     private val itemStorage: StorageContainer,
-    private val inventory: Container,
     private val packer: PokemonPacker,
 ) {
     sealed interface Result {
@@ -52,7 +51,7 @@ class PresetSwitch(
         data class Refused(val reason: String) : Result
     }
 
-    /** Where a preset's Pokemon is now: in the party, or as an item in the Pokemon storage or player inventory. */
+    /** Where a preset's Pokemon is now: in the party, or as an item in the Pokemon storage. */
     private sealed interface Source {
         val uuid: UUID
 
@@ -60,7 +59,7 @@ class PresetSwitch(
             override val uuid: UUID get() = pokemon.uuid
         }
 
-        data class Stored(val slot: Int, override val uuid: UUID, val inventory: Boolean) : Source
+        data class Stored(val slot: Int, override val uuid: UUID) : Source
     }
 
     fun current(): List<Pokemon> = (0 until PresetData.PARTY_SIZE).mapNotNull { party.get(it) }
@@ -71,20 +70,17 @@ class PresetSwitch(
         val sources: List<Source?> = target.slots.map { slot ->
             val id = slot.pokemon?.takeIf(claimed::add) ?: return@map null
             current.firstOrNull { it.uuid == id }?.let { return@map Source.Party(it) }
-            pokemonItems.indexOfFirst { packer.uuid(it) == id }.takeIf { it >= 0 }?.let { return@map Source.Stored(it, id, false) }
-            (0 until inventory.containerSize).firstOrNull { packer.uuid(inventory.getItem(it)) == id }
-                ?.let { Source.Stored(it, id, true) }
+            pokemonItems.indexOfFirst { packer.uuid(it) == id }.takeIf { it >= 0 }?.let { Source.Stored(it, id) }
         }
         val leaving = current.filter { pokemon -> sources.none { it is Source.Party && it.uuid == pokemon.uuid } }
-        val fromStorage = sources.count { it is Source.Stored && !it.inventory }
+        val fromStorage = sources.count { it is Source.Stored }
         if (leaving.size > pokemonStorage.freeSlots() + fromStorage) return Result.Refused("pokemon_storage_full")
         if (!itemStorage.canTake(current.map { it.heldItem() }.filter(StoredMark::isStored))) return Result.Refused("storage_full")
 
         // The arriving Pokemon are read before anything moves, so a bad item stops the switch untouched.
         val arriving = sources.map { source ->
             if (source !is Source.Stored) return@map null
-            val stack = if (source.inventory) inventory.getItem(source.slot) else pokemonItems[source.slot]
-            val pokemon = packer.unpack(stack) ?: return Result.Refused("failed")
+            val pokemon = packer.unpack(pokemonItems[source.slot]) ?: return Result.Refused("failed")
             if (pokemon.uuid != source.uuid) return Result.Refused("failed")
             if (party.any { it.uuid == pokemon.uuid } || pc.any { it.uuid == pokemon.uuid }) return Result.Refused("duplicate")
             pokemon
@@ -102,7 +98,7 @@ class PresetSwitch(
         current.forEach { party.remove(it) }
         for (source in sources) {
             if (source !is Source.Stored) continue
-            if (source.inventory) inventory.setItem(source.slot, ItemStack.EMPTY) else pokemonStorage.setItem(source.slot, ItemStack.EMPTY)
+            pokemonStorage.setItem(source.slot, ItemStack.EMPTY)
         }
         for (stack in packed) {
             val slot = pokemonItems.indexOfFirst(ItemStack::isEmpty)
@@ -122,23 +118,22 @@ class PresetSwitch(
             pokemon.swapHeldItem(item, false, false)
             if (pokemon.heldItem().isEmpty) itemStorage.add(item)
         }
-        inventory.setChanged()
         return Result.Done(arriving.filterNotNull().map { it.uuid }, leaving.map { it.uuid })
     }
 
     companion object {
         /**
-         * Brings [preset] up to date with [party]; true when it changed. A row left empty keeps its Pokemon while
-         * [putAway] says that Pokemon is not in another row, the Pokemon storage or the PC (it is on the cursor or in
-         * the inventory), so another preset's switch can still find it.
+         * Brings [preset] up to date with [party]; true when it changed. A row left empty forgets its Pokemon unless
+         * [inHand] says the player is still carrying it on the cursor: put in another row, the Pokemon storage, the PC
+         * or the inventory, it has left the preset.
          */
-        fun mirror(preset: Preset, party: PartyStore, putAway: (UUID) -> Boolean): Boolean {
+        fun mirror(preset: Preset, party: PartyStore, inHand: (UUID) -> Boolean): Boolean {
             var changed = false
             for ((row, slot) in preset.slots.withIndex()) {
                 val pokemon = party.get(row)
                 if (pokemon == null) {
                     val id = slot.pokemon ?: continue
-                    if (putAway(id)) {
+                    if (!inHand(id)) {
                         slot.pokemon = null
                         slot.reference = ItemStack.EMPTY
                         changed = true

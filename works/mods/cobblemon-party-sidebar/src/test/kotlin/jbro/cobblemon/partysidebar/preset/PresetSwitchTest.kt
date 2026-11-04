@@ -47,15 +47,14 @@ class PresetSwitchTest {
         val itemStorage = StorageContainer(items, StorageKind.ITEMS) {}
         val pokemonStorage = StorageContainer(pokemonItems, StorageKind.POKEMON) {}
         val inventory = SimpleContainer(36)
-        val switch = PresetSwitch(party, emptyList(), pokemonItems, pokemonStorage, itemStorage, inventory, Packer)
+        val switch = PresetSwitch(party, emptyList(), pokemonItems, pokemonStorage, itemStorage, Packer)
+        var cursor: UUID? = null
 
         fun storedIds(): List<UUID> = pokemonItems.mapNotNull(Packer::uuid) +
             (0 until inventory.containerSize).mapNotNull { Packer.uuid(inventory.getItem(it)) }
 
         /** Mirrors [preset] the way the server does before every switch. */
-        fun mirror(preset: Preset) = PresetSwitch.mirror(preset, party) { id ->
-            party.any { it.uuid == id } || pokemonItems.any { Packer.uuid(it) == id }
-        }
+        fun mirror(preset: Preset) = PresetSwitch.mirror(preset, party) { id -> id == cursor }
 
         fun lend(pokemon: Pokemon, item: Item) {
             val lent = itemStorage.takeOne(ItemStack(item))
@@ -162,30 +161,65 @@ class PresetSwitchTest {
         assertTrue((0..2).all { !world.party.get(it)!!.heldItem().isEmpty })
     }
 
-    @Test fun `a Pokemon itemized into the inventory comes back from there, once`() {
+    @Test fun `a Pokemon taken out of the Pokemon storage into the inventory stays there`() {
         val world = World()
         val owl = Pokemon()
         val other = Pokemon()
         world.party.set(PartyPosition(0), owl)
         world.party.set(PartyPosition(1), other)
-        world.itemStorage.add(ItemStack(Items.IRON_HELMET))
-        world.lend(owl, Items.IRON_HELMET)
         val first = Preset().also { world.mirror(it) }
         val second = preset(other)
         world.run(second)
+        assertEquals(owl.uuid, world.pokemonItems.firstNotNullOf(Packer::uuid), "the owl waits in the Pokemon storage")
 
-        // On the second preset the player itemizes the other Pokemon into the inventory, as the sidebar does.
-        val item = Packer.pack(world.party.get(0)!!)
-        world.party.remove(world.party.get(0)!!)
-        world.inventory.setItem(5, item)
-        world.mirror(second)
-        assertEquals(other.uuid, second.slots[0].pokemon, "a Pokemon in the inventory keeps its row")
-
+        // The player takes the owl's item out of the Pokemon storage into the inventory, then goes back to its preset.
+        val slot = world.pokemonItems.indexOfFirst { Packer.uuid(it) == owl.uuid }
+        world.inventory.setItem(5, world.pokemonItems[slot])
+        world.pokemonItems[slot] = ItemStack.EMPTY
         world.run(first)
-        assertEquals(listOf(owl.uuid, other.uuid), (0..1).map { world.party.get(it)?.uuid })
-        assertTrue(world.inventory.getItem(5).isEmpty, "the inventory item was taken, not copied")
-        assertEquals(1, world.count(Items.IRON_HELMET))
+
+        assertEquals(owl.uuid, Packer.uuid(world.inventory.getItem(5)), "the owl stays in the inventory")
+        assertEquals(listOf(null, other.uuid), (0..1).map { world.party.get(it)?.uuid })
+        assertNull(first.slots[0].pokemon, "the preset forgets the owl once it is in the inventory")
+        world.run(second)
+        world.run(first)
+        assertEquals(owl.uuid, Packer.uuid(world.inventory.getItem(5)), "later switches leave it there too")
         world.assertEachOnce(owl, other)
+    }
+
+    @Test fun `a Pokemon itemized from the party into the inventory leaves its preset`() {
+        val world = World()
+        val owl = Pokemon()
+        val other = Pokemon()
+        world.party.set(PartyPosition(0), owl)
+        world.party.set(PartyPosition(1), other)
+        val first = Preset().also { world.mirror(it) }
+        val second = preset(other)
+
+        val item = Packer.pack(owl)
+        world.party.remove(owl)
+        world.inventory.setItem(5, item)
+        world.mirror(first)
+        assertNull(first.slots[0].pokemon, "a Pokemon in the inventory leaves its row")
+
+        world.run(second)
+        world.run(first)
+        assertEquals(owl.uuid, Packer.uuid(world.inventory.getItem(5)), "the inventory item is never taken")
+        world.assertEachOnce(owl, other)
+    }
+
+    @Test fun `a Pokemon on the cursor keeps its row`() {
+        val world = World()
+        val owl = Pokemon()
+        world.party.set(PartyPosition(0), owl)
+        val first = Preset().also { world.mirror(it) }
+        world.party.remove(owl)
+        world.cursor = owl.uuid
+        world.mirror(first)
+        assertEquals(owl.uuid, first.slots[0].pokemon)
+        world.cursor = null
+        world.mirror(first)
+        assertNull(first.slots[0].pokemon, "put down anywhere outside the party, it leaves the row")
     }
 
     @Test fun `a refused switch moves nothing`() {

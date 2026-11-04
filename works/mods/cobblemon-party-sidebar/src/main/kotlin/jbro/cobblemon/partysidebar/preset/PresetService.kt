@@ -21,8 +21,8 @@ import java.util.UUID
  *
  * The active preset is the live party: every few ticks it takes down which Pokemon stands in each row and which
  * storage item each one borrows. Switching to another preset puts the Pokemon it does not use into the Pokemon storage
- * as items, takes its own Pokemon out of the Pokemon storage (or the player inventory, for one just itemized), returns
- * every borrowed item to the item storage and lends the new preset's items out again. The PC is not touched. Switching
+ * as items, takes its own Pokemon out of the Pokemon storage (never the player inventory: a Pokemon item taken out there
+ * has left its preset), returns every borrowed item to the item storage and lends the new preset's items out again. The PC is not touched. Switching
  * happens only outside battle, so a battle never has to be unwound.
  *
  * A row whose preset lends an item the Pokemon is not holding, or names a Pokemon that is not there, is reported as
@@ -141,7 +141,7 @@ object PresetService {
         mirror(player, data)
         if (index == data.active) return true
         val switch = PresetSwitch(Cobblemon.storage.getParty(player), Cobblemon.storage.getPC(player), data.pokemonStorage,
-            pokemonStorage(player), storage(player), player.inventory, PokemonPacker.Items(player.registryAccess()))
+            pokemonStorage(player), storage(player), PokemonPacker.Items(player.registryAccess()))
         if (switch.current().any { it.entity?.isBusy == true }) return reject(player, "busy")
         return try {
             when (val result = switch.run(data.presets[index])) {
@@ -162,11 +162,8 @@ object PresetService {
 
     /** Brings the active preset up to date with the party; true when it changed. */
     fun mirror(player: ServerPlayer, data: PlayerPresets): Boolean {
-        val party = Cobblemon.storage.getParty(player)
-        return PresetSwitch.mirror(data.activePreset(), party) { id ->
-            party.any { it.uuid == id } || data.pokemonStorage.any { itemUuid(it) == id } ||
-                Cobblemon.storage.getPC(player).any { it.uuid == id }
-        }
+        val carried = listOf(player.containerMenu.carried, player.inventoryMenu.carried).mapNotNull(::itemUuid)
+        return PresetSwitch.mirror(data.activePreset(), Cobblemon.storage.getParty(player)) { id -> id in carried }
     }
 
     private fun state(player: ServerPlayer, data: PlayerPresets): PresetStatePayload {
