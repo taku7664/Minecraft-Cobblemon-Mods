@@ -354,7 +354,9 @@ object PartySidebar {
         val pokemon = party(hit.row)
         if (pokemon == null) {
             if (hit.column == Column.MODEL && PresetClient.missingPokemon(hit.row)) {
-                graphics.renderTooltip(font, Component.translatable("tooltip.cobblemon_party_sidebar.missing_pokemon"), mouseX, mouseY)
+                val species = PresetClient.ghost(hit.row)?.species?.let(ResourceLocation::tryParse)?.let(PokemonSpecies::getByIdentifier)
+                val lines = listOfNotNull(species?.translatedName, Component.translatable("tooltip.cobblemon_party_sidebar.missing_pokemon"))
+                graphics.renderComponentTooltip(font, lines, mouseX, mouseY)
             }
             return
         }

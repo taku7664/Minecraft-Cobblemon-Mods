@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.partysidebar.network.HeldItemClickPayload
 import jbro.cobblemon.partysidebar.preset.PresetService
+import jbro.cobblemon.partysidebar.preset.StorageKind
 import jbro.cobblemon.partysidebar.preset.StorageMenu
 import jbro.cobblemon.partysidebar.preset.StoredMark
 import jbro.cobblemon.toitem.api.PokemonTransfers
@@ -46,6 +47,17 @@ object HeldItemExchange {
         if (StoredMark.isStored(held)) {
             returnToStorage(player, pokemon)
             return
+        }
+        // Beside the item storage, shift-click puts the item there, like shift-clicking an inventory item does.
+        val menu = player.containerMenu
+        if (menu is StorageMenu && menu.kind == StorageKind.ITEMS) {
+            val storage = PresetService.storage(player)
+            if (storage.canTake(listOf(held))) {
+                val removed = pokemon.swapHeldItem(ItemStack.EMPTY, decrement = false)
+                if (!pokemon.heldItem().isEmpty) return
+                if (!storage.add(removed)) player.inventory.placeItemBackInInventory(removed)
+                return
+            }
         }
         val inventory = player.inventory
         if (inventory.getFreeSlot() < 0 && inventory.getSlotWithRemainingSpace(held) < 0) {

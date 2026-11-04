@@ -18,6 +18,9 @@ inventory texture, so it matches the inventory under any resource pack.
   Shift-click a Pokemon item in the survival inventory or hotbar to restore it to the lowest empty party slot.
   A full party refuses quick restoration; right-clicking a held item can overflow to the PC instead.
   Inventory items in chest and fusion screens keep their normal shift-click behavior. No itemize key or separate model drag is registered.
+  Beside the Pokémon storage or the fusion window, shift-clicking a Pokémon sends it into that window instead (the
+  storage's first free slot; fusion's base slot, then the first empty material slot), and beside the item storage
+  shift-clicking a held item puts it in the storage. When the window is full it goes to the inventory as usual.
 - **Top row:** the current preset's name (click it in the inventory to rename, up to 16 characters; blank shows
   "Preset N"), then **add preset** and **delete preset** (click twice within three seconds).
 - **Bottom row:** **fusion** (Mega Showdown's DNA Splicers; opens PokeFusion's window as `/pokefusion` does, greyed
