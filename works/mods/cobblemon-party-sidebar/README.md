@@ -18,24 +18,27 @@ inventory texture, so it matches the inventory under any resource pack.
   Shift-click a Pokemon item in the survival inventory or hotbar to restore it to the lowest empty party slot.
   A full party refuses quick restoration; right-clicking a held item can overflow to the PC instead.
   Inventory items in chest and fusion screens keep their normal shift-click behavior. No itemize key or separate model drag is registered.
-- **Buttons:** four small buttons sit under the rows. The first, holding Mega Showdown's DNA Splicers, opens
-  PokeFusion's window as `/pokefusion` does (greyed out when the server has no such command for you; without Mega
-  Showdown it shows a letter). Then **add preset**, **delete preset** (click twice within three seconds) and the
-  **item storage**. Hover any of them for its name.
-- **Presets:** `< 1 / 2 >` under the buttons switches presets. The current preset always follows the party: which
-  Pokemon stands in each row and which storage item it borrows. Switching sends the Pokemon the other preset does not
-  use to the PC, brings its own from the PC, returns every borrowed item to the storage and lends that preset's items
-  out again. A new preset starts as a copy of the current one; deleting one switches to its neighbour first. Up to 18
-  presets; switching, adding and deleting are refused during a battle, while the cursor holds an item, or when the PC
-  has no room for the Pokemon leaving the party.
-- **Item storage:** a 54-slot chest that belongs to you, opened from its button. It shows three rows at a time;
-  scroll with the wheel or drag the bar on its right. Shift-clicking an item in fills any free slot, shown or not.
-  Esc goes back to the inventory and the column stays beside it. Items in it, and items Pokemon borrow from it, wear a small chest in the corner and
-  before their name. Pick one up in the storage and click a held-item slot to lend it: the Pokemon really holds it, so
-  battles and evolutions see it. Taking a borrowed item off a Pokemon puts it back in the storage, not the inventory.
-  An item placed in the inventory is taken out of the storage and loses the mark.
-- **Missing items:** a held-item slot turns red when its preset lends an item the Pokemon is not holding (a battle used
-  it up, or the storage had none left when switching); hover it to see which.
+- **Top row:** the current preset's name (click it in the inventory to rename, up to 16 characters; blank shows
+  "Preset N"), then **add preset** and **delete preset** (click twice within three seconds).
+- **Bottom row:** **fusion** (Mega Showdown's DNA Splicers; opens PokeFusion's window as `/pokefusion` does, greyed
+  out when the server has no such command for you), the **item storage** and the **Pokémon storage**. Pressing the
+  open window's button again, or Esc, goes back to the inventory; this also holds for the fusion window. Below them
+  `< 1 / 2 >` switches presets. Hover any button for its name.
+- **Presets:** the current preset always follows the party: which Pokémon stands in each row and which storage item
+  it borrows. Switching puts the Pokémon the other preset does not use into the Pokémon storage as items, takes that
+  preset's Pokémon out of the Pokémon storage (or the inventory, for one just itemized), returns every borrowed item
+  to the item storage and lends that preset's items out again. The PC is not used. A new preset starts empty, so adding
+  one puts the whole party into the Pokémon storage; deleting one switches to its neighbour first. Up to 18 presets;
+  switching, adding and deleting are refused during a battle, while the cursor holds an item, or when the Pokémon
+  storage has no room for the Pokémon leaving the party.
+- **Storages:** two 54-slot chests of your own, shown as a large chest. The **Pokémon storage** takes only itemized
+  Pokémon; beside it the column itemizes and places Pokémon as in the inventory. In the **item storage**, items (and
+  items Pokémon borrow from it) wear a small chest in the corner and before their name. Pick one up there and click a
+  held-item slot to lend it: the Pokémon really holds it, so battles and evolutions see it, and it is gone from the
+  storage while lent. Taking it off a Pokémon puts it back in the storage, not the inventory. An item placed in the
+  inventory is taken out of the storage and loses the mark.
+- **Missing:** a row turns red when its preset names a Pokémon that is not there, or lends an item the Pokémon is not
+  holding (a battle used it up, or the storage had none left when switching); hover it to see which.
 
 Held items cannot be changed during a battle, and Cobblemon's held-item tags (`cobblemon:held/blacklisted_items_to_hold`,
 `cobblemon:held/whitelisted_items_to_hold`) apply. The column is not shown in the creative inventory. With EMI
@@ -45,7 +48,7 @@ installed, EMI keeps its side panels clear of the column.
 
 Install the same version on **both client and server**. Requires Minecraft 1.21.1, Java 21, Fabric Loader 0.19.5+,
 Fabric API, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+ and Cobblemon 1.8.1 (below 1.9.0). Mod Menu and EMI
-are optional; Cobblemon To Item 0.1.2+ is required. Cobblemon has no packet for a client to change a held item, so the server half makes that change; on a
+are optional; Cobblemon To Item 0.1.6+ is required. Cobblemon has no packet for a client to change a held item, so the server half makes that change; on a
 server without this mod the column only shows the party; slot interactions need the server half.
 
 ## Settings

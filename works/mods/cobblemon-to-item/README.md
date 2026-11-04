@@ -36,7 +36,7 @@ PokemonTooltip.render(graphics, pokemon, mouseX, mouseY)
 PokemonTooltip.renderItemTooltip(graphics, stack, mouseX, mouseY)
 ```
 
-`PokemonItemData`·`PokemonTransfers`는 `jbro.cobblemon.toitem.api`, `PokemonTooltip`은 `jbro.cobblemon.toitem.api.client`에 있습니다. 전송 API는 서버 스레드에서 호출해야 합니다. 사이드바 GUI 경로는 일반 인벤토리와 합성 메뉴에서 실행합니다. 인벤토리 아이템의 Shift 복원은 일반 인벤토리 메뉴에서만 실행합니다. 명령 경로만 `dropOverflow = true`를 사용합니다.
+`PokemonItemData`·`PokemonTransfers`는 `jbro.cobblemon.toitem.api`, `PokemonTooltip`은 `jbro.cobblemon.toitem.api.client`에 있습니다. 전송 API는 서버 스레드에서 호출해야 합니다. 사이드바 GUI 경로는 일반 인벤토리, 합성 메뉴, 사이드바의 포켓몬 보관함(`cobblemon_party_sidebar:pokemon_storage`)에서 실행합니다. 인벤토리 아이템의 Shift 복원은 일반 인벤토리 메뉴에서만 실행합니다. 명령 경로만 `dropOverflow = true`를 사용합니다.
 
 아이템 데이터는 `custom_data.cobblemon_to_item`의 `version: 1`, `pokemon: <전체 Cobblemon NBT>`로 저장합니다. 알 수 없는 버전은 읽지 않습니다. 기존 `PTI_NBT` 아이템 마이그레이션은 이 모드에 포함하지 않으며, 추후 `jbro-policy`의 서버 데이터 일괄 변환 작업으로 처리합니다. 마이그레이션 전에 구버전 아이템을 새 아이템으로 취급하지 않습니다.
 

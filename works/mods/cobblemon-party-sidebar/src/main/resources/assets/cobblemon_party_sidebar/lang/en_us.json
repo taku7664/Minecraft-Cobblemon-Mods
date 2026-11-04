@@ -8,7 +8,6 @@
   "button.cobblemon_party_sidebar.fusion": "Pokemon Fusion",
   "cobblemon_party_sidebar.message.preset_in_battle": "Presets cannot be switched during a battle.",
   "cobblemon_party_sidebar.message.busy": "A Pokémon is busy right now.",
-  "cobblemon_party_sidebar.message.pc_full": "Your PC has no room for the Pokémon leaving the party.",
   "cobblemon_party_sidebar.message.storage_full": "The item storage is full.",
   "cobblemon_party_sidebar.message.preset_limit": "You cannot add more presets.",
   "cobblemon_party_sidebar.message.preset_last": "The last preset cannot be deleted.",
@@ -17,8 +16,18 @@
   "button.cobblemon_party_sidebar.add": "Add preset",
   "button.cobblemon_party_sidebar.delete": "Delete preset",
   "button.cobblemon_party_sidebar.delete_confirm": "Click again to delete this preset",
-  "button.cobblemon_party_sidebar.storage": "Item storage",
   "button.cobblemon_party_sidebar.previous": "Previous preset",
   "button.cobblemon_party_sidebar.next": "Next preset",
-  "tooltip.cobblemon_party_sidebar.missing": "Not in the item storage: %s"
+  "tooltip.cobblemon_party_sidebar.missing": "Not in the item storage: %s",
+  "cobblemon_party_sidebar.message.pokemon_storage_full": "The Pokémon storage has no room for the Pokémon leaving the party.",
+  "cobblemon_party_sidebar.message.duplicate": "That Pokémon is already in your party or PC.",
+  "container.cobblemon_party_sidebar.pokemon_storage": "Pokémon Storage",
+  "button.cobblemon_party_sidebar.item_storage": "Item storage",
+  "button.cobblemon_party_sidebar.pokemon_storage": "Pokémon storage",
+  "button.cobblemon_party_sidebar.back": "Back to the inventory",
+  "preset.cobblemon_party_sidebar.default": "Preset %s",
+  "tooltip.cobblemon_party_sidebar.rename": "Click to rename",
+  "tooltip.cobblemon_party_sidebar.missing_pokemon": "This preset's Pokémon is not here",
+  "screen.cobblemon_party_sidebar.rename": "Rename preset",
+  "screen.cobblemon_party_sidebar.rename_hint": "Enter to save, Esc to cancel"
 }

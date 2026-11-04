@@ -24,11 +24,17 @@ import java.util.UUID
 object PokemonTransfers {
     const val COMMAND = "poke2item"
 
-    /** Cursor transfers only support the survival inventory and the registered fusion menu. */
+    /** Menus whose player inventory takes Pokemon items by ID, so this mod needs neither of them to load. */
+    private val SIDEBAR_MENUS = setOf(
+        ResourceLocation.fromNamespaceAndPath("pokefusion", "fusion"),
+        ResourceLocation.fromNamespaceAndPath("cobblemon_party_sidebar", "pokemon_storage"),
+    )
+
+    /** Cursor transfers only support the survival inventory, the fusion menu and the party sidebar's Pokemon storage. */
     @JvmStatic fun supportsSidebarMenu(menu: AbstractContainerMenu): Boolean {
         if (menu is InventoryMenu) return true
         return try {
-            BuiltInRegistries.MENU.getKey(menu.type) == ResourceLocation.fromNamespaceAndPath("pokefusion", "fusion")
+            BuiltInRegistries.MENU.getKey(menu.type) in SIDEBAR_MENUS
         } catch (_: UnsupportedOperationException) {
             false // Unregistered client menus (including creative inventory) have no MenuType.
         }
