@@ -1,5 +1,10 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-11-04 13:12] 사이드바 포켓몬 보관함 메뉴 허용 (0.1.6, 빌드·main·개발 배포, 실게임 미확인)
+
+- **구현:** `supportsSidebarMenu`가 `pokefusion:fusion`에 더해 `cobblemon_party_sidebar:pokemon_storage`도 허용한다. 레지스트리 ID로만 비교하므로 두 모드 중 어느 쪽도 로드할 필요가 없다. 전송 규칙·롤백은 바꾸지 않았다.
+- **빌드·배포:** 사이드바 0.4.0과 함께 커밋 `561dff479`에 넣었다. 개발 서버·클라이언트 0.1.5 → 0.1.6, SHA-256 `af1771f91c5c2d0a9a4ff17ab2a304cb8eec953523a3cab3a9c6992cc064472e` 일치. 단위 테스트는 실행하지 않았다(빌드는 `-x test`).
+
 ## [2026-10-24 15:10] 개발 서버·클라이언트 배포 (0.1.5, 실게임 미확인)
 
 - **배치:** 사용자 요청으로 `develop-product/server/mods`와 `develop-product/client/mods`(cobblemon-dev 정션)에 아이템화 0.1.5·사이드바 0.2.3·포켓퓨전 1.4.2를 함께 설치했다. 기존 각 모드 JAR은 대상 폴더에서 교체했으며 백업은 `F:\AI\builds\cobblemon-mods-sidebar-fusion-20261024\deployment-backups\20261024-151020`에 보관했다.
