@@ -181,20 +181,16 @@ internal object PvpLobbyView {
         val standing = PvpRankedClientState.standings[format]
         val lines = buildList {
             add(Line(player?.name ?: Component.empty(), Tone.TEXT))
-            val games = standing?.let { it.wins + it.losses } ?: 0
-            when {
-                standing == null -> add(Line(lobby("profile.loading"), Tone.DIM))
-                // Before the first game a place, a record and a peak say nothing; the rating alone does.
-                games == 0 -> {
-                    add(Line(lobby("profile.rating", standing.rating), Tone.ACCENT))
-                    add(Line(lobby("profile.no_games"), Tone.DIM))
-                }
-                else -> {
-                    add(Line(lobby("profile.rating", standing.rating), Tone.ACCENT))
-                    add(Line(lobby("profile.rank", standing.rank, standing.ladderSize), Tone.TEXT))
-                    add(Line(lobby("profile.record", standing.wins, standing.losses, Math.round(standing.wins * 100.0 / games).toInt()), Tone.TEXT))
-                    add(Line(lobby("profile.peak", standing.peak), Tone.DIM))
-                }
+            if (standing == null) {
+                add(Line(lobby("profile.loading"), Tone.DIM))
+            } else {
+                // The record always shows, 0W 0L before the first game; only the place waits for one.
+                val games = standing.wins + standing.losses
+                val rate = if (games == 0) 0 else Math.round(standing.wins * 100.0 / games).toInt()
+                add(Line(lobby("profile.rating", standing.rating), Tone.ACCENT))
+                add(Line(if (standing.rank > 0) lobby("profile.rank", standing.rank, standing.ladderSize) else lobby("profile.unranked"), Tone.TEXT))
+                add(Line(lobby("profile.record", standing.wins, standing.losses, rate), Tone.TEXT))
+                add(Line(lobby("profile.peak", standing.peak), Tone.DIM))
             }
         }
         host.add(Lines(columns["lines"], lines))

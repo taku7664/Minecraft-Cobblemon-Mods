@@ -150,7 +150,7 @@
   "chat.more_cobblemon_contents.pvp.ranked_forfeit": "[랭크] %1$s이(가) %2$s의 선출 포기로 %3$s 1:1에서 승리했습니다!",
   "screen.more_cobblemon_contents.pvp.ranked.dropped": "랭크 매칭이 취소됐습니다: %s",
   "screen.more_cobblemon_contents.pvp.ranked.error.match_failed": "랭크 대전을 시작하지 못했습니다. 다시 매칭해 주세요.",
-  "screen.more_cobblemon_contents.pvp.lobby.profile.no_games": "랭크 전적 없음",
+  "screen.more_cobblemon_contents.pvp.lobby.profile.unranked": "순위 없음",
   "screen.more_cobblemon_contents.pvp.lobby.hud.selection": "선출 중 · %s",
   "screen.more_cobblemon_contents.pvp.opponent_team": "상대 등록 파티",
   "screen.more_cobblemon_contents.pvp.your_team": "내 선출",

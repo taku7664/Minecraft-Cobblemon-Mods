@@ -150,7 +150,7 @@
   "chat.more_cobblemon_contents.pvp.ranked_forfeit": "[Ranked] %1$s won a 1v1 %3$s as %2$s left the team preview!",
   "screen.more_cobblemon_contents.pvp.ranked.dropped": "Ranked search cancelled: %s",
   "screen.more_cobblemon_contents.pvp.ranked.error.match_failed": "The ranked battle could not start. Please search again.",
-  "screen.more_cobblemon_contents.pvp.lobby.profile.no_games": "No ranked games",
+  "screen.more_cobblemon_contents.pvp.lobby.profile.unranked": "Unranked",
   "screen.more_cobblemon_contents.pvp.lobby.hud.selection": "Team preview · %s",
   "screen.more_cobblemon_contents.pvp.opponent_team": "Opponent's registered team",
   "screen.more_cobblemon_contents.pvp.your_team": "Your selection",
