@@ -175,7 +175,7 @@ object PresetService {
         val itemStorage = storage(player)
         if (!itemStorage.canTake(current.map { it.heldItem() }.filter(StoredMark::isStored))) return reject(player, "storage_full")
         return try {
-            // Everything that can fail is worked out before anything moves.
+            // The arriving Pokemon are read before anything moves, so a bad item stops the switch untouched.
             val arriving = sources.map { source ->
                 if (source !is Source.Stored) return@map null
                 val stack = if (source.inventory) inventory.getItem(source.slot) else items[source.slot]
@@ -185,17 +185,19 @@ object PresetService {
                 if (party.any { it.uuid == pokemon.uuid } || pc.any { it.uuid == pokemon.uuid }) return reject(player, "duplicate")
                 pokemon
             }
+            // Borrowed items go back first. Packing a Pokemon before that saved the borrowed item inside the Pokemon
+            // item while the same item also went back to the storage: one item became two on every round trip.
+            for (pokemon in current) {
+                if (!StoredMark.isStored(pokemon.heldItem())) continue
+                val back = pokemon.removeHeldItem()
+                if (!itemStorage.add(back)) pokemon.swapHeldItem(back, false, false)
+            }
+            // A failure here leaves every Pokemon in the party and every borrowed item in the storage.
             val packed = leaving.map { pokemon ->
                 val stack = PokemonItemData.create(pokemon, registries)
                 val tag = PokemonItemData.pokemonTag(stack) ?: return reject(player, "failed")
                 check(Pokemon.loadFromNBT(registries, tag).uuid == pokemon.uuid) { "Pokemon item changed identity" }
                 stack
-            }
-
-            for (pokemon in current) {
-                if (!StoredMark.isStored(pokemon.heldItem())) continue
-                val back = pokemon.removeHeldItem()
-                if (!itemStorage.add(back)) pokemon.swapHeldItem(back, false, false)
             }
             current.forEach { if (it.entity != null) it.recall() }
             current.forEach { party.remove(it) }

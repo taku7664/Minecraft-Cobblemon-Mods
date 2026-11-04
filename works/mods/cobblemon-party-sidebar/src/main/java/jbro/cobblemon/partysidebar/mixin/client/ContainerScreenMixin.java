@@ -37,9 +37,9 @@ public abstract class ContainerScreenMixin {
         if (!((Object) this instanceof InventoryScreen) && PartySidebar.INSTANCE.mouseReleased(cobblemonPartySidebar$self(), x, y, button)) cir.setReturnValue(true);
     }
 
-    @Inject(method = "onClose", at = @At("TAIL"))
+    @Inject(method = "onClose", at = @At("HEAD"), cancellable = true)
     private void cobblemonPartySidebar$close(CallbackInfo ci) {
-        PartySidebar.INSTANCE.closed(cobblemonPartySidebar$self());
+        if (PartySidebar.INSTANCE.closeToInventory(cobblemonPartySidebar$self())) ci.cancel();
     }
 
     @Inject(method = "hasClickedOutside", at = @At("HEAD"), cancellable = true)

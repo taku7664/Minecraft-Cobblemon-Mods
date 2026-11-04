@@ -26,6 +26,7 @@ import net.minecraft.client.gui.screens.inventory.InventoryScreen
 import net.minecraft.client.renderer.RenderType
 import net.minecraft.core.registries.BuiltInRegistries
 import net.minecraft.network.chat.Component
+import net.minecraft.network.protocol.game.ServerboundContainerClosePacket
 import net.minecraft.resources.ResourceLocation
 import net.minecraft.world.inventory.ClickType
 import net.minecraft.world.inventory.InventoryMenu
@@ -422,7 +423,7 @@ object PartySidebar {
         val state = PresetClient.state
         val kind = storageKind(screen)
         when (button) {
-            Button.FUSION -> if (isFusion(screen)) screen.onClose()
+            Button.FUSION -> if (isFusion(screen)) closeToInventory(screen)
                 else Minecraft.getInstance().player?.connection?.sendCommand(FUSION_COMMAND)
             Button.ADD -> ClientPlayNetworking.send(PresetActionPayload(PresetActionPayload.Action.ADD))
             Button.DELETE -> {
@@ -431,10 +432,16 @@ object PartySidebar {
                     ClientPlayNetworking.send(PresetActionPayload(PresetActionPayload.Action.DELETE))
                 } else deleteArmedUntil = Util.getMillis() + DELETE_CONFIRM_MILLIS
             }
-            Button.ITEMS -> if (kind == StorageKind.ITEMS) screen.onClose()
-                else ClientPlayNetworking.send(PresetActionPayload(PresetActionPayload.Action.OPEN_ITEMS))
-            Button.POKEMON -> if (kind == StorageKind.POKEMON) screen.onClose()
-                else ClientPlayNetworking.send(PresetActionPayload(PresetActionPayload.Action.OPEN_POKEMON))
+            // Switching windows closes this one first, so the server need not close it with a packet that would
+            // empty the screen in between and recentre the cursor.
+            Button.ITEMS -> if (kind == StorageKind.ITEMS) closeToInventory(screen) else {
+                closeToInventory(screen)
+                ClientPlayNetworking.send(PresetActionPayload(PresetActionPayload.Action.OPEN_ITEMS))
+            }
+            Button.POKEMON -> if (kind == StorageKind.POKEMON) closeToInventory(screen) else {
+                closeToInventory(screen)
+                ClientPlayNetworking.send(PresetActionPayload(PresetActionPayload.Action.OPEN_POKEMON))
+            }
             Button.PREVIOUS -> state?.let { ClientPlayNetworking.send(PresetActionPayload(PresetActionPayload.Action.SELECT, it.active - 1)) }
             Button.NEXT -> state?.let { ClientPlayNetworking.send(PresetActionPayload(PresetActionPayload.Action.SELECT, it.active + 1)) }
         }
@@ -472,12 +479,19 @@ object PartySidebar {
         }
     }
 
-    /** Closing a storage or the fusion window (Esc, the inventory key or its button) goes back to the inventory. */
-    fun closed(screen: AbstractContainerScreen<*>) {
-        if (screen.menu !is StorageMenu && !isFusion(screen)) return
+    /**
+     * Closing a storage or the fusion window (Esc, the inventory key or its button) goes back to the inventory; true
+     * when it did. This does what `LocalPlayer.closeContainer` does but goes straight to the inventory screen: the
+     * empty screen in between grabbed the mouse, and the next screen put the cursor back in the middle.
+     */
+    fun closeToInventory(screen: AbstractContainerScreen<*>): Boolean {
+        if (screen.menu !is StorageMenu && !isFusion(screen)) return false
         val minecraft = Minecraft.getInstance()
-        val player = minecraft.player ?: return
+        val player = minecraft.player ?: return false
+        player.connection.send(ServerboundContainerClosePacket(screen.menu.containerId))
+        player.containerMenu = player.inventoryMenu
         minecraft.setScreen(InventoryScreen(player))
+        return true
     }
 
     /** Asks the server to itemize the Pokemon in [row], placing the item on the cursor or directly in the inventory. */
