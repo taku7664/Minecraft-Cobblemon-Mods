@@ -20,9 +20,19 @@ object PresetServerConfig {
     var consumeStoredItemsInBattle = true
         private set
 
-    /** A battle wants [pokemon]'s held item changed; false keeps a borrowed storage item where it is. */
-    @JvmStatic fun battleMayChange(pokemon: BattlePokemon): Boolean =
-        consumeStoredItemsInBattle || !StoredMark.isStored(pokemon.effectedPokemon.heldItem())
+    /**
+     * A battle wants [pokemon]'s held item changed ([change]: `take` uses it up or loses it, `give` replaces it); false
+     * keeps a borrowed storage item where it is. Either way a borrowed item is logged for support questions.
+     */
+    @JvmStatic fun battleMayChange(pokemon: BattlePokemon, change: String): Boolean {
+        val held = pokemon.effectedPokemon.heldItem()
+        if (!StoredMark.isStored(held)) return true
+        val owner = pokemon.effectedPokemon.getOwnerPlayer()
+        val where = "held(pokemon=${pokemon.effectedPokemon.uuid} species=${pokemon.effectedPokemon.species.resourceIdentifier})"
+        StorageLog.log(owner, if (consumeStoredItemsInBattle) "battle_$change" else "battle_${change}_kept",
+            StorageLog.describe(held), where, if (consumeStoredItemsInBattle) "battle" else where)
+        return consumeStoredItemsInBattle
+    }
 
     fun load() {
         val path = FabricLoader.getInstance().configDir.resolve(FILE)

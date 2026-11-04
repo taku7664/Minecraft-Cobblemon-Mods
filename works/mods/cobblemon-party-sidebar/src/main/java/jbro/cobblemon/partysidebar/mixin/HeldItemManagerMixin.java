@@ -17,11 +17,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class HeldItemManagerMixin {
     @Inject(method = "take", at = @At("HEAD"), cancellable = true)
     private void cobblemonPartySidebar$keepBorrowedOnTake(BattlePokemon pokemon, String showdownId, CallbackInfo ci) {
-        if (!PresetServerConfig.battleMayChange(pokemon)) ci.cancel();
+        if (!PresetServerConfig.battleMayChange(pokemon, "take")) ci.cancel();
     }
 
     @Inject(method = "give", at = @At("HEAD"), cancellable = true)
     private void cobblemonPartySidebar$keepBorrowedOnGive(BattlePokemon pokemon, String showdownId, CallbackInfo ci) {
-        if (!PresetServerConfig.battleMayChange(pokemon)) ci.cancel();
+        if (!PresetServerConfig.battleMayChange(pokemon, "give")) ci.cancel();
     }
 }

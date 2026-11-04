@@ -7,6 +7,7 @@ import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.partysidebar.network.HeldItemClickPayload
 import jbro.cobblemon.partysidebar.preset.PresetService
 import jbro.cobblemon.partysidebar.preset.StorageKind
+import jbro.cobblemon.partysidebar.preset.StorageLog
 import jbro.cobblemon.partysidebar.preset.StorageMenu
 import jbro.cobblemon.partysidebar.preset.StoredMark
 import jbro.cobblemon.toitem.api.PokemonTransfers
@@ -55,7 +56,9 @@ object HeldItemExchange {
             if (storage.canTake(listOf(held))) {
                 val removed = pokemon.swapHeldItem(ItemStack.EMPTY, decrement = false)
                 if (!pokemon.heldItem().isEmpty) return
-                if (!storage.add(removed)) player.inventory.placeItemBackInInventory(removed)
+                val what = StorageLog.describe(removed)
+                if (storage.add(removed)) StorageLog.log(player, "deposit", what, heldBy(pokemon), "item_storage")
+                else player.inventory.placeItemBackInInventory(removed)
                 return
             }
         }
@@ -79,6 +82,7 @@ object HeldItemExchange {
         }
         val removed = pokemon.swapHeldItem(ItemStack.EMPTY, decrement = false)
         if (!pokemon.heldItem().isEmpty) return
+        StorageLog.log(player, "return", StorageLog.describe(removed), heldBy(pokemon), "item_storage")
         storage.add(removed)
         PresetService.forgetReference(player, pokemon)
     }
@@ -113,13 +117,19 @@ object HeldItemExchange {
         // Takes one item off the cursor stack; a cancelled swap leaves the stack untouched.
         val returned = pokemon.swapHeldItem(carried, decrement = true, aiCanDrop = false)
         if (carried.count == before) return
+        if (StoredMark.isStored(pokemon.heldItem())) {
+            StorageLog.log(player, "lend", StorageLog.describe(pokemon.heldItem()), "cursor", heldBy(pokemon))
+        }
         if (StoredMark.isStored(returned)) {
+            StorageLog.log(player, "return", StorageLog.describe(returned), heldBy(pokemon), "item_storage")
             storage.add(returned)
             return
         }
         if (carried.isEmpty) menu.carried = returned
         else if (!returned.isEmpty) player.inventory.placeItemBackInInventory(returned)
     }
+
+    private fun heldBy(pokemon: Pokemon) = "held(pokemon=${pokemon.uuid} species=${pokemon.species.resourceIdentifier})"
 
     /** The same check Cobblemon makes when a player hands an item to a Pokemon in the world. */
     private fun isForbidden(stack: ItemStack): Boolean {

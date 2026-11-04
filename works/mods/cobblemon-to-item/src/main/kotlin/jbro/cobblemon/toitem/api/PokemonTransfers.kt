@@ -174,13 +174,29 @@ object PokemonTransfers {
             consume = { source.set(ItemStack.EMPTY) }, restoreSource = { source.set(original) })
     }
 
+    /**
+     * Quick-move out of a window's own slot (the party sidebar's Pokemon storage) into the lowest empty party slot.
+     * Only in a supported sidebar menu with an empty cursor; a full party refuses and leaves the item where it is.
+     */
+    @JvmStatic fun restoreFromMenuSlot(player: ServerPlayer, menuSlot: Int): Boolean {
+        val menu = player.containerMenu
+        if (!supportsSidebarMenu(menu) || !menu.carried.isEmpty) return false
+        val source = menu.slots.getOrNull(menuSlot) ?: return false
+        if (source.container === player.inventory) return false
+        val stack = source.item
+        if (PokemonItemData.pokemonTag(stack) == null) return reject(player, "invalid_item")
+        val original = stack.copy()
+        return restore(player, stack, null, allowPc = false,
+            consume = { source.set(ItemStack.EMPTY) }, restoreSource = { source.set(original) }, from = "menu[$menuSlot]")
+    }
+
     /** The held-item use route may overflow to the PC; failed storage never consumes the item. */
     @JvmStatic fun restoreHeld(player: ServerPlayer, stack: ItemStack): Boolean =
         restore(player, stack, null, allowPc = true,
             consume = { stack.shrink(1) }, restoreSource = { stack.count = 1 })
 
     private fun restore(player: ServerPlayer, stack: ItemStack, requestedSlot: Int?, allowPc: Boolean,
-                        consume: () -> Unit, restoreSource: () -> Unit): Boolean {
+                        consume: () -> Unit, restoreSource: () -> Unit, from: String? = null): Boolean {
         if (!allowed(player, inventoryOnly = !allowPc)) return false
         val tag = PokemonItemData.pokemonTag(stack) ?: return reject(player, "invalid_item")
         return guarded(player) {
@@ -207,7 +223,7 @@ object PokemonTransfers {
                 },
             )
             logTransfer(player, pokemon,
-                if (allowPc) "held_item" else if (requestedSlot != null) "cursor" else "inventory",
+                from ?: if (allowPc) "held_item" else if (requestedSlot != null) "cursor" else "inventory",
                 if (slot != null) "party[${slot + 1}]" else "pc[$pcPosition]", success)
             success
         }

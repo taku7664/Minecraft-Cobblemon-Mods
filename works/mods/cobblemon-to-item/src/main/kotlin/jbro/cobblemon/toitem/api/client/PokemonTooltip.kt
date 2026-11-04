@@ -40,6 +40,12 @@ object PokemonTooltip {
     private const val LOWERED_COLOR = 0x80B0FF
     private const val MAX_STAT_COLOR = 0x55FF55
 
+    /**
+     * How the held item's name is written. Another mod may wrap it, as the party sidebar marks the items Pokemon borrow
+     * from its storage; set it once from a client entrypoint.
+     */
+    @JvmStatic var heldItemName: (ItemStack) -> Component = { it.hoverName }
+
     /** Shared detailed tooltip for party entries and Pokemon items. */
     @JvmStatic @JvmOverloads
     fun render(graphics: GuiGraphics, pokemon: Pokemon, mouseX: Int, mouseY: Int, extraLines: List<Component> = emptyList()) {
@@ -97,7 +103,7 @@ object PokemonTooltip {
         add(labelled("nature", Component.translatable(pokemon.effectiveNature.displayName)))
         add(labelled("ability", Component.translatable(pokemon.ability.displayName)))
         val held = pokemon.heldItem()
-        add(labelled("held_item", if (held.isEmpty) key("held_item_none") else held.hoverName))
+        add(labelled("held_item", if (held.isEmpty) key("held_item_none") else heldItemName(held)))
     }
 
     /** Five upright bars, filled from XS (one) through XL (five), followed by the native category. */

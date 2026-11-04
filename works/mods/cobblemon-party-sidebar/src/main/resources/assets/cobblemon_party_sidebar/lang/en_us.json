@@ -29,5 +29,16 @@
   "tooltip.cobblemon_party_sidebar.rename": "Click to rename",
   "tooltip.cobblemon_party_sidebar.missing_pokemon": "This preset's Pokémon is not here",
   "screen.cobblemon_party_sidebar.rename": "Rename preset",
-  "screen.cobblemon_party_sidebar.rename_hint": "Enter to save, Esc to cancel"
+  "screen.cobblemon_party_sidebar.rename_hint": "Enter to save, Esc to cancel",
+  "command.cobblemon_party_sidebar.storage.none": "%s has no presets or storage yet.",
+  "command.cobblemon_party_sidebar.storage.items.header": "Item storage of %s (%s of %s slots used)",
+  "command.cobblemon_party_sidebar.storage.items.offline": "  Offline: items lent to the party are not shown.",
+  "command.cobblemon_party_sidebar.storage.items.lent": "  Lent to party slot %s (%s): %s",
+  "command.cobblemon_party_sidebar.storage.pokemon.header": "Pokémon storage of %s (%s of %s slots used)",
+  "command.cobblemon_party_sidebar.storage.pokemon.unreadable": " (unreadable Pokémon data)",
+  "command.cobblemon_party_sidebar.storage.pokemon.held": "holds %s",
+  "command.cobblemon_party_sidebar.storage.presets.header": "Presets of %s (%s)",
+  "command.cobblemon_party_sidebar.storage.presets.active": " (current)",
+  "command.cobblemon_party_sidebar.storage.presets.lends": "lends %s",
+  "command.cobblemon_party_sidebar.storage.presets.lost": "[missing]"
 }

@@ -29,5 +29,16 @@
   "tooltip.cobblemon_party_sidebar.rename": "클릭해서 이름 바꾸기",
   "tooltip.cobblemon_party_sidebar.missing_pokemon": "이 프리셋의 포켓몬이 없습니다",
   "screen.cobblemon_party_sidebar.rename": "프리셋 이름 바꾸기",
-  "screen.cobblemon_party_sidebar.rename_hint": "Enter로 저장, Esc로 취소"
+  "screen.cobblemon_party_sidebar.rename_hint": "Enter로 저장, Esc로 취소",
+  "command.cobblemon_party_sidebar.storage.none": "%s에게는 아직 프리셋이나 보관함 기록이 없습니다.",
+  "command.cobblemon_party_sidebar.storage.items.header": "%s의 도구 보관함 (%s/%s칸 사용)",
+  "command.cobblemon_party_sidebar.storage.items.offline": "  접속 중이 아니라 파티가 빌려 간 도구는 보이지 않습니다.",
+  "command.cobblemon_party_sidebar.storage.items.lent": "  파티 %s번(%s)이 빌림: %s",
+  "command.cobblemon_party_sidebar.storage.pokemon.header": "%s의 포켓몬 보관함 (%s/%s칸 사용)",
+  "command.cobblemon_party_sidebar.storage.pokemon.unreadable": " (포켓몬 데이터를 읽을 수 없음)",
+  "command.cobblemon_party_sidebar.storage.pokemon.held": "지닌 도구 %s",
+  "command.cobblemon_party_sidebar.storage.presets.header": "%s의 프리셋 (%s개)",
+  "command.cobblemon_party_sidebar.storage.presets.active": " (현재)",
+  "command.cobblemon_party_sidebar.storage.presets.lends": "빌림 %s",
+  "command.cobblemon_party_sidebar.storage.presets.lost": "[없음]"
 }

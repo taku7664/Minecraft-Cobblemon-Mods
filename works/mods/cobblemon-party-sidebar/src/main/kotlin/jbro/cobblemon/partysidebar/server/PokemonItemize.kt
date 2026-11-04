@@ -3,6 +3,7 @@ package jbro.cobblemon.partysidebar.server
 import jbro.cobblemon.partysidebar.network.ItemizePayload
 import jbro.cobblemon.partysidebar.network.RestorePayload
 import jbro.cobblemon.partysidebar.preset.StorageKind
+import jbro.cobblemon.partysidebar.preset.StorageLog
 import jbro.cobblemon.partysidebar.preset.StorageMenu
 import jbro.cobblemon.toitem.api.PokemonItemData
 import jbro.cobblemon.toitem.api.PokemonTransfers
@@ -33,7 +34,12 @@ object PokemonItemize {
         } else -1
         if (!PokemonTransfers.itemize(player, payload.slot, payload.pokemonId, staging, dropOverflow = false) || staging < 0) return
         if (PokemonItemData.pokemonTag(menu.slots[staging].item)?.getUUID("UUID") != payload.pokemonId) return
+        val item = menu.slots[staging].item.copy()
         menu.quickMoveStack(player, staging)
+        // Cobblemon To Item logged the step into the inventory; this logs where the window took it.
+        val moved = menu.slots[staging].item.isEmpty
+        StorageLog.log(player, if (moved) "deposit" else "deposit_refused", StorageLog.describe(item), "inventory[${menu.slots[staging].containerSlot}]",
+            if (menu is StorageMenu) "pokemon_storage" else "fusion")
         menu.broadcastChanges()
     }
 

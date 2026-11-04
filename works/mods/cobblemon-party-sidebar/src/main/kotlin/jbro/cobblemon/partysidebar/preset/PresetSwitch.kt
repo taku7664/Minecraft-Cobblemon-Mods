@@ -47,7 +47,8 @@ class PresetSwitch(
     private val packer: PokemonPacker,
 ) {
     sealed interface Result {
-        data class Done(val arriving: List<UUID>, val leaving: List<UUID>) : Result
+        /** [moves] lists every item and Pokemon the switch moved, for the support log ([StorageLog]). */
+        data class Done(val arriving: List<UUID>, val leaving: List<UUID>, val moves: List<Move> = emptyList()) : Result
         data class Refused(val reason: String) : Result
     }
 
@@ -61,6 +62,11 @@ class PresetSwitch(
 
         data class Stored(val slot: Int, override val uuid: UUID) : Source
     }
+
+    /** One thing a switch moved: an [action] of `switch_*`, what moved and where from and to. */
+    data class Move(val action: String, val what: String, val from: String, val to: String)
+
+    private fun held(pokemon: Pokemon) = "held(pokemon=${pokemon.uuid} species=${pokemon.species.resourceIdentifier})"
 
     fun current(): List<Pokemon> = (0 until PresetData.PARTY_SIZE).mapNotNull { party.get(it) }
 
@@ -87,10 +93,12 @@ class PresetSwitch(
         }
         // Borrowed items go back first. Packing a Pokemon before that saved the borrowed item inside the Pokemon item
         // while the same item also went back to the storage: one item became two on every round trip.
+        val moves = mutableListOf<Move>()
         for (pokemon in current) {
             if (!StoredMark.isStored(pokemon.heldItem())) continue
             val back = pokemon.removeHeldItem()
-            if (!itemStorage.add(back)) pokemon.swapHeldItem(back, false, false)
+            if (itemStorage.add(back)) moves += Move("switch_return", StorageLog.describe(back), held(pokemon), "item_storage")
+            else pokemon.swapHeldItem(back, false, false)
         }
         // A failure here leaves every Pokemon in the party and every borrowed item in the storage.
         val packed = leaving.map(packer::pack)
@@ -100,14 +108,17 @@ class PresetSwitch(
             if (source !is Source.Stored) continue
             pokemonStorage.setItem(source.slot, ItemStack.EMPTY)
         }
-        for (stack in packed) {
+        for ((index, stack) in packed.withIndex()) {
             val slot = pokemonItems.indexOfFirst(ItemStack::isEmpty)
             check(slot >= 0) { "Pokemon storage filled up during a switch" }
             pokemonStorage.setItem(slot, stack)
+            moves += Move("switch_out", StorageLog.describe(stack), "party(${leaving[index].uuid})", "pokemon_storage[$slot]")
         }
         sources.forEachIndexed { row, source ->
             val pokemon = (source as? Source.Party)?.pokemon ?: arriving[row] ?: return@forEachIndexed
             party.set(PartyPosition(row), pokemon)
+            if (source is Source.Stored) moves += Move("switch_in", StorageLog.pokemon(pokemon.uuid,
+                pokemon.species.resourceIdentifier.toString()), "pokemon_storage[${source.slot}]", "party[$row]")
         }
         for (row in 0 until PresetData.PARTY_SIZE) {
             val pokemon = party.get(row) ?: continue
@@ -117,10 +128,11 @@ class PresetSwitch(
             if (item.isEmpty) continue
             pokemon.swapHeldItem(item, false, false)
             if (pokemon.heldItem().isEmpty) itemStorage.add(item)
+            else moves += Move("switch_lend", StorageLog.describe(pokemon.heldItem()), "item_storage", held(pokemon))
         }
         // A row whose Pokemon is no longer in the Pokemon storage stays in the preset, red with its silhouette.
         target.slots.forEachIndexed { row, slot -> slot.lost = slot.pokemon != null && sources[row] == null }
-        return Result.Done(arriving.filterNotNull().map { it.uuid }, leaving.map { it.uuid })
+        return Result.Done(arriving.filterNotNull().map { it.uuid }, leaving.map { it.uuid }, moves)
     }
 
     companion object {

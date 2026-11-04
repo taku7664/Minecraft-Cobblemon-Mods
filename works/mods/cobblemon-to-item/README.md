@@ -27,6 +27,7 @@ PokemonItemData.pokemonTag(stack)
 PokemonItemData.putPokemon(rootTag, pokemonTag)
 PokemonTransfers.itemize(player, slot, pokemon.uuid, targetMenuSlot, dropOverflow = false)
 PokemonTransfers.restoreInventory(player, menuSlot, pokemonUuid)
+PokemonTransfers.restoreFromMenuSlot(player, menuSlot) // 사이드바 포켓몬 보관함 칸 → 파티 첫 빈칸
 PokemonTransfers.pickup(player, partySlot, pokemonUuid)
 PokemonTransfers.restoreCursor(player, partySlot, pokemonUuid, expectedTargetUuidOrNull)
 PokemonTransfers.restoreHeld(player, heldStack)
@@ -34,6 +35,7 @@ PokemonTransfers.restoreHeld(player, heldStack)
 // 클라이언트: 파티 Pokemon 또는 저장된 ItemStack으로 같은 툴팁을 표시합니다.
 PokemonTooltip.render(graphics, pokemon, mouseX, mouseY)
 PokemonTooltip.renderItemTooltip(graphics, stack, mouseX, mouseY)
+PokemonTooltip.heldItemName = { stack -> ... } // 지닌 도구 이름 꾸미기(사이드바가 보관함 도구에 상자 아이콘을 붙임)
 ```
 
 `PokemonItemData`·`PokemonTransfers`는 `jbro.cobblemon.toitem.api`, `PokemonTooltip`은 `jbro.cobblemon.toitem.api.client`에 있습니다. 전송 API는 서버 스레드에서 호출해야 합니다. 사이드바 GUI 경로는 일반 인벤토리, 합성 메뉴, 사이드바의 포켓몬 보관함(`cobblemon_party_sidebar:pokemon_storage`)에서 실행합니다. 인벤토리 아이템의 Shift 복원은 일반 인벤토리 메뉴에서만 실행합니다. 명령 경로만 `dropOverflow = true`를 사용합니다.

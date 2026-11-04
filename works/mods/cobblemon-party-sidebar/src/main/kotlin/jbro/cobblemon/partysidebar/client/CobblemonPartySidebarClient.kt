@@ -4,6 +4,7 @@ import jbro.cobblemon.partysidebar.CobblemonPartySidebar
 import jbro.cobblemon.partysidebar.network.PresetStatePayload
 import jbro.cobblemon.partysidebar.preset.StorageMenu
 import jbro.cobblemon.partysidebar.preset.StoredMark
+import jbro.cobblemon.toitem.api.client.PokemonTooltip
 import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents
@@ -33,6 +34,10 @@ object CobblemonPartySidebarClient : ClientModInitializer {
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> PresetClient.state = null }
         ItemTooltipCallback.EVENT.register { stack, _, _, lines ->
             if (StoredMark.isStored(stack) && lines.isNotEmpty()) lines[0] = PresetClient.namePrefix().append(lines[0])
+        }
+        // The Pokemon summary (party column, Pokemon items) names the held item itself; mark storage items there too.
+        PokemonTooltip.heldItemName = { stack ->
+            if (StoredMark.isStored(stack)) PresetClient.namePrefix().append(stack.hoverName) else stack.hoverName
         }
     }
 }

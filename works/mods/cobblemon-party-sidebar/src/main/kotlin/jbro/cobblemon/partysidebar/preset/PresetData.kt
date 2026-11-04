@@ -48,6 +48,9 @@ class PresetData : SavedData() {
 
     fun get(player: UUID): PlayerPresets = players.getOrPut(player) { PlayerPresets() }
 
+    /** A player's data without creating any, for read-only lookups. */
+    fun peek(player: UUID): PlayerPresets? = players[player]
+
     override fun save(tag: CompoundTag, registries: HolderLookup.Provider): CompoundTag {
         val list = ListTag()
         players.forEach { (id, data) ->

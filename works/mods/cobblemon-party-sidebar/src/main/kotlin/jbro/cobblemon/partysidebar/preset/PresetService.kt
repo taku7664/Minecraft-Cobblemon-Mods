@@ -149,6 +149,7 @@ object PresetService {
                     dirty(player)
                     CobblemonPartySidebar.LOGGER.info("[party-preset] player={} preset={} arriving={} leaving={}",
                         player.scoreboardName, index + 1, result.arriving, result.leaving)
+                    result.moves.forEach { StorageLog.log(player, it.action, it.what, it.from, it.to) }
                     true
                 }
             }
@@ -192,7 +193,14 @@ object PresetService {
             val stack = inventory.getItem(slot)
             if (!StoredMark.isStored(stack)) continue
             val target = storage ?: storage(player).also { storage = it }
-            if (target.add(stack)) inventory.setItem(slot, ItemStack.EMPTY) else StoredMark.unmark(stack)
+            val what = StorageLog.describe(stack)
+            if (target.add(stack)) {
+                inventory.setItem(slot, ItemStack.EMPTY)
+                StorageLog.log(player, "leak_return", what, "inventory[$slot]", "item_storage")
+            } else {
+                StoredMark.unmark(stack)
+                StorageLog.log(player, "leak_unmark", what, "inventory[$slot]", "inventory[$slot]")
+            }
             inventory.setChanged()
         }
     }

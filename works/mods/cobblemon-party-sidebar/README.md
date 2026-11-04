@@ -21,6 +21,7 @@ inventory texture, so it matches the inventory under any resource pack.
   Beside the Pokémon storage or the fusion window, shift-clicking a Pokémon sends it into that window instead (the
   storage's first free slot; fusion's base slot, then the first empty material slot), and beside the item storage
   shift-clicking a held item puts it in the storage. When the window is full it goes to the inventory as usual.
+  Shift-clicking a Pokémon in the Pokémon storage puts it in the lowest empty party slot; a full party leaves it there.
 - **Top row:** the current preset's name (click it in the inventory to rename, up to 16 characters; blank shows
   "Preset N"), then **add preset** and **delete preset** (click twice within three seconds).
 - **Bottom row:** **fusion** (Mega Showdown's DNA Splicers; opens PokeFusion's window as `/pokefusion` does, greyed
@@ -52,11 +53,29 @@ Held items cannot be changed during a battle, and Cobblemon's held-item tags (`c
 `cobblemon:held/whitelisted_items_to_hold`) apply. The column is not shown in the creative inventory. With EMI
 installed, EMI keeps its side panels clear of the column.
 
+## Support
+
+Every item or Pokémon that moves in or out of a storage leaves a server log line, in the same shape as Cobblemon To
+Item's `[pokemon-transfer]` lines:
+
+```
+[party-storage] player=<name> playerUuid=<uuid> action=<action> what=<item id xN [stored] | pokemon=<uuid> species=<id>> from=<where> to=<where>
+```
+
+Actions: `deposit`/`withdraw` (storage windows, found by comparing the storage before and after each click),
+`lend`/`return` (held-item slots), `switch_out`/`switch_in`/`switch_return`/`switch_lend` (preset switches, beside the
+`[party-preset]` summary line), `leak_return`/`leak_unmark`, and `battle_take`/`battle_give` (with `_kept` when
+`consumeStoredItemsInBattle` is off).
+
+Operators (level 2) can look a player up, online or not, with `/partystorage <player> items|pokemon|presets`: the item
+storage (plus the items the party borrows, when online), the Pokémon storage with levels and held items, and each
+preset's rows with the item they lend and whether they are missing. Pokémon UUIDs click to copy, for searching the log.
+
 ## Installation
 
 Install the same version on **both client and server**. Requires Minecraft 1.21.1, Java 21, Fabric Loader 0.19.5+,
 Fabric API, Fabric Language Kotlin 1.14.1+kotlin.2.4.20+ and Cobblemon 1.8.1 (below 1.9.0). Mod Menu and EMI
-are optional; Cobblemon To Item 0.1.6+ is required. Cobblemon has no packet for a client to change a held item, so the server half makes that change; on a
+are optional; Cobblemon To Item 0.1.7+ is required. Cobblemon has no packet for a client to change a held item, so the server half makes that change; on a
 server without this mod the column only shows the party; slot interactions need the server half.
 
 ## Settings

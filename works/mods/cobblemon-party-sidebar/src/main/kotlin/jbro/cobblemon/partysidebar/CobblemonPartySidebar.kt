@@ -7,10 +7,12 @@ import jbro.cobblemon.partysidebar.network.PresetStatePayload
 import jbro.cobblemon.partysidebar.network.RestorePayload
 import jbro.cobblemon.partysidebar.preset.PresetServerConfig
 import jbro.cobblemon.partysidebar.preset.PresetService
+import jbro.cobblemon.partysidebar.preset.StorageCommand
 import jbro.cobblemon.partysidebar.preset.StorageMenu
 import jbro.cobblemon.partysidebar.server.HeldItemExchange
 import jbro.cobblemon.partysidebar.server.PokemonItemize
 import net.fabricmc.api.ModInitializer
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
@@ -51,6 +53,7 @@ object CobblemonPartySidebar : ModInitializer {
             PresetService.handle(context.player(), payload)
         }
         ServerTickEvents.END_SERVER_TICK.register(PresetService::tick)
+        CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> StorageCommand.register(dispatcher) }
         ServerPlayConnectionEvents.JOIN.register { handler, _, _ -> PresetService.sync(handler.player, force = true) }
         ServerPlayConnectionEvents.DISCONNECT.register { handler, _ -> PresetService.forget(handler.player) }
     }

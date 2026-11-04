@@ -2,9 +2,11 @@ package jbro.cobblemon.partysidebar.preset
 
 import jbro.cobblemon.partysidebar.CobblemonPartySidebar
 import jbro.cobblemon.toitem.api.PokemonItemData
+import jbro.cobblemon.toitem.api.PokemonTransfers
 import net.minecraft.core.NonNullList
 import net.minecraft.core.Registry
 import net.minecraft.core.registries.BuiltInRegistries
+import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.Container
 import net.minecraft.world.ContainerHelper
 import net.minecraft.world.SimpleContainer
@@ -121,7 +123,8 @@ private class PokemonSlot(container: Container, slot: Int, x: Int, y: Int) : Slo
  *
  * In the item storage, items leaving for the player inventory lose their mark; a storage item on the cursor keeps it,
  * so dropping it on a held-item slot lends it to that Pokemon (see the held-item exchange). The Pokemon storage takes
- * only Pokemon items; the party column beside it itemizes and restores Pokemon as in the inventory.
+ * only Pokemon items; the party column beside it itemizes and restores Pokemon as in the inventory, and shift-clicking a
+ * Pokemon in the storage puts it in the lowest empty party slot.
  */
 class StorageMenu(val kind: StorageKind, id: Int, inventory: Inventory, private val storage: Container) :
     ChestMenu(typeOf(kind), id, inventory, storage, ROWS) {
@@ -136,6 +139,12 @@ class StorageMenu(val kind: StorageKind, id: Int, inventory: Inventory, private 
     }
 
     override fun clicked(slotId: Int, button: Int, clickType: ClickType, player: Player) {
+        if (player !is ServerPlayer) return click(slotId, button, clickType, player)
+        // Every click is logged by what it changed in the storage, whatever kind of click it was.
+        StorageLog.tracked(player, storage, kind, "player:${clickType.name.lowercase()}") { click(slotId, button, clickType, player) }
+    }
+
+    private fun click(slotId: Int, button: Int, clickType: ClickType, player: Player) {
         if (kind == StorageKind.POKEMON) {
             super.clicked(slotId, button, clickType, player)
             return
@@ -151,6 +160,12 @@ class StorageMenu(val kind: StorageKind, id: Int, inventory: Inventory, private 
     }
 
     override fun quickMoveStack(player: Player, index: Int): ItemStack {
+        // A Pokemon shift-clicked in the Pokemon storage goes back to the party, not the inventory. Cobblemon To Item
+        // makes the move on the server; the client only waits for the result.
+        if (kind == StorageKind.POKEMON && index < PresetData.STORAGE_SIZE) {
+            if (player is ServerPlayer) PokemonTransfers.restoreFromMenuSlot(player, index)
+            return ItemStack.EMPTY
+        }
         if (kind == StorageKind.ITEMS && index >= PresetData.STORAGE_SIZE) StoredMark.mark(slots[index].item)
         val result = super.quickMoveStack(player, index)
         stripInventory()
