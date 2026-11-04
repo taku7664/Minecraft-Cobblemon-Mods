@@ -73,7 +73,10 @@ internal object PvpRoomHudOverlay {
         if (screen != null && screen !is ChatScreen) return
         val room = PvpRoomClientState.lastRoom
         if (room == null) {
-            if (PvpRankedClientState.queuedFormat != null) drawQueue(graphics, client, screen is ChatScreen)
+            when {
+                roomlessSelection() != null -> drawSelection(graphics, client, screen is ChatScreen)
+                PvpRankedClientState.queuedFormat != null -> drawQueue(graphics, client, screen is ChatScreen)
+            }
             return
         }
         val layout = PvpRoomHudLayout.calculate(graphics.guiWidth(), graphics.guiHeight(), expanded, room.spectators.size)
@@ -154,6 +157,39 @@ internal object PvpRoomHudOverlay {
         }
     }
 
+    /**
+     * A team preview with no room around it (a ranked match, a challenge) whose screen was closed: the same bar,
+     * with the time left to pick and one control that opens the preview again.
+     */
+    private fun drawSelection(graphics: GuiGraphics, client: Minecraft, interactive: Boolean) {
+        val selection = roomlessSelection() ?: return
+        val theme = CobblemonUiSharedTheme.snapshot()
+        val content = CobblemonUiSharedTheme.contentSnapshot()
+        val font = client.font
+        val layout = PvpRoomHudLayout.queue(graphics.guiWidth(), graphics.guiHeight())
+        val panel = layout.panel
+        UiSurfaceRenderer.draw(graphics, panel.x, panel.y, panel.width, panel.height,
+            theme.surfaces.shell.copy(backgroundOpacity = WINDOW_OPACITY))
+        drawTitleBar(graphics, theme, layout)
+        val seconds = ((selection.state.selectionDeadlineEpochMillis - System.currentTimeMillis()).coerceAtLeast(0) + 999) / 1_000
+        val text = Component.translatable(lobbyKey("hud.selection"), "%d:%02d".format(seconds / 60, seconds % 60))
+        val title = MccHubKit.fitted(text, (layout.title.width - 2).coerceAtLeast(1))
+        graphics.drawString(font, title, layout.title.x, layout.title.y + (layout.title.height - font.lineHeight) / 2 + 1,
+            theme.colors.textPrimary, false)
+        if (!interactive) {
+            CobblemonUiThemedButton.draw(graphics, content, selectionOpenRect(layout), openLabel(), UiButtonVariant.PRIMARY,
+                opacity = CONTROL_OPACITY)
+        }
+    }
+
+    /** The team preview this player picks in, when no room HUD would lead back to it. */
+    private fun roomlessSelection() = PvpHubClient.selection
+        ?.takeIf { PvpRoomClientState.lastRoom == null && PvpHubClient.view == PvpHubClient.View.SELECTION && !it.state.spectatorMode }
+
+    /** The open control over both control slots, as the preview bar has nothing to stop. */
+    private fun selectionOpenRect(layout: PvpRoomHudLayout): UiRect =
+        UiRect(layout.openButton.x, layout.openButton.y, layout.toggleButton.right - layout.openButton.x, layout.openButton.height)
+
     /** The hub header's navy bar inside the window's frame, with its red trim under it once the room shows below. */
     private fun drawTitleBar(graphics: GuiGraphics, theme: UiThemeSnapshot, layout: PvpRoomHudLayout) {
         val bar = layout.titleBar
@@ -191,6 +227,15 @@ internal object PvpRoomHudOverlay {
         installedButtons.remove(screen)?.let { previous -> Screens.getButtons(screen).removeAll(previous.toSet()) }
         if (screen !is ChatScreen) return
         val room = PvpRoomClientState.lastRoom
+        if (room == null && roomlessSelection() != null) {
+            val layout = PvpRoomHudLayout.queue(screen.width, screen.height)
+            val open = CobblemonUiThemedButton(selectionOpenRect(layout), openLabel(), UiButtonVariant.PRIMARY, CONTROL_OPACITY) {
+                PvpHubClient.openSelection()
+            }.apply { theme = CobblemonUiSharedTheme::contentSnapshot }
+            Screens.getButtons(screen).add(open)
+            installedButtons[screen] = listOf(open)
+            return
+        }
         if (room == null) {
             if (PvpRankedClientState.queuedFormat == null) return
             val layout = PvpRoomHudLayout.queue(screen.width, screen.height)

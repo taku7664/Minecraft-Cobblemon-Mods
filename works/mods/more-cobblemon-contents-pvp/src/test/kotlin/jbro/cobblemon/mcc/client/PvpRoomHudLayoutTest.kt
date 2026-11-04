@@ -56,4 +56,14 @@ class PvpRoomHudLayoutTest {
         assertEquals(10 - PvpRoomHudLayout.MAX_VISIBLE_SPECTATORS, layout.hiddenSpectatorCount)
         assertEquals("-", layout.toggleLabel)
     }
+
+    @Test
+    fun `a panel over the hotbar column sits above the health and food rows`() {
+        // 427 wide: the 184 wide bar starts left of the hotbar's right end.
+        val narrow = PvpRoomHudLayout.queue(427, 240)
+        assertTrue(narrow.panel.bottom <= 240 - PvpRoomHudLayout.STATUS_CLEARANCE, "${narrow.panel}")
+        val wide = PvpRoomHudLayout.queue(960, 507)
+        assertEquals(507 - PvpRoomHudLayout.HOTBAR_CLEARANCE, wide.panel.bottom)
+    }
 }
+

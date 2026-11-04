@@ -119,4 +119,24 @@ class PvpRankedTest {
             assertEquals(intent, PvpRankedIntentPayload.CODEC.decode(intentBuffer).intent)
         }
     }
+
+    @Test
+    fun `an over-long message or name is cut instead of failing the state`() {
+        val long = "x".repeat(1_000)
+        val state = PvpRankedStatePayload(
+            standings = emptyList(),
+            queuedFormat = null,
+            queuedForMillis = 0,
+            queueSizes = emptyMap(),
+            leaders = mapOf(PvpBattleFormat.SINGLE to List(20) { PvpRankedLeader(it + 1, long, 1000, 0, 0) }),
+            messageKey = long,
+            messageArgs = List(8) { long },
+        )
+        val buffer = RegistryFriendlyByteBuf(Unpooled.buffer(), RegistryAccess.EMPTY)
+        PvpRankedStatePayload.CODEC.encode(buffer, state)
+        val decoded = PvpRankedStatePayload.CODEC.decode(buffer)
+        assertEquals(10, decoded.leaders.getValue(PvpBattleFormat.SINGLE).size)
+        assertEquals(256, decoded.messageKey!!.length)
+        assertEquals(4, decoded.messageArgs.size)
+    }
 }

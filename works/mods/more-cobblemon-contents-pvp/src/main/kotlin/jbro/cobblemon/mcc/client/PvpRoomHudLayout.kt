@@ -26,6 +26,10 @@ internal data class PvpRoomHudLayout(
 ) {
     companion object {
         const val HOTBAR_CLEARANCE = 28
+        /** Room above the hotbar and the health, food and armour rows over it, for a panel that reaches over them. */
+        const val STATUS_CLEARANCE = 60
+        /** Half the hotbar's width; the status rows above it are no wider. */
+        private const val HOTBAR_HALF_WIDTH = 91
         const val MAX_VISIBLE_SPECTATORS = 6
         private const val SCREEN_MARGIN = 6
         private const val HEADER_HEIGHT = 22
@@ -92,9 +96,11 @@ internal data class PvpRoomHudLayout(
                     }, left = CONTENT_INSET, right = CONTENT_INSET, min = 2))
                 }
             })
+            // On a narrow screen the panel reaches over the hotbar's column; it then sits above the status rows too.
+            val overHotbar = screenWidth - SCREEN_MARGIN - panelWidth < screenWidth / 2 + HOTBAR_HALF_WIDTH
             // Pinned to the lower right, but never off the left or top edge of a tiny screen.
             val layout = UiLayout.inset(UiLayout.align(panel, panelWidth, panelHeight, UiCrossAlignment.END, UiCrossAlignment.END,
-                pinStart = true), top = SCREEN_MARGIN, right = SCREEN_MARGIN, bottom = HOTBAR_CLEARANCE)
+                pinStart = true), top = SCREEN_MARGIN, right = SCREEN_MARGIN, bottom = if (overHotbar) STATUS_CLEARANCE else HOTBAR_CLEARANCE)
                 .solve(UiRect(0, 0, screenWidth, screenHeight))
             val header = layout["header"]
             if (!expanded) {

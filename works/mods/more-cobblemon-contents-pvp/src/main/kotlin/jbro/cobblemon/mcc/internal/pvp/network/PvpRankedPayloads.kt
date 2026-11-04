@@ -60,19 +60,22 @@ internal data class PvpRankedStatePayload(
                 buffer.writeVarInt(payload.leaders.size)
                 payload.leaders.forEach { (format, leaders) ->
                     buffer.writeFormat(format)
-                    buffer.writeVarInt(leaders.size)
-                    leaders.forEach { leader ->
+                    val shown = leaders.take(PVP_RANKED_MAX_LEADERS)
+                    buffer.writeVarInt(shown.size)
+                    shown.forEach { leader ->
                         buffer.writeVarInt(leader.rank)
-                        buffer.writeUtf(leader.name, MAX_STRING_LENGTH)
+                        buffer.writeUtf(leader.name.take(MAX_STRING_LENGTH), MAX_STRING_LENGTH)
                         buffer.writeVarInt(leader.rating)
                         buffer.writeVarInt(leader.wins)
                         buffer.writeVarInt(leader.losses)
                     }
                 }
                 buffer.writeBoolean(payload.messageKey != null)
-                payload.messageKey?.let { buffer.writeUtf(it, MAX_STRING_LENGTH) }
-                buffer.writeVarInt(payload.messageArgs.size)
-                payload.messageArgs.forEach { buffer.writeUtf(it, MAX_STRING_LENGTH) }
+                payload.messageKey?.let { buffer.writeUtf(it.take(MAX_STRING_LENGTH), MAX_STRING_LENGTH) }
+                // Anything longer than the reader takes is cut here rather than failing the whole state.
+                val args = payload.messageArgs.take(MAX_MESSAGE_ARGS)
+                buffer.writeVarInt(args.size)
+                args.forEach { buffer.writeUtf(it.take(MAX_STRING_LENGTH), MAX_STRING_LENGTH) }
                 buffer.writeBoolean(payload.reopen)
             },
             { buffer ->

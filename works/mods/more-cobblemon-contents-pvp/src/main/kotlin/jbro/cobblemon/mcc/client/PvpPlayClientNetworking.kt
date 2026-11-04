@@ -114,7 +114,10 @@ internal object PvpPlayClientNetworking {
             context.client().execute { PvpHubClient.rejectRoom(payload.requestId, payload.messageKey, payload.messageArgs) }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpSelectionStatePayload.TYPE) { payload, context ->
-            context.client().execute { PvpHubClient.acceptSelection(payload.requestId, payload.state) }
+            context.client().execute {
+                PvpHubClient.acceptSelection(payload.requestId, payload.state)
+                PvpRoomHudOverlay.refreshControls()
+            }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpSelectionRejectedPayload.TYPE) { payload, context ->
             context.client().execute { PvpHubClient.rejectSelection(payload.requestId, payload.matchId, payload.messageKey) }
@@ -122,6 +125,7 @@ internal object PvpPlayClientNetworking {
         ClientPlayNetworking.registerGlobalReceiver(PvpSelectionClosedPayload.TYPE) { payload, context ->
             context.client().execute {
                 PvpHubClient.closeSelection(payload.matchId)
+                PvpRoomHudOverlay.refreshControls()
                 context.client().player?.displayClientMessage(Component.translatable(payload.messageKey), false)
             }
         }

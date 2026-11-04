@@ -90,7 +90,9 @@ internal object PvpRankedClientState {
         clearFeedback()
     }
 
+    /** Sends [intent]; a server without ranked battles gets nothing, and nothing waits on its answer. */
     fun send(intent: PvpRankedIntent) {
+        if (!ClientPlayNetworking.canSend(PvpRankedIntentPayload.TYPE)) return
         if (intent !is PvpRankedIntent.Refresh) {
             pending = true
             clearFeedback()
@@ -163,7 +165,7 @@ internal object PvpLobbyView {
     /** The player's own card: their model, name and where they stand in the format picked on the ranked side. */
     private fun profile(host: MccHubContentHost, rect: UiRect) {
         val format = PvpHubClient.rankedFormat
-        val body = MccHubKit.card(host, rect, lobby("profile.title"), MccHubKit.CardTone.FEATURE)
+        val body = MccHubKit.card(host, rect, lobby("profile.title", room("format.${format.recordId}")), MccHubKit.CardTone.FEATURE)
         val player = Minecraft.getInstance().player
         val columns = UiLayout.row(gap = 4) {
             fixed(MODEL_WIDTH.coerceAtMost(body.width / 4), "model")
@@ -179,16 +181,20 @@ internal object PvpLobbyView {
         val standing = PvpRankedClientState.standings[format]
         val lines = buildList {
             add(Line(player?.name ?: Component.empty(), Tone.TEXT))
-            add(Line(pvp("format.${format.recordId}"), Tone.DIM))
-            if (standing == null) {
-                add(Line(lobby("profile.loading"), Tone.DIM))
-            } else {
-                add(Line(lobby("profile.rating", standing.rating), Tone.ACCENT))
-                add(Line(if (standing.rank > 0) lobby("profile.rank", standing.rank, standing.ladderSize) else lobby("profile.unranked"), Tone.TEXT))
-                val games = standing.wins + standing.losses
-                val rate = if (games == 0) 0 else Math.round(standing.wins * 100.0 / games).toInt()
-                add(Line(lobby("profile.record", standing.wins, standing.losses, rate), Tone.TEXT))
-                add(Line(lobby("profile.peak", standing.peak), Tone.DIM))
+            val games = standing?.let { it.wins + it.losses } ?: 0
+            when {
+                standing == null -> add(Line(lobby("profile.loading"), Tone.DIM))
+                // Before the first game a place, a record and a peak say nothing; the rating alone does.
+                games == 0 -> {
+                    add(Line(lobby("profile.rating", standing.rating), Tone.ACCENT))
+                    add(Line(lobby("profile.no_games"), Tone.DIM))
+                }
+                else -> {
+                    add(Line(lobby("profile.rating", standing.rating), Tone.ACCENT))
+                    add(Line(lobby("profile.rank", standing.rank, standing.ladderSize), Tone.TEXT))
+                    add(Line(lobby("profile.record", standing.wins, standing.losses, Math.round(standing.wins * 100.0 / games).toInt()), Tone.TEXT))
+                    add(Line(lobby("profile.peak", standing.peak), Tone.DIM))
+                }
             }
         }
         host.add(Lines(columns["lines"], lines))
@@ -218,7 +224,6 @@ internal object PvpLobbyView {
         if (queued != null) {
             host.add(Lines(parts["status"], listOf(
                 Line(lobby("ranked.searching", 0), Tone.ACCENT) { lobby("ranked.searching", clock(state.queuedSeconds())) },
-                Line(lobby("ranked.waiting", state.queueSizes[queued] ?: 0), Tone.DIM),
             )))
         } else {
             MccHubKit.text(host, parts["status"], rules(format)) { MccHubKit.panelDim(it) }
@@ -272,12 +277,12 @@ internal object PvpLobbyView {
             ))
     }
 
-    /** "Pick 3 of 6 · Level 50 · Mega Evolution · No duplicate Pokemon or items" for [format]. */
+    /** "Pick 3 · Mega · No duplicates" for [format]. */
     private fun rules(format: PvpBattleFormat): Component {
         val mechanics = PvpRankedRules.ENABLED_MECHANICS.map { room("mechanic.${it.id}") }
         val gimmicks = if (mechanics.isEmpty()) lobby("ranked.rules.no_gimmicks")
             else mechanics.reduce { acc, next -> Component.empty().append(acc).append(", ").append(next) }
-        return lobby("ranked.rules", format.registrationRange.last, format.selectionSize, gimmicks)
+        return lobby("ranked.rules", format.selectionSize, gimmicks)
     }
 
     private fun clock(seconds: Long): String = "%d:%02d".format(seconds / 60, seconds % 60)
