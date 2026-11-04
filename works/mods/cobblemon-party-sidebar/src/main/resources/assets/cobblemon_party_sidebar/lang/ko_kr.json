@@ -5,5 +5,20 @@
   "config.cobblemon_party_sidebar.enabled": "파티 표시",
   "config.cobblemon_party_sidebar.tooltip": "포켓몬 툴팁",
   "config.cobblemon_party_sidebar.save_failed": "설정을 저장하지 못했습니다.",
-  "button.cobblemon_party_sidebar.fusion": "포켓몬 합성"
+  "button.cobblemon_party_sidebar.fusion": "포켓몬 합성",
+  "cobblemon_party_sidebar.message.preset_in_battle": "배틀 중에는 프리셋을 바꿀 수 없습니다.",
+  "cobblemon_party_sidebar.message.busy": "지금은 움직일 수 없는 포켓몬이 있습니다.",
+  "cobblemon_party_sidebar.message.pc_full": "파티에서 빠질 포켓몬을 넣을 PC 자리가 없습니다.",
+  "cobblemon_party_sidebar.message.storage_full": "도구 보관함이 가득 찼습니다.",
+  "cobblemon_party_sidebar.message.preset_limit": "프리셋을 더 만들 수 없습니다.",
+  "cobblemon_party_sidebar.message.preset_last": "마지막 프리셋은 지울 수 없습니다.",
+  "cobblemon_party_sidebar.message.failed": "처리하지 못했습니다. 바뀐 것은 없습니다.",
+  "container.cobblemon_party_sidebar.item_storage": "도구 보관함",
+  "button.cobblemon_party_sidebar.add": "프리셋 추가",
+  "button.cobblemon_party_sidebar.delete": "프리셋 삭제",
+  "button.cobblemon_party_sidebar.delete_confirm": "한 번 더 누르면 이 프리셋을 지웁니다",
+  "button.cobblemon_party_sidebar.storage": "도구 보관함",
+  "button.cobblemon_party_sidebar.previous": "이전 프리셋",
+  "button.cobblemon_party_sidebar.next": "다음 프리셋",
+  "tooltip.cobblemon_party_sidebar.missing": "보관함에 없음: %s"
 }

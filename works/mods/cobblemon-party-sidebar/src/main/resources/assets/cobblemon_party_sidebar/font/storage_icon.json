@@ -1,0 +1,11 @@
+{
+  "providers": [
+    {
+      "type": "bitmap",
+      "file": "cobblemon_party_sidebar:font/storage_icon.png",
+      "ascent": 7,
+      "height": 8,
+      "chars": ["\ue000"]
+    }
+  ]
+}

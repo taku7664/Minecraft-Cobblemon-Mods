@@ -129,6 +129,13 @@ internal object InventorySkin {
         return Skin(width, height, argb(pixel(width - 10, 68)), box)
     }
 
+    /** Text on the panel body: vanilla's dark grey on a light body, a light grey on a dark one. */
+    fun labelColor(): Int {
+        val color = current().bodyColor
+        val brightness = ((color shr 16) and 0xFF) * 299 + ((color shr 8) and 0xFF) * 587 + (color and 0xFF) * 114
+        return if (brightness > 128_000) 0x404040 else 0xD0D0D0
+    }
+
     /** [NativeImage] pixels are ABGR; fills want ARGB. */
     private fun argb(abgr: Int): Int =
         (abgr and 0xFF00FF00.toInt()) or ((abgr and 0xFF) shl 16) or ((abgr shr 16) and 0xFF)
