@@ -136,6 +136,7 @@ internal object PvpLobbyView {
     private const val RANKED = "ranked"
     private const val CUSTOM = "custom"
     private const val LINE = 10
+    private const val STAT_LINE = 11
 
     fun build(host: MccHubContentHost, bounds: UiRect) {
         val layout = PvpLobbyLayout.calculate(bounds)
@@ -167,33 +168,36 @@ internal object PvpLobbyView {
         val format = PvpHubClient.rankedFormat
         val body = MccHubKit.card(host, rect, lobby("profile.title", room("format.${format.recordId}")), MccHubKit.CardTone.FEATURE)
         val player = Minecraft.getInstance().player
-        val columns = UiLayout.row(gap = 4) {
-            fixed(MODEL_WIDTH.coerceAtMost(body.width / 4), "model")
-            weight("lines", min = 1)
-        }.solve(body)
-        // The model stands beside the lines; on a tall hub it would otherwise sink to the card's foot.
-        val model = columns["model"].let { UiRect(it.x, it.y, it.width, it.height.coerceAtMost(MODEL_HEIGHT)) }
+        // A framed portrait as large as half the card allows, the name, rating and place beside it.
+        val portraitSize = (body.height / 2).coerceAtMost(body.width * 2 / 5).coerceIn(PORTRAIT_MIN, PORTRAIT_MAX)
+        val portrait = UiRect(body.x, body.y, portraitSize, portraitSize)
         if (player != null) {
-            host.add(CobblemonUiRenderSlot.create(model.x, model.y, model.width, model.height,
-                UiRenderSlotSpec(player.name, framed = false),
-                CobblemonUiRenderContent.PlayerProfile(player.gameProfile, UiModelFraming.FULL_BODY)))
+            host.add(CobblemonUiRenderSlot.create(portrait.x, portrait.y, portrait.width, portrait.height,
+                UiRenderSlotSpec(player.name),
+                CobblemonUiRenderContent.PlayerProfile(player.gameProfile, UiModelFraming.PORTRAIT)))
         }
         val standing = PvpRankedClientState.standings[format]
-        val lines = buildList {
+        val heading = buildList {
             add(Line(player?.name ?: Component.empty(), Tone.TEXT))
             if (standing == null) {
                 add(Line(lobby("profile.loading"), Tone.DIM))
             } else {
-                // The record always shows, 0W 0L before the first game; only the place waits for one.
-                val games = standing.wins + standing.losses
-                val rate = if (games == 0) 0 else Math.round(standing.wins * 100.0 / games).toInt()
                 add(Line(lobby("profile.rating", standing.rating), Tone.ACCENT))
                 add(Line(if (standing.rank > 0) lobby("profile.rank", standing.rank, standing.ladderSize) else lobby("profile.unranked"), Tone.TEXT))
-                add(Line(lobby("profile.record", standing.wins, standing.losses, rate), Tone.TEXT))
-                add(Line(lobby("profile.peak", standing.peak), Tone.DIM))
             }
         }
-        host.add(Lines(columns["lines"], lines))
+        val beside = UiRect(portrait.right + 5, body.y, (body.right - portrait.right - 5).coerceAtLeast(1), portraitSize)
+        host.add(Lines(beside, heading, centered = true))
+        if (standing == null) return
+        // Under the portrait, from the card's left edge: the record, the win rate and the peak, label against value.
+        val games = standing.wins + standing.losses
+        val rate = if (games == 0) 0 else Math.round(standing.wins * 100.0 / games).toInt()
+        val statsTop = portrait.bottom + 5
+        host.add(Stats(UiRect(body.x, statsTop, body.width, (body.bottom - statsTop).coerceAtLeast(1)), listOf(
+            lobby("profile.stat.record") to lobby("profile.stat.record_value", standing.wins, standing.losses),
+            lobby("profile.stat.rate") to lobby("profile.stat.rate_value", rate),
+            lobby("profile.stat.peak") to Component.literal(standing.peak.toString()),
+        )))
     }
 
     /** Ranked: the format to queue for, the wait or the rules, the leaders, and the queue button. */
@@ -288,9 +292,9 @@ internal object PvpLobbyView {
 
     private fun sendRoom(intent: PvpRoomIntent) = PvpPlayClientNetworking.send(PvpRoomIntentPayload(intent))
 
-    private const val MODEL_WIDTH = 36
-    /** Six lines of the player's card. */
-    private const val MODEL_HEIGHT = LINE * 6
+    /** The portrait's side: three lines of text beside it at least, and no more than a large hub needs. */
+    private const val PORTRAIT_MIN = LINE * 3 + 2
+    private const val PORTRAIT_MAX = 72
 
     private enum class Tone { TEXT, DIM, ACCENT }
 
@@ -303,17 +307,41 @@ internal object PvpLobbyView {
         Tone.ACCENT -> theme.colors.accentPrimary
     }
 
-    /** Lines from the top of [rect], each cut to its width; those that do not fit are left out. */
-    private class Lines(private val rect: UiRect, private val lines: List<Line>) :
+    /**
+     * Lines from the top of [rect], or [centered] in its height, each cut to its width; those that do not fit are
+     * left out.
+     */
+    private class Lines(private val rect: UiRect, private val lines: List<Line>, private val centered: Boolean = false) :
         AbstractWidget(rect.x, rect.y, rect.width, rect.height, Component.empty()) {
         init { active = false }
         override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
             val theme = CobblemonUiThemes.registry.snapshot()
             val font = Minecraft.getInstance().font
+            val top = if (centered) rect.y + ((rect.height - lines.size * LINE) / 2).coerceAtLeast(0) else rect.y
             lines.forEachIndexed { index, line ->
-                val y = rect.y + index * LINE
+                val y = top + index * LINE
                 if (y + font.lineHeight > rect.bottom) return
                 graphics.drawString(font, MccHubKit.fitted(line.live?.invoke() ?: line.text, rect.width), rect.x, y, color(theme, line.tone), false)
+            }
+        }
+        override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
+    }
+
+    /** Label and value rows under a rule: the label from the left edge, the value against the right, as many as fit. */
+    private class Stats(private val rect: UiRect, private val rows: List<Pair<Component, Component>>) :
+        AbstractWidget(rect.x, rect.y, rect.width, rect.height, Component.empty()) {
+        init { active = false }
+        override fun renderWidget(graphics: GuiGraphics, mouseX: Int, mouseY: Int, partialTick: Float) {
+            val theme = CobblemonUiThemes.registry.snapshot()
+            val font = Minecraft.getInstance().font
+            graphics.fill(rect.x, rect.y, rect.right, rect.y + 1, theme.colors.border)
+            rows.forEachIndexed { index, (label, value) ->
+                val y = rect.y + 4 + index * STAT_LINE
+                if (y + font.lineHeight > rect.bottom) return
+                val valueWidth = font.width(value)
+                graphics.drawString(font, MccHubKit.fitted(label, (rect.width - valueWidth - 4).coerceAtLeast(1)), rect.x, y,
+                    MccHubKit.panelDim(theme), false)
+                graphics.drawString(font, value, rect.right - valueWidth, y, MccHubKit.panelText(theme), false)
             }
         }
         override fun updateWidgetNarration(output: NarrationElementOutput) = Unit
