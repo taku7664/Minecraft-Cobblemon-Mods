@@ -4,6 +4,7 @@ import net.minecraft.core.HolderLookup
 import net.minecraft.core.NonNullList
 import net.minecraft.nbt.CompoundTag
 import net.minecraft.nbt.ListTag
+import net.minecraft.nbt.StringTag
 import net.minecraft.nbt.Tag
 import net.minecraft.server.MinecraftServer
 import net.minecraft.util.datafix.DataFixTypes
@@ -12,8 +13,18 @@ import net.minecraft.world.item.ItemStack
 import net.minecraft.world.level.saveddata.SavedData
 import java.util.UUID
 
-/** One party row of a preset: which Pokemon stands there and which storage item it borrows (empty when none). */
-class PresetSlot(var pokemon: UUID? = null, var reference: ItemStack = ItemStack.EMPTY)
+/**
+ * One party row of a preset: which Pokemon stands there and which storage item it borrows (empty when none).
+ * [species] and [aspects] are how that Pokemon last looked, for the faint silhouette of a [lost] row: one whose
+ * Pokemon a switch could not find in the Pokemon storage.
+ */
+class PresetSlot(
+    var pokemon: UUID? = null,
+    var reference: ItemStack = ItemStack.EMPTY,
+    var species: String = "",
+    var aspects: Set<String> = emptySet(),
+    var lost: Boolean = false,
+)
 
 /** A preset's rows and the name the player gave it (blank shows as "Preset N"). */
 class Preset(val slots: List<PresetSlot> = List(PresetData.PARTY_SIZE) { PresetSlot() }, var name: String = "")
@@ -52,6 +63,11 @@ class PresetData : SavedData() {
                                 add(CompoundTag().apply {
                                     slot.pokemon?.let { putUUID("Pokemon", it) }
                                     if (!slot.reference.isEmpty) put("Reference", slot.reference.save(registries))
+                                    if (slot.species.isNotEmpty()) putString("Species", slot.species)
+                                    if (slot.aspects.isNotEmpty()) put("Aspects", ListTag().apply {
+                                        slot.aspects.forEach { add(StringTag.valueOf(it)) }
+                                    })
+                                    if (slot.lost) putBoolean("Lost", true)
                                 })
                             }
                         })
@@ -93,6 +109,9 @@ class PresetData : SavedData() {
                             if (slot.contains("Reference", Tag.TAG_COMPOUND.toInt())) {
                                 ItemStack.parseOptional(registries, slot.getCompound("Reference"))
                             } else ItemStack.EMPTY,
+                            slot.getString("Species"),
+                            slot.getList("Aspects", Tag.TAG_STRING.toInt()).map { it.asString }.toSet(),
+                            slot.getBoolean("Lost"),
                         )
                     }, presetTag.getString("Name"))
                 }

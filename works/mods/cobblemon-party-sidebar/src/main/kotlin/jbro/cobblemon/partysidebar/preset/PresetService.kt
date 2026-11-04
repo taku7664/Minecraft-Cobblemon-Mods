@@ -6,6 +6,7 @@ import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.partysidebar.CobblemonPartySidebar
 import jbro.cobblemon.partysidebar.network.PresetActionPayload
 import jbro.cobblemon.partysidebar.network.PresetStatePayload
+import jbro.cobblemon.toitem.api.PokemonItemData
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
@@ -159,7 +160,9 @@ object PresetService {
 
     /** Brings the active preset up to date with the party; true when it changed. */
     fun mirror(player: ServerPlayer, data: PlayerPresets): Boolean =
-        PresetSwitch.mirror(data.activePreset(), Cobblemon.storage.getParty(player))
+        PresetSwitch.mirror(data.activePreset(), Cobblemon.storage.getParty(player)) { id ->
+            listOf(player.containerMenu.carried, player.inventoryMenu.carried).any { PokemonItemData.pokemonTag(it)?.getUUID("UUID") == id }
+        }
 
     private fun state(player: ServerPlayer, data: PlayerPresets): PresetStatePayload {
         val party = Cobblemon.storage.getParty(player)
@@ -172,7 +175,10 @@ object PresetService {
             else slot.reference.copy()
         }
         val missingPokemon = slots.mapIndexed { row, slot -> slot.pokemon != null && party.get(row)?.uuid != slot.pokemon }
-        return PresetStatePayload(data.active, data.presets.size, data.activePreset().name, missing, missingPokemon)
+        val ghosts = slots.mapIndexed { row, slot ->
+            if (missingPokemon[row] && slot.species.isNotEmpty()) PresetStatePayload.Ghost(slot.species, slot.aspects.sorted()) else null
+        }
+        return PresetStatePayload(data.active, data.presets.size, data.activePreset().name, missing, missingPokemon, ghosts)
     }
 
     /**
@@ -196,7 +202,8 @@ object PresetService {
         return Preset(List(PresetData.PARTY_SIZE) { row ->
             val pokemon = party.get(row)
             val held = pokemon?.heldItem() ?: ItemStack.EMPTY
-            PresetSlot(pokemon?.uuid, if (StoredMark.isStored(held)) StoredMark.prototype(held) else ItemStack.EMPTY)
+            PresetSlot(pokemon?.uuid, if (StoredMark.isStored(held)) StoredMark.prototype(held) else ItemStack.EMPTY,
+                pokemon?.species?.resourceIdentifier?.toString() ?: "", pokemon?.aspects?.toSet() ?: emptySet())
         })
     }
 

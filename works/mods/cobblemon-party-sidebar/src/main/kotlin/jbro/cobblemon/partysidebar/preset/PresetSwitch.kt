@@ -118,6 +118,8 @@ class PresetSwitch(
             pokemon.swapHeldItem(item, false, false)
             if (pokemon.heldItem().isEmpty) itemStorage.add(item)
         }
+        // A row whose Pokemon is no longer in the Pokemon storage stays in the preset, red with its silhouette.
+        target.slots.forEachIndexed { row, slot -> slot.lost = slot.pokemon != null && sources[row] == null }
         return Result.Done(arriving.filterNotNull().map { it.uuid }, leaving.map { it.uuid })
     }
 
@@ -125,21 +127,23 @@ class PresetSwitch(
         /**
          * Brings [preset] up to date with [party]; true when it changed.
          *
-         * A row keeps its Pokemon and borrowed item while the Pokemon is away, wherever it went (cursor, inventory,
-         * either storage, the PC, another player): the preset still refers to it and the sidebar shows the row red.
-         * A row changes only when another Pokemon is put in it, or forgets its Pokemon when that Pokemon now stands in
-         * another row. Forgetting on anything else wiped the row, and the item it lent, whenever a Pokemon was taken
-         * out for a moment.
+         * Taking a Pokemon out of its row empties the row once it leaves the cursor ([inHand]): that is how a row is
+         * cleared. A [PresetSlot.lost] row (its Pokemon went missing while another preset was active) is kept, red
+         * with the Pokemon's silhouette, until that Pokemon or another one stands there. Either way a row lets go of a
+         * Pokemon now standing in another row.
          */
-        fun mirror(preset: Preset, party: PartyStore): Boolean {
+        fun mirror(preset: Preset, party: PartyStore, inHand: (UUID) -> Boolean): Boolean {
             var changed = false
             for ((row, slot) in preset.slots.withIndex()) {
                 val pokemon = party.get(row)
                 if (pokemon == null) {
                     val id = slot.pokemon ?: continue
-                    if (party.any { it.uuid == id }) {
+                    if (party.any { it.uuid == id } || (!slot.lost && !inHand(id))) {
                         slot.pokemon = null
                         slot.reference = ItemStack.EMPTY
+                        slot.species = ""
+                        slot.aspects = emptySet()
+                        slot.lost = false
                         changed = true
                     }
                     continue
@@ -147,6 +151,13 @@ class PresetSwitch(
                 if (slot.pokemon != pokemon.uuid) {
                     slot.pokemon = pokemon.uuid
                     slot.reference = ItemStack.EMPTY
+                    changed = true
+                }
+                val species = pokemon.species.resourceIdentifier.toString()
+                if (slot.lost || slot.species != species || slot.aspects != pokemon.aspects) {
+                    slot.lost = false
+                    slot.species = species
+                    slot.aspects = pokemon.aspects.toSet()
                     changed = true
                 }
                 val held = pokemon.heldItem()

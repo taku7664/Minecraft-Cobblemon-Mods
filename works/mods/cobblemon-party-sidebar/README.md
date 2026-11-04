@@ -27,9 +27,11 @@ inventory texture, so it matches the inventory under any resource pack.
 - **Presets:** the current preset always follows the party: which Pokémon stands in each row and which storage item
   it borrows. Switching puts the Pokémon the other preset does not use into the Pokémon storage as items, takes that
   preset's Pokémon out of the Pokémon storage (never the inventory), returns every borrowed item to the item storage
-  and lends that preset's items out again. A Pokémon taken out of its row (onto the cursor, into the inventory, a
-  storage or the PC) keeps its place in the preset, with the item it borrows; the row changes only when another
-  Pokémon is put in it, or when that Pokémon is put in another row. The PC is not used. A new preset starts empty, so adding
+  and lends that preset's items out again. Taking a Pokémon out of its row empties the row once the Pokémon leaves
+  the cursor; that is how a row is cleared. A Pokémon that left the Pokémon storage while another preset was on (taken
+  into the inventory, say) stays in its row when you switch back: the row is red with the Pokémon's faint silhouette
+  and keeps the item it borrows, and the Pokémon comes back with a later switch once it is in the Pokémon storage
+  again. Putting another Pokémon in the row replaces it. The PC is not used. A new preset starts empty, so adding
   one puts the whole party into the Pokémon storage; deleting one switches to its neighbour first. Up to 18 presets;
   switching, adding and deleting are refused during a battle, while the cursor holds an item, or when the Pokémon
   storage has no room for the Pokémon leaving the party.
@@ -39,9 +41,9 @@ inventory texture, so it matches the inventory under any resource pack.
   held-item slot to lend it: the Pokémon really holds it, so battles and evolutions see it, and it is gone from the
   storage while lent. Taking it off a Pokémon puts it back in the storage, not the inventory. An item placed in the
   inventory is taken out of the storage and loses the mark.
-- **Missing:** a row turns red when its preset names a Pokémon that is not there (taken out, or not in the Pokémon
-  storage when switching), or lends an item the Pokémon is not holding (a battle used it up, or the storage had none
-  left when switching); hover it to see which. It stays red until that Pokémon or item is back.
+- **Missing:** a Pokémon frame turns red, with a faint silhouette, while its Pokémon is on the cursor or after a
+  switch could not find it in the Pokémon storage. A held-item slot turns red when its preset lends an item the
+  Pokémon is not holding (a battle used it up, or the storage had none left when switching). Hover either to see why.
 
 Held items cannot be changed during a battle, and Cobblemon's held-item tags (`cobblemon:held/blacklisted_items_to_hold`,
 `cobblemon:held/whitelisted_items_to_hold`) apply. The column is not shown in the creative inventory. With EMI

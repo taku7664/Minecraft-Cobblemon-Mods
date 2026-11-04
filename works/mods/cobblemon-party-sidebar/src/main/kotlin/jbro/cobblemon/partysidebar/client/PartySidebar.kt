@@ -1,5 +1,6 @@
 package jbro.cobblemon.partysidebar.client
 
+import com.cobblemon.mod.common.api.pokemon.PokemonSpecies
 import com.cobblemon.mod.common.client.CobblemonClient
 import com.cobblemon.mod.common.item.PokemonItem
 import com.cobblemon.mod.common.pokemon.Pokemon
@@ -8,6 +9,7 @@ import jbro.cobblemon.partysidebar.CobblemonPartySidebar
 import jbro.cobblemon.partysidebar.network.HeldItemClickPayload
 import jbro.cobblemon.partysidebar.network.ItemizePayload
 import jbro.cobblemon.partysidebar.network.PresetActionPayload
+import jbro.cobblemon.partysidebar.network.PresetStatePayload
 import jbro.cobblemon.partysidebar.network.RestorePayload
 import jbro.cobblemon.partysidebar.preset.PresetData
 import jbro.cobblemon.partysidebar.preset.StorageKind
@@ -206,6 +208,7 @@ object PartySidebar {
                         InventorySkin.box(graphics, x, y, size)
                         if (PresetClient.missingPokemon(row)) graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, MISSING)
                         if (pokemon != null) drawModel(graphics, pokemon, x + (size - MODEL_SIZE) / 2, y + (size - MODEL_SIZE) / 2)
+                        else PresetClient.ghost(row)?.let { drawGhost(graphics, it, x, y, size) }
                     }
                     Column.HELD -> {
                         InventorySkin.slot(graphics, x, y)
@@ -552,6 +555,28 @@ object PartySidebar {
         return stack
     }
 
+    private val ghostStacks = HashMap<PresetStatePayload.Ghost, ItemStack>()
+
+    /**
+     * The missing Pokemon of a red row as a dark silhouette, washed over with the row's red so it reads faintly.
+     * Drawn from the species and aspects the server remembered, since the Pokemon itself is not in the party.
+     */
+    private fun drawGhost(graphics: GuiGraphics, ghost: PresetStatePayload.Ghost, x: Int, y: Int, size: Int) {
+        val stack = ghostStacks.getOrPut(ghost) {
+            val species = ResourceLocation.tryParse(ghost.species)?.let(PokemonSpecies::getByIdentifier)
+            if (ghostStacks.size > 64) ghostStacks.clear()
+            if (species == null) ItemStack.EMPTY else PokemonItem.from(species, ghost.aspects.toSet(), 1, SILHOUETTE)
+        }
+        if (stack.isEmpty) return
+        val offset = (size - MODEL_SIZE) / 2
+        graphics.pose().pushPose()
+        graphics.pose().translate((x + offset).toFloat(), (y + offset).toFloat(), 0f)
+        graphics.pose().scale(MODEL_SIZE / 16f, MODEL_SIZE / 16f, 1f)
+        graphics.renderItem(stack, 0, 0)
+        graphics.pose().popPose()
+        graphics.fill(RenderType.guiOverlay(), x + 1, y + 1, x + size - 1, y + size - 1, GHOST_WASH)
+    }
+
     /** A faint berry outline, like the armor slots' empty icons, marking where a held item goes. */
     private fun drawEmptyHeldItem(graphics: GuiGraphics, x: Int, y: Int) {
         RenderSystem.enableBlend()
@@ -576,6 +601,8 @@ object PartySidebar {
     private const val HIGHLIGHT = 0x80FFFFFF.toInt()
     private const val DISABLED = 0x90303030.toInt()
     private const val MISSING = 0x70D03030
+    private const val GHOST_WASH = 0x60D03030
+    private val SILHOUETTE = Vector4f(0.12f, 0.04f, 0.04f, 1f)
     private const val ARMED = 0x80D03030.toInt()
     private const val TITLE_HOVER = 0x30FFFFFF
 }

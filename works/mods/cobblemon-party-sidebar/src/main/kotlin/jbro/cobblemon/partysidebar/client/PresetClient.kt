@@ -31,6 +31,9 @@ object PresetClient {
     /** Whether [row]'s preset names a Pokemon that is not standing in that row. */
     fun missingPokemon(row: Int): Boolean = state?.missingPokemon?.getOrNull(row) == true
 
+    /** How [row]'s missing Pokemon looked, for its silhouette; null when the row is not missing one. */
+    fun ghost(row: Int): PresetStatePayload.Ghost? = state?.ghosts?.getOrNull(row)
+
     /**
      * The chest glyph from `font/storage_icon.json` and a space, put before a storage item's name. The root has no
      * style: appended parts inherit their parent's, and the name drawn in the glyph font came out as boxes.
