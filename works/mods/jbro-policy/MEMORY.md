@@ -1,3 +1,10 @@
+## [2026-11-04 19:40] 1.6.0 모드팩 (빌드·개발·PPakemon·deploy-product/client·모드팩 해시 확인, 로컬 운영·VPS·드라이브·실게임 미실행)
+
+- **소스:** `origin/main` `bb7239c43`(PACK_VERSION 1.6.0, jbro-policy 0.1.10, MCC 본체·애드온 5개 0.1.1)을 `F:\AIuildelease-1.6.0`에서 빌드했다. 우리 모드 20개(새 `cobblemon-battle-speed` 포함, `build.ps1` 목록에 추가). 이번 빌드에서 단위 테스트는 돌리지 않았고, 모듈별 테스트는 각 모듈 기록의 개발 배포 때 결과다. 위키 `373cffeab`는 이 커밋 앞에 있어 함께 들어갔다.
+- **반영:** 개발 서버·클라이언트 바뀐 JAR 10개, PPakemon(모드 10 추가·9 삭제, 위키 153), `deploy-product/client` 20개. 모드팩 `Downloads/PPakemon 1.6.0.mrpack`(index 70, overrides 31, config·options 0). 우리 모드 20개가 빌드본·`deploy-product/client`·모드팩에서 해시가 같다.
+- **하지 않음:** 로컬 운영 서버·VPS(사용자 요청 범위가 "버전업하고 모드팩"), 그래서 `deploy-product/server` JAR은 1.5.0 운영 서버 그대로다. 드라이브 업로드, 패치노트 게시, 실게임.
+- **패치노트 규칙(사용자 지시):** 운영자용 항목은 VERSION.txt·패치노트에 넣지 않는다. 다운로드 절에 업데이트 방법(📥┃설치-방법) 링크를 다시 건다. 랭크배틀은 시험용 콘텐츠로 알린다.
+
 ## [2026-11-03 12:57] 피츄 JSON 이전 개발 배포 (빌드·배치·해시 확인, main 푸시 완료, 서버 기동·디스코드·실게임 미실행)
 
 - **소스:** 사용자 "개발에 배포해"에 따라 `origin/main`(`a53bbf494`, 1.5.0 릴리스·위키 문서)을 `feature/pichu-wiki`에 병합한 `0182672f8`로 빌드하고 `origin/main`에 fast-forward 푸시했다. 충돌은 이 파일뿐이라 양쪽 항목을 살렸다. 병합을 막던 `deploy-product/{client,server}/VERSION.txt` 미커밋 변경은 `origin/main` 블롭과 바이트가 같음을 확인하고 되돌린 뒤 병합했다.
