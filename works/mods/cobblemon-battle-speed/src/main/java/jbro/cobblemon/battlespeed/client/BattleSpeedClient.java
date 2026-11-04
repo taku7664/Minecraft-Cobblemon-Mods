@@ -10,7 +10,9 @@ public final class BattleSpeedClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         ClientPlayNetworking.registerGlobalReceiver(BattleSpeedPayload.TYPE, (payload, context) ->
-            context.client().execute(() -> ClientBattleSpeedState.set(payload.battleId(), payload.animationSpeed()))
+            context.client().execute(() -> ClientBattleSpeedState.set(
+                payload.battleId(), payload.animationSpeed(), payload.modelSpeed()
+            ))
         );
         ClientPlayNetworking.registerGlobalReceiver(BattleSpeedSyncPayload.TYPE, (payload, context) ->
             context.client().execute(() -> ClientBattleSpeedSettings.update(payload.level(), payload.configJson()))

@@ -155,6 +155,7 @@ final class BattleSpeedConfigScreen {
         addPart(apply, entries, "move_effects", working.apply.moveEffects);
         addPart(apply, entries, "battle_timers", working.apply.battleTimers);
         addPart(apply, entries, "client_animations", working.apply.clientAnimations);
+        addPart(apply, entries, "model_animations", working.apply.modelAnimations);
         category.addEntry(apply.build());
 
         category.addEntry(entries.startIntField(text("server.skip_move_effects"), working.skipMoveEffectsFromLevel)

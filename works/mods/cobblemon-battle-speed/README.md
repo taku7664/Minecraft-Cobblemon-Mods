@@ -40,7 +40,8 @@ Mod Menu에서 이 모드의 설정 버튼을 누르면 열립니다. 값은 모
     "messageWaits":     { "enabled": true, "multiplier": 1.0 },
     "moveEffects":      { "enabled": true, "multiplier": 1.0 },
     "battleTimers":     { "enabled": true, "multiplier": 1.0 },
-    "clientAnimations": { "enabled": true, "multiplier": 1.0 }
+    "clientAnimations": { "enabled": true, "multiplier": 1.0 },
+    "modelAnimations": { "enabled": true, "multiplier": 1.0 }
   },
   "skipMoveEffectsFromLevel": 0,
   "permissions": { "change": 0, "reload": 2 }
@@ -59,6 +60,7 @@ Mod Menu에서 이 모드의 설정 버튼을 누르면 열립니다. 값은 모
 | `apply.moveEffects` | 기술 연출 안의 일시정지·딜레이 |
 | `apply.battleTimers` | 그 밖의 배틀 타이머: 내보내기 간격, 기절 대기, 울음소리 |
 | `apply.clientAnimations` | 클라이언트 체력바·HUD 타일 이동 애니메이션 |
+| `apply.modelAnimations` | 배틀 중인 포켓몬의 모델 애니메이션(공격·피격·기절 모션)과 그 모션에 맞춰 나오는 파티클·효과음 타이밍 |
 | `apply.*.multiplier` | 그 부분만 단계 배속에 추가로 곱함. 1배속 배틀은 항상 1배속 |
 | `skipMoveEffectsFromLevel` | 이 단계부터 기술 연출을 아예 건너뜀. `0`은 건너뛰지 않음 |
 | `permissions.change` / `permissions.reload` | 각 명령어에 필요한 권한 레벨(0~4) |
@@ -67,6 +69,6 @@ Mod Menu에서 이 모드의 설정 버튼을 누르면 열립니다. 값은 모
 
 ## 빨라지지 않는 것
 
-- 몬스터볼 비행, 회수, 상대에게 돌진하는 동작처럼 실제로 움직이는 엔티티는 속도를 바꿀 수 없습니다. 기다리는 시간만 줄어서, 고배속에서는 동작이 끝나기 전에 다음 진행이 시작될 수 있습니다. 거슬리면 `skipMoveEffectsFromLevel`로 연출을 건너뛰게 합니다.
+- 포켓몬의 공격·피격·기절 모션은 `modelAnimations`로 빨라지지만, 몬스터볼 비행, 회수, 상대에게 돌진하는 이동처럼 엔티티가 실제로 움직이는 부분과 기술 파티클 자체의 속도는 바꿀 수 없습니다. 이런 부분은 기다리는 시간만 줄어서, 고배속에서는 동작이 끝나기 전에 다음 진행이 시작될 수 있습니다. 거슬리면 `skipMoveEffectsFromLevel`로 연출을 건너뛰게 합니다.
 - 기술 선택 시간 같은 플레이어 입력 대기는 그대로입니다.
 - 클라이언트에 이 모드가 없어도 서버 진행은 빨라지지만, 체력바는 원래 속도로 줄어서 화면이 진행을 못 따라갑니다.

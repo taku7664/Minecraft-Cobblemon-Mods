@@ -32,6 +32,8 @@ class BattleSpeedConfigTest {
         assertTrue(config.battles.npc);
         assertTrue(config.apply.messageWaits.enabled);
         assertEquals(1.0, config.apply.moveEffects.multiplier);
+        assertTrue(config.apply.modelAnimations.enabled);
+        assertEquals(1.0, config.apply.modelAnimations.multiplier);
         assertEquals(2, config.permissions.reload);
     }
 

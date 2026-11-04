@@ -54,6 +54,8 @@
   "cobblemon_battle_speed.config.server.apply.battle_timers.tooltip": "Send-out spacing, faint waits, cries.",
   "cobblemon_battle_speed.config.server.apply.client_animations": "HP bar and HUD animations",
   "cobblemon_battle_speed.config.server.apply.client_animations.tooltip": "The client's HP bar and HUD tile slides. When off, the HUD may lag behind the battle.",
+  "cobblemon_battle_speed.config.server.apply.model_animations": "Pokémon model animations",
+  "cobblemon_battle_speed.config.server.apply.model_animations.tooltip": "The battlers' attack, hit and faint motions, and the particles and sounds timed to them. Poké Ball flights and move particles themselves keep their speed.",
   "cobblemon_battle_speed.config.server.apply.multiplier": "%s multiplier",
   "cobblemon_battle_speed.config.server.apply.multiplier.tooltip": "Applied to this part only, on top of the level speed. 1 keeps the level speed.",
   "cobblemon_battle_speed.config.server.skip_move_effects": "Skip move animations from level",

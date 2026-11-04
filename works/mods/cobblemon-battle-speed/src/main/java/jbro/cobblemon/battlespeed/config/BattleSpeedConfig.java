@@ -57,6 +57,8 @@ public final class BattleSpeedConfig {
         public Part battleTimers = new Part();
         /** Client HP bar and tile slide animations, so the HUD keeps up with the faster battle. */
         public Part clientAnimations = new Part();
+        /** Pokémon model animations of the battlers: attack, hit and faint motions and the effects keyed to them. */
+        public Part modelAnimations = new Part();
     }
 
     public static final class Part {
@@ -126,6 +128,7 @@ public final class BattleSpeedConfig {
         apply.moveEffects = normalizedPart(apply.moveEffects);
         apply.battleTimers = normalizedPart(apply.battleTimers);
         apply.clientAnimations = normalizedPart(apply.clientAnimations);
+        apply.modelAnimations = normalizedPart(apply.modelAnimations);
         skipMoveEffectsFromLevel = Math.max(0, skipMoveEffectsFromLevel);
         if (permissions == null) {
             permissions = new Permissions();

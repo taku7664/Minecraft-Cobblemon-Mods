@@ -9,8 +9,8 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.Objects;
 import java.util.UUID;
 
-/** Tells a client how fast to run the HUD animations of one battle. */
-public record BattleSpeedPayload(UUID battleId, float animationSpeed) implements CustomPacketPayload {
+/** Tells a client how fast to run one battle's HUD animations and its Pokémon model animations. */
+public record BattleSpeedPayload(UUID battleId, float animationSpeed, float modelSpeed) implements CustomPacketPayload {
     public static final Type<BattleSpeedPayload> TYPE = new Type<>(
         ResourceLocation.fromNamespaceAndPath(BattleSpeed.MOD_ID, "battle_speed")
     );
@@ -18,8 +18,9 @@ public record BattleSpeedPayload(UUID battleId, float animationSpeed) implements
         (buffer, payload) -> {
             buffer.writeUUID(payload.battleId());
             buffer.writeFloat(payload.animationSpeed());
+            buffer.writeFloat(payload.modelSpeed());
         },
-        buffer -> new BattleSpeedPayload(buffer.readUUID(), buffer.readFloat())
+        buffer -> new BattleSpeedPayload(buffer.readUUID(), buffer.readFloat(), buffer.readFloat())
     );
 
     public BattleSpeedPayload {

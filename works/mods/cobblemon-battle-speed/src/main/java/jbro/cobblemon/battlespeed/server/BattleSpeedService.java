@@ -199,8 +199,13 @@ public final class BattleSpeedService {
         if (player == null || !ServerPlayNetworking.canSend(player, BattleSpeedPayload.TYPE)) {
             return;
         }
-        float speed = (float) config.apply.clientAnimations.factor(levelSpeed(battle));
-        ServerPlayNetworking.send(player, new BattleSpeedPayload(battle.getBattleId(), speed));
+        var apply = config.apply;
+        double levelSpeed = levelSpeed(battle);
+        ServerPlayNetworking.send(player, new BattleSpeedPayload(
+            battle.getBattleId(),
+            (float) apply.clientAnimations.factor(levelSpeed),
+            (float) apply.modelAnimations.factor(levelSpeed)
+        ));
     }
 
     private static PokemonBattle currentBattle() {

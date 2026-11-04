@@ -54,6 +54,8 @@
   "cobblemon_battle_speed.config.server.apply.battle_timers.tooltip": "내보내기 간격, 기절 대기, 울음소리 같은 타이머입니다.",
   "cobblemon_battle_speed.config.server.apply.client_animations": "체력바·HUD 애니메이션",
   "cobblemon_battle_speed.config.server.apply.client_animations.tooltip": "클라이언트의 체력바와 HUD 타일 이동 속도입니다. 끄면 화면이 진행을 못 따라갈 수 있습니다.",
+  "cobblemon_battle_speed.config.server.apply.model_animations": "포켓몬 모델 애니메이션",
+  "cobblemon_battle_speed.config.server.apply.model_animations.tooltip": "배틀 중인 포켓몬의 공격·피격·기절 모션과, 모션에 맞춰 나오는 파티클·효과음 타이밍입니다. 몬스터볼 비행과 기술 파티클 자체의 속도는 그대로입니다.",
   "cobblemon_battle_speed.config.server.apply.multiplier": "%s 배율",
   "cobblemon_battle_speed.config.server.apply.multiplier.tooltip": "이 부분만 단계 배속에 한 번 더 곱합니다. 1이면 단계 배속 그대로입니다.",
   "cobblemon_battle_speed.config.server.skip_move_effects": "기술 연출 건너뛰기 시작 단계",

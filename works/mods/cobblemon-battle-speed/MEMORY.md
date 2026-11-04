@@ -1,5 +1,14 @@
 # cobblemon-battle-speed 작업 기록
 
+## [2026-11-04 09:15] 0.3.0: 포켓몬 모델 애니메이션 배속 (실게임 미확인)
+
+- **요청:** 사용자가 실게임에서 애니메이션이 빨라지는지 모르겠다고 했다. 0.2.0까지는 서버 대기·체력바·HUD 타일만 빨라지고 포켓몬 모델 동작은 원래 속도였다.
+- **원리(Cobblemon 1.8.1 소스·바이트코드 확인):** 모델 애니메이션 시간은 `PosableState.animationSeconds = (age + partialTicks) / 20`이고, `PokemonClientDelegate.tick(PokemonEntity)`가 매 tick `incrementAge()`로 `age`를 1 올린다. `incrementAge`는 파티클·효과음(`tickEffects`)과 주 애니메이션 종료 판정도 함께 돌린다. 클라이언트는 엔티티의 `battleId`(동기화 데이터)를 안다.
+- **구현:** `PokemonClientDelegateMixin`이 `tick` 끝에서 배속 배틀(`battleId`가 서버가 보낸 배틀 ID와 같음)의 포켓몬에게 `incrementAge`를 (배속 - 1)번 더 부른다. 소수 배속은 나머지를 다음 tick으로 넘긴다. `updatePartialTicks`도 같은 비율로 늘려 tick 사이가 끊기지 않게 했다. `tick`은 브리지 메서드 `tick(Entity)`가 있어 `PokemonEntity` 디스크립터로 지정했다. 배속 패킷에 `modelSpeed`를 추가했다(0.2.0과 패킷 형식이 달라 서버·클라 같은 버전 필요). 설정은 `apply.modelAnimations`이고 화면의 "빨라지는 부분"에도 넣었다.
+- **한계:** 몬스터볼 비행, 회수, 돌진 이동, 기술 파티클 자체 속도는 그대로다. 관전자가 아닌 주변 플레이어에게는 패킷이 가지 않아 1배속 모델로 보인다.
+- **빌드:** 단위 테스트 24개 통과. 임시 서버에서 0.3.0 기동, `reload`, 새 설정 파일에 `modelAnimations` 생성 확인. 클라이언트 mixin은 서버 기동으로 확인할 수 없다.
+- **미확인:** 실게임에서 모션이 빨라지는지, 고배속에서 모션이 튀거나 대기 동작이 어색한지.
+
 ## [2026-11-03 21:15] 0.2.0 개발 배치와 커밋 실수 (실게임 화면 미확인)
 
 - **커밋 실수:** `ddaae2216`에서 `config/` 소스 패키지를 넣으려고 `git add -f works/mods/cobblemon-battle-speed`를 쓰는 바람에, 무시되던 `build/` 정션 안의 class·JAR·임시 파일 77개가 같이 들어가 `main`에 푸시됐다. 바로 `4f2eac401`로 지웠다(강제 푸시는 하지 않음, 이력에는 남아 있다). 강제 추가는 `config/` 아래 파일 경로만 지정할 것.
