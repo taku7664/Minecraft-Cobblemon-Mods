@@ -1,7 +1,6 @@
 package jbro.cobblemon.partysidebar.preset
 
 import com.cobblemon.mod.common.Cobblemon
-import com.cobblemon.mod.common.api.storage.party.PartyPosition
 import com.cobblemon.mod.common.battles.BattleRegistry
 import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.partysidebar.CobblemonPartySidebar
@@ -133,17 +132,6 @@ object PresetService {
             Component.translatable("container.cobblemon_party_sidebar.$title")))
     }
 
-    /** Where a preset's Pokemon is now: in the party, or as an item in the Pokemon storage or player inventory. */
-    private sealed interface Source {
-        val uuid: UUID
-
-        data class Party(val pokemon: Pokemon) : Source {
-            override val uuid: UUID get() = pokemon.uuid
-        }
-
-        data class Stored(val slot: Int, override val uuid: UUID, val inventory: Boolean) : Source
-    }
-
     private fun itemUuid(stack: ItemStack): UUID? = PokemonItemData.pokemonTag(stack)?.getUUID("UUID")
 
     private fun apply(player: ServerPlayer, data: PlayerPresets, index: Int): Boolean {
@@ -152,83 +140,20 @@ object PresetService {
         if (!player.containerMenu.carried.isEmpty) return reject(player, "busy")
         mirror(player, data)
         if (index == data.active) return true
-        val registries = player.registryAccess()
-        val party = Cobblemon.storage.getParty(player)
-        val pc = Cobblemon.storage.getPC(player)
-        val pokemonStorage = pokemonStorage(player)
-        val items = data.pokemonStorage
-        val inventory = player.inventory
-        val target = data.presets[index]
-        val current = (0 until PresetData.PARTY_SIZE).mapNotNull { party.get(it) }
-        val claimed = HashSet<UUID>()
-        val sources: List<Source?> = target.slots.map { slot ->
-            val id = slot.pokemon?.takeIf(claimed::add) ?: return@map null
-            current.firstOrNull { it.uuid == id }?.let { return@map Source.Party(it) }
-            items.indexOfFirst { itemUuid(it) == id }.takeIf { it >= 0 }?.let { return@map Source.Stored(it, id, false) }
-            (0 until inventory.containerSize).firstOrNull { itemUuid(inventory.getItem(it)) == id }
-                ?.let { Source.Stored(it, id, true) }
-        }
-        val leaving = current.filter { pokemon -> sources.none { it is Source.Party && it.uuid == pokemon.uuid } }
-        val fromStorage = sources.count { it is Source.Stored && !it.inventory }
-        if (current.any { it.entity?.isBusy == true }) return reject(player, "busy")
-        if (leaving.size > pokemonStorage.freeSlots() + fromStorage) return reject(player, "pokemon_storage_full")
-        val itemStorage = storage(player)
-        if (!itemStorage.canTake(current.map { it.heldItem() }.filter(StoredMark::isStored))) return reject(player, "storage_full")
+        val switch = PresetSwitch(Cobblemon.storage.getParty(player), Cobblemon.storage.getPC(player), data.pokemonStorage,
+            pokemonStorage(player), storage(player), player.inventory, PokemonPacker.Items(player.registryAccess()))
+        if (switch.current().any { it.entity?.isBusy == true }) return reject(player, "busy")
         return try {
-            // The arriving Pokemon are read before anything moves, so a bad item stops the switch untouched.
-            val arriving = sources.map { source ->
-                if (source !is Source.Stored) return@map null
-                val stack = if (source.inventory) inventory.getItem(source.slot) else items[source.slot]
-                val tag = PokemonItemData.pokemonTag(stack) ?: return reject(player, "failed")
-                val pokemon = Pokemon.loadFromNBT(registries, tag)
-                if (pokemon.uuid != source.uuid) return reject(player, "failed")
-                if (party.any { it.uuid == pokemon.uuid } || pc.any { it.uuid == pokemon.uuid }) return reject(player, "duplicate")
-                pokemon
+            when (val result = switch.run(data.presets[index])) {
+                is PresetSwitch.Result.Refused -> reject(player, result.reason)
+                is PresetSwitch.Result.Done -> {
+                    data.active = index
+                    dirty(player)
+                    CobblemonPartySidebar.LOGGER.info("[party-preset] player={} preset={} arriving={} leaving={}",
+                        player.scoreboardName, index + 1, result.arriving, result.leaving)
+                    true
+                }
             }
-            // Borrowed items go back first. Packing a Pokemon before that saved the borrowed item inside the Pokemon
-            // item while the same item also went back to the storage: one item became two on every round trip.
-            for (pokemon in current) {
-                if (!StoredMark.isStored(pokemon.heldItem())) continue
-                val back = pokemon.removeHeldItem()
-                if (!itemStorage.add(back)) pokemon.swapHeldItem(back, false, false)
-            }
-            // A failure here leaves every Pokemon in the party and every borrowed item in the storage.
-            val packed = leaving.map { pokemon ->
-                val stack = PokemonItemData.create(pokemon, registries)
-                val tag = PokemonItemData.pokemonTag(stack) ?: return reject(player, "failed")
-                check(Pokemon.loadFromNBT(registries, tag).uuid == pokemon.uuid) { "Pokemon item changed identity" }
-                stack
-            }
-            current.forEach { if (it.entity != null) it.recall() }
-            current.forEach { party.remove(it) }
-            for (source in sources) {
-                if (source !is Source.Stored) continue
-                if (source.inventory) inventory.setItem(source.slot, ItemStack.EMPTY) else pokemonStorage.setItem(source.slot, ItemStack.EMPTY)
-            }
-            for (stack in packed) {
-                val slot = items.indexOfFirst(ItemStack::isEmpty)
-                check(slot >= 0) { "Pokemon storage filled up during a switch" }
-                pokemonStorage.setItem(slot, stack)
-            }
-            sources.forEachIndexed { row, source ->
-                val pokemon = (source as? Source.Party)?.pokemon ?: arriving[row] ?: return@forEachIndexed
-                party.set(PartyPosition(row), pokemon)
-            }
-            sources.forEachIndexed { row, _ ->
-                val pokemon = party.get(row) ?: return@forEachIndexed
-                val reference = target.slots[row].reference
-                if (reference.isEmpty || !pokemon.heldItem().isEmpty) return@forEachIndexed
-                val item = itemStorage.takeOne(reference)
-                if (item.isEmpty) return@forEachIndexed
-                pokemon.swapHeldItem(item, false, false)
-                if (pokemon.heldItem().isEmpty) itemStorage.add(item)
-            }
-            inventory.setChanged()
-            data.active = index
-            dirty(player)
-            CobblemonPartySidebar.LOGGER.info("[party-preset] player={} preset={} arriving={} leaving={}",
-                player.scoreboardName, index + 1, arriving.filterNotNull().map { it.uuid }, leaving.map { it.uuid })
-            true
         } catch (failure: Exception) {
             CobblemonPartySidebar.LOGGER.error("Preset switch failed for {}", player.scoreboardName, failure)
             reject(player, "failed")
@@ -238,40 +163,10 @@ object PresetService {
     /** Brings the active preset up to date with the party; true when it changed. */
     fun mirror(player: ServerPlayer, data: PlayerPresets): Boolean {
         val party = Cobblemon.storage.getParty(player)
-        var changed = false
-        for ((row, slot) in data.activePreset().slots.withIndex()) {
-            val pokemon = party.get(row)
-            if (pokemon == null) {
-                val id = slot.pokemon ?: continue
-                // Put away (another row, the Pokemon storage or the PC), it leaves the row; a Pokemon still on the
-                // cursor or in the inventory keeps its place, so another preset's switch can find it.
-                val putAway = party.any { it.uuid == id } || data.pokemonStorage.any { itemUuid(it) == id } ||
-                    Cobblemon.storage.getPC(player).any { it.uuid == id }
-                if (putAway) {
-                    slot.pokemon = null
-                    slot.reference = ItemStack.EMPTY
-                    changed = true
-                }
-                continue
-            }
-            if (slot.pokemon != pokemon.uuid) {
-                slot.pokemon = pokemon.uuid
-                slot.reference = ItemStack.EMPTY
-                changed = true
-            }
-            val held = pokemon.heldItem()
-            if (StoredMark.isStored(held)) {
-                if (!StoredMark.sameItem(slot.reference, held)) {
-                    slot.reference = StoredMark.prototype(held)
-                    changed = true
-                }
-            } else if (!held.isEmpty && !slot.reference.isEmpty) {
-                slot.reference = ItemStack.EMPTY
-                changed = true
-            }
-            // Holding nothing keeps the reference: the item was used up or taken, and the row shows it missing.
+        return PresetSwitch.mirror(data.activePreset(), party) { id ->
+            party.any { it.uuid == id } || data.pokemonStorage.any { itemUuid(it) == id } ||
+                Cobblemon.storage.getPC(player).any { it.uuid == id }
         }
-        return changed
     }
 
     private fun state(player: ServerPlayer, data: PlayerPresets): PresetStatePayload {
