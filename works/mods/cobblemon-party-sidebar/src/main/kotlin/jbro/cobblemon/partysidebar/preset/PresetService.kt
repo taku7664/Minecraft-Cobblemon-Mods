@@ -6,7 +6,6 @@ import com.cobblemon.mod.common.pokemon.Pokemon
 import jbro.cobblemon.partysidebar.CobblemonPartySidebar
 import jbro.cobblemon.partysidebar.network.PresetActionPayload
 import jbro.cobblemon.partysidebar.network.PresetStatePayload
-import jbro.cobblemon.toitem.api.PokemonItemData
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
@@ -132,8 +131,6 @@ object PresetService {
             Component.translatable("container.cobblemon_party_sidebar.$title")))
     }
 
-    private fun itemUuid(stack: ItemStack): UUID? = PokemonItemData.pokemonTag(stack)?.getUUID("UUID")
-
     private fun apply(player: ServerPlayer, data: PlayerPresets, index: Int): Boolean {
         if (index !in data.presets.indices) return false
         if (BattleRegistry.getBattleByParticipatingPlayer(player) != null) return reject(player, "preset_in_battle")
@@ -161,10 +158,8 @@ object PresetService {
     }
 
     /** Brings the active preset up to date with the party; true when it changed. */
-    fun mirror(player: ServerPlayer, data: PlayerPresets): Boolean {
-        val carried = listOf(player.containerMenu.carried, player.inventoryMenu.carried).mapNotNull(::itemUuid)
-        return PresetSwitch.mirror(data.activePreset(), Cobblemon.storage.getParty(player)) { id -> id in carried }
-    }
+    fun mirror(player: ServerPlayer, data: PlayerPresets): Boolean =
+        PresetSwitch.mirror(data.activePreset(), Cobblemon.storage.getParty(player))
 
     private fun state(player: ServerPlayer, data: PlayerPresets): PresetStatePayload {
         val party = Cobblemon.storage.getParty(player)

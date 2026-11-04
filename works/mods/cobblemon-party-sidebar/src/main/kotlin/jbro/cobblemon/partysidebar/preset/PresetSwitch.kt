@@ -123,17 +123,21 @@ class PresetSwitch(
 
     companion object {
         /**
-         * Brings [preset] up to date with [party]; true when it changed. A row left empty forgets its Pokemon unless
-         * [inHand] says the player is still carrying it on the cursor: put in another row, the Pokemon storage, the PC
-         * or the inventory, it has left the preset.
+         * Brings [preset] up to date with [party]; true when it changed.
+         *
+         * A row keeps its Pokemon and borrowed item while the Pokemon is away, wherever it went (cursor, inventory,
+         * either storage, the PC, another player): the preset still refers to it and the sidebar shows the row red.
+         * A row changes only when another Pokemon is put in it, or forgets its Pokemon when that Pokemon now stands in
+         * another row. Forgetting on anything else wiped the row, and the item it lent, whenever a Pokemon was taken
+         * out for a moment.
          */
-        fun mirror(preset: Preset, party: PartyStore, inHand: (UUID) -> Boolean): Boolean {
+        fun mirror(preset: Preset, party: PartyStore): Boolean {
             var changed = false
             for ((row, slot) in preset.slots.withIndex()) {
                 val pokemon = party.get(row)
                 if (pokemon == null) {
                     val id = slot.pokemon ?: continue
-                    if (!inHand(id)) {
+                    if (party.any { it.uuid == id }) {
                         slot.pokemon = null
                         slot.reference = ItemStack.EMPTY
                         changed = true
