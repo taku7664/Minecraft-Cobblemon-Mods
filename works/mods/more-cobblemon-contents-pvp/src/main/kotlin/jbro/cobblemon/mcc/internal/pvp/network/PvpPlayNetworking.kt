@@ -47,6 +47,15 @@ import jbro.cobblemon.mcc.internal.pvp.PvpRoomError
 import jbro.cobblemon.mcc.internal.pvp.PvpRoomBattlePlacement
 import jbro.cobblemon.mcc.internal.pvp.PvpRoomMutation
 import jbro.cobblemon.mcc.internal.pvp.PvpRoomService
+import jbro.cobblemon.mcc.internal.pvp.PvpRankedEntry
+import jbro.cobblemon.mcc.internal.pvp.PvpRankedHistory
+import jbro.cobblemon.mcc.internal.pvp.PvpRankedPairing
+import jbro.cobblemon.mcc.internal.pvp.PvpRankedQueue
+import jbro.cobblemon.mcc.internal.pvp.PvpRankedResult
+import jbro.cobblemon.mcc.internal.pvp.PvpRankedRules
+import jbro.cobblemon.mcc.internal.pvp.PvpRoomSide
+import jbro.cobblemon.mcc.internal.command.MccAdminArguments
+import kotlin.math.roundToInt
 import jbro.cobblemon.mcc.internal.pvp.PvpRoomView
 import jbro.cobblemon.mcc.internal.pvp.leaveRequestError
 import jbro.cobblemon.mcc.internal.pvp.PvpSelectionMutation
@@ -86,6 +95,9 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     private val retryableMatches = HashSet<UUID>()
     private val pendingCompletions = PvpCompletionRetryQueue()
     private val rooms = PvpRoomService()
+    private val rankedQueue = PvpRankedQueue()
+    /** Rooms the ranked queue made for its matches, with their format. Nobody sees them as rooms. */
+    private val rankedRooms = HashMap<UUID, RankedMatch>()
     private var currentServer: MinecraftServer? = null
     private val loungeGateway by lazy { Cobblemon173PvpLoungeGateway({ currentServer }, ::livePlayer) }
     private val arenas = PvpArenaPool()
@@ -176,6 +188,19 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         PayloadTypeRegistry.playC2S().register(PvpSelectionIntentPayload.TYPE, PvpSelectionIntentPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(PvpRoomIntentPayload.TYPE, PvpRoomIntentPayload.CODEC)
         PayloadTypeRegistry.playC2S().register(PvpLoungeExitPayload.TYPE, PvpLoungeExitPayload.CODEC)
+        PayloadTypeRegistry.playS2C().register(PvpRankedStatePayload.TYPE, PvpRankedStatePayload.CODEC)
+        PayloadTypeRegistry.playC2S().register(PvpRankedIntentPayload.TYPE, PvpRankedIntentPayload.CODEC)
+        ServerPlayNetworking.registerGlobalReceiver(PvpRankedIntentPayload.TYPE) { payload, context ->
+            val player = context.player()
+            onlinePlayers[player.uuid] = player
+            try {
+                handleRankedIntent(player, payload.intent)
+            } catch (exception: RuntimeException) {
+                rejectFailedRankedRequest(player, exception)
+            } catch (error: LinkageError) {
+                rejectFailedRankedRequest(player, error)
+            }
+        }
         ServerPlayNetworking.registerGlobalReceiver(PvpSelectionIntentPayload.TYPE) { payload, context ->
             val player = context.player()
             onlinePlayers[player.uuid] = player
@@ -261,6 +286,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                     MoreCobblemonContents.LOGGER.error("PvP disconnect cleanup failed for $playerId", failure)
                 },
                 { onlinePlayers.remove(playerId) },
+                { if (rankedQueue.leave(playerId) != null) pushRankedQueueSizes() },
                 { room = rooms.roomFor(playerId) },
                 {
                     val challenge = sessions.challengeFor(playerId)
@@ -347,6 +373,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 lounge::shutdown,
                 sessions::clear,
                 rooms::clear,
+                rankedQueue::clear,
+                rankedRooms::clear,
                 retryableMatches::clear,
                 {
                     if (pendingCompletions.size() > 0) {
@@ -374,6 +402,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 { lounge.restoreAvailable(onlinePlayers::containsKey) },
                 loungeGateway::enforceSpectatorAnchors,
                 { if (server.tickCount % LOBBY_INVITE_REFRESH_TICKS == 0) refreshChangedLobbyInvites() },
+                { if (server.tickCount % RANKED_PAIRING_TICKS == 0) processRankedQueue(server) },
             )
         }
     }
@@ -420,9 +449,11 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             { lounge.finish(roomId) },
             {
                 val members = rooms.close(roomId)?.memberIds ?: room.memberIds
-                notifyOnlinePlayers(members, "admin room close") { player ->
+                val ranked = rankedRooms.remove(roomId)
+                notifyOnlinePlayers(members + ranked?.playerIds.orEmpty(), "admin room close") { player ->
                     player.sendSystemMessage(Component.translatable("command.${MoreCobblemonContents.MOD_ID}.pvp.admin.room.closed_notice"))
                     sendRoomList(player, null)
+                    if (ranked != null) sendRankedState(player)
                 }
             },
         )
@@ -498,6 +529,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
 
         override fun busy(server: MinecraftServer, playerId: UUID): Boolean =
             rooms.roomFor(playerId) != null || sessions.challengeFor(playerId) != null ||
+                rankedQueue.entryFor(playerId) != null ||
                 pendingCompletions.completions().any { it.winnerId == playerId || it.loserId == playerId }
     }
 
@@ -531,6 +563,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         ) {
             BattleHubNetworking.sendHeader(player)
             sendRoomList(player, null)
+            sendRankedState(player)
             true
         }
         return PvpCommandOutcome(if (opened) PvpCommandStatus.APPLIED else PvpCommandStatus.INTERNAL_FAILURE)
@@ -661,6 +694,21 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                 ServerPlayNetworking.send(player, PvpRoomRejectedPayload(intent.requestId, paused.reasonKey, paused.arguments))
                 return
             }
+        }
+        // A ranked match runs in a room nobody sees; nothing reaches it through the room controls.
+        val ownRoom = rooms.roomFor(player.uuid)
+        if (ownRoom != null && ownRoom.roomId in rankedRooms && intent !is PvpRoomIntent.Refresh) {
+            rejectRoom(player, intent.requestId, PvpRoomError.PLAYER_BUSY)
+            return
+        }
+        if (intent.targetRoomId()?.let { it in rankedRooms } == true) {
+            rejectRoom(player, intent.requestId, PvpRoomError.UNKNOWN_ROOM)
+            return
+        }
+        // Going into a room gives up a place in the ranked queue.
+        if ((intent is PvpRoomIntent.Create || intent is PvpRoomIntent.Join) && rankedQueue.leave(player.uuid) != null) {
+            sendRankedState(player)
+            pushRankedQueueSizes()
         }
         when (intent) {
             is PvpRoomIntent.Refresh -> {
@@ -900,7 +948,12 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     }
 
     private fun sendRoomList(player: ServerPlayer, requestId: UUID?) {
-        ServerPlayNetworking.send(player, rooms.listStateFor(player.uuid, requestId, ::summaryView))
+        val state = rooms.listStateFor(player.uuid, requestId, ::summaryView)
+        // Ranked matches' rooms stay out of the list, and a player in one is not in a room as far as the client knows.
+        ServerPlayNetworking.send(player, state.copy(
+            rooms = state.rooms.filter { it.roomId !in rankedRooms },
+            memberRoomId = state.memberRoomId?.takeIf { it !in rankedRooms },
+        ))
     }
 
     private fun sendRoomListSafely(player: ServerPlayer, requestId: UUID?, operation: String) {
@@ -913,6 +966,7 @@ internal object PvpPlayNetworking : PvpCommandBackend {
     }
 
     private fun sendRoom(player: ServerPlayer, room: PvpRoomView, requestId: UUID?, reopen: Boolean = false) {
+        if (room.roomId in rankedRooms) return
         ServerPlayNetworking.send(player, PvpRoomStatePayload(requestId, clientView(room), reopen))
     }
 
@@ -1077,6 +1131,10 @@ internal object PvpPlayNetworking : PvpCommandBackend {
      * for a rematch. Only a room that no longer exists falls back to the room list.
      */
     private fun finishRoom(roomId: UUID) {
+        if (roomId in rankedRooms) {
+            finishRankedRoom(roomId)
+            return
+        }
         var room: PvpRoomView? = null
         runManagedCleanupActionsSafely(
             reportFailure = { failure ->
@@ -1141,16 +1199,19 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         format: PvpBattleFormat,
         issues: Set<PvpTeamIssue>,
     ): PvpRoomRejectedPayload {
+        val (key, args) = teamInvalidMessage(playerName, format, issues)
+        return PvpRoomRejectedPayload(requestId, key, args)
+    }
+
+    /** The message naming [playerName] and the first rule their party breaks. */
+    private fun teamInvalidMessage(playerName: String, format: PvpBattleFormat, issues: Set<PvpTeamIssue>): Pair<String, List<String>> {
         val prefix = "screen.${MoreCobblemonContents.MOD_ID}.pvp.room.error.team_invalid"
         return when {
-            PvpTeamIssue.WRONG_TEAM_SIZE in issues -> PvpRoomRejectedPayload(
-                requestId,
-                "$prefix.team_size",
-                listOf(playerName, format.registrationRange.first.toString(), format.registrationRange.last.toString()),
-            )
-            PvpTeamIssue.DUPLICATE_SPECIES in issues -> PvpRoomRejectedPayload(requestId, "$prefix.duplicate_species", listOf(playerName))
-            PvpTeamIssue.DUPLICATE_HELD_ITEM in issues -> PvpRoomRejectedPayload(requestId, "$prefix.duplicate_held_item", listOf(playerName))
-            else -> PvpRoomRejectedPayload(requestId, "$prefix.player", listOf(playerName))
+            PvpTeamIssue.WRONG_TEAM_SIZE in issues -> "$prefix.team_size" to
+                listOf(playerName, format.registrationRange.first.toString(), format.registrationRange.last.toString())
+            PvpTeamIssue.DUPLICATE_SPECIES in issues -> "$prefix.duplicate_species" to listOf(playerName)
+            PvpTeamIssue.DUPLICATE_HELD_ITEM in issues -> "$prefix.duplicate_held_item" to listOf(playerName)
+            else -> "$prefix.player" to listOf(playerName)
         }
     }
 
@@ -1336,6 +1397,9 @@ internal object PvpPlayNetworking : PvpCommandBackend {
             settle = {
                 if (sessions.isLaunchPending(pending.matchId)) return@attemptPvpCompletionSettlement false
                 var recordedFormat: PvpBattleFormat? = null
+                // Read before the cleanup below forgets the room.
+                val ranked = pending.matchId in rankedRooms
+                var rankedResult: PvpRankedResult? = null
                 val accepted = transitionPvpBattleLifecycle(
                     transition = {
                         if (pending.cancelled) {
@@ -1352,6 +1416,13 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                                         BattleRecordService.recordCompletedBattles(server, completions)
                                     }.recordResult(winnerId, loserId, format)
                                         .also { PvpMatchHistory.record(server, pending.battleId, winnerId, loserId, format.recordId) }
+                                        .also {
+                                            if (ranked) {
+                                                rankedResult = PvpRankedHistory.settle(pending.battleId, format,
+                                                    winnerId, MccAdminArguments.name(server, winnerId),
+                                                    loserId, MccAdminArguments.name(server, loserId))
+                                            }
+                                        }
                                 },
                             )
                         }
@@ -1368,7 +1439,8 @@ internal object PvpPlayNetworking : PvpCommandBackend {
                     fun name(id: UUID) = Component.literal(jbro.cobblemon.mcc.internal.command.MccAdminArguments.name(server, id))
                     winner?.let { jbro.cobblemon.mcc.api.presentation.BattleResultNotices.victory(it, name(pending.loserId)) }
                     loser?.let { jbro.cobblemon.mcc.api.presentation.BattleResultNotices.defeat(it, name(pending.winnerId)) }
-                    recordedFormat?.let { format -> broadcastResult(server, pending, format) }
+                    recordedFormat?.let { format -> broadcastResult(server, pending, format, ranked) }
+                    rankedResult?.let { result -> tellRatingChange(server, result) }
                 }
                 if (!accepted) {
                     MoreCobblemonContents.LOGGER.warn(
@@ -1391,13 +1463,13 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         )
 
     /** Tells the whole server who beat whom, by display name so Styled Nicknames' nicknames show. */
-    private fun broadcastResult(server: MinecraftServer, pending: PendingPvpCompletion, format: PvpBattleFormat) {
+    private fun broadcastResult(server: MinecraftServer, pending: PendingPvpCompletion, format: PvpBattleFormat, ranked: Boolean) {
         fun name(id: UUID): Component = pending.displayNames[id]
             ?: server.playerList.getPlayer(id)?.displayName
             ?: Component.literal(jbro.cobblemon.mcc.internal.command.MccAdminArguments.name(server, id))
         server.playerList.broadcastSystemMessage(
             Component.translatable(
-                "chat.${MoreCobblemonContents.MOD_ID}.pvp.result",
+                if (ranked) "chat.${MoreCobblemonContents.MOD_ID}.pvp.ranked_result" else "chat.${MoreCobblemonContents.MOD_ID}.pvp.result",
                 name(checkNotNull(pending.winnerId)),
                 name(checkNotNull(pending.loserId)),
                 Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.pvp.format.${format.recordId}"),
@@ -1419,6 +1491,233 @@ internal object PvpPlayNetworking : PvpCommandBackend {
         onlinePlayers[first.uuid] = first
         onlinePlayers[second.uuid] = second
     }
+
+    /** A ranked match's room: its format and its two players, kept after the room itself is gone. */
+    private data class RankedMatch(val format: PvpBattleFormat, val leftId: UUID, val rightId: UUID) {
+        val playerIds: List<UUID> get() = listOf(leftId, rightId)
+    }
+
+    private fun handleRankedIntent(player: ServerPlayer, intent: PvpRankedIntent) {
+        when (intent) {
+            PvpRankedIntent.Refresh -> sendRankedState(player)
+            PvpRankedIntent.Leave -> {
+                val left = rankedQueue.leave(player.uuid) != null
+                sendRankedState(player)
+                if (left) pushRankedQueueSizes(except = player.uuid)
+            }
+            is PvpRankedIntent.Join -> joinRankedQueue(player, intent.format)
+        }
+    }
+
+    private fun joinRankedQueue(player: ServerPlayer, format: PvpBattleFormat) {
+        val paused = MccContentSwitches.check(player.server, player.uuid, ManagedBattleContentIds.PVP)
+        val refusal: Pair<String, List<String>>? = when {
+            paused is ContentAccessDecision.Denied -> paused.reasonKey to paused.arguments
+            !supportsSelectionScreen(player) -> rankedKey("error.client") to emptyList()
+            rooms.roomFor(player.uuid) != null -> rankedKey("error.in_room") to emptyList()
+            sessions.challengeFor(player.uuid) != null || BattleRegistry.getBattleByParticipatingPlayerId(player.uuid) != null ->
+                rankedKey("error.in_battle") to emptyList()
+            else -> when (val team = registerRankedTeam(player, format)) {
+                is PvpTeamRegistrationResult.Rejected -> teamInvalidMessage(player.scoreboardName, format, team.issues)
+                is PvpTeamRegistrationResult.Accepted -> null
+            }
+        }
+        if (refusal != null) {
+            sendRankedState(player, refusal.first, refusal.second)
+            return
+        }
+        // Asking again for the same format keeps the time already waited.
+        if (rankedQueue.entryFor(player.uuid)?.format != format) {
+            rankedQueue.join(PvpRankedEntry(player.uuid, format, PvpRankedHistory.ladder.rating(player.uuid, format), System.currentTimeMillis()))
+        }
+        sendRankedState(player)
+        pushRankedQueueSizes(except = player.uuid)
+        processRankedQueue(player.server)
+    }
+
+    private fun registerRankedTeam(player: ServerPlayer, format: PvpBattleFormat): PvpTeamRegistrationResult =
+        Cobblemon173PvpTeamFactory.register(player, format, PvpRankedRules.SPECIES_CLAUSE, PvpRankedRules.ITEM_CLAUSE)
+
+    /**
+     * Drops whoever can no longer wait (gone, in a room or a match, or PvP switched off for them), then starts a
+     * match for every pair the queue offers.
+     */
+    private fun processRankedQueue(server: MinecraftServer) {
+        var changed = false
+        rankedQueue.entries().forEach { entry ->
+            val player = onlinePlayers[entry.playerId]
+            val paused = MccContentSwitches.check(server, entry.playerId, ManagedBattleContentIds.PVP)
+            val reason: Pair<String, List<String>>? = when {
+                player == null -> "" to emptyList()
+                paused is ContentAccessDecision.Denied -> paused.reasonKey to paused.arguments
+                rooms.roomFor(entry.playerId) != null || sessions.challengeFor(entry.playerId) != null ->
+                    rankedKey("dropped.busy") to emptyList()
+                else -> null
+            }
+            if (reason != null && rankedQueue.leave(entry.playerId) != null) {
+                changed = true
+                player?.let { sendRankedState(it, reason.first, reason.second) }
+            }
+        }
+        val pairings = rankedQueue.pair(System.currentTimeMillis()) { playerId ->
+            BattleRegistry.getBattleByParticipatingPlayerId(playerId) == null
+        }
+        pairings.forEach { pairing ->
+            changed = true
+            runManagedCleanupActionsSafely(
+                reportFailure = { failure ->
+                    MoreCobblemonContents.LOGGER.error(
+                        "PvP ranked match could not start for ${pairing.first.playerId} and ${pairing.second.playerId}", failure,
+                    )
+                },
+                { startRankedMatch(pairing) },
+            )
+        }
+        if (changed) pushRankedQueueSizes()
+    }
+
+    /**
+     * Seats a pairing in a private room nobody else sees and opens the team preview for both, as a room's start
+     * does. A party that no longer fits the rules sends its owner out of the queue and the other back into it.
+     */
+    private fun startRankedMatch(pairing: PvpRankedPairing) {
+        val format = pairing.first.format
+        val left = onlinePlayers[pairing.first.playerId]
+        val right = onlinePlayers[pairing.second.playerId]
+        if (left == null || right == null) {
+            if (left != null) rankedQueue.join(pairing.first)
+            if (right != null) rankedQueue.join(pairing.second)
+            return
+        }
+        val leftTeam = registerRankedTeam(left, format)
+        val rightTeam = registerRankedTeam(right, format)
+        if (leftTeam !is PvpTeamRegistrationResult.Accepted || rightTeam !is PvpTeamRegistrationResult.Accepted) {
+            listOf(Triple(left, leftTeam, pairing.first), Triple(right, rightTeam, pairing.second)).forEach { (player, team, entry) ->
+                if (team is PvpTeamRegistrationResult.Rejected) {
+                    val (key, args) = teamInvalidMessage(player.scoreboardName, format, team.issues)
+                    sendRankedState(player, key, args)
+                } else {
+                    rankedQueue.join(entry)
+                    sendRankedState(player)
+                }
+            }
+            return
+        }
+        val roomId = rooms.create(left.uuid, PvpRankedRules.settings(format)).room.roomId
+        rankedRooms[roomId] = RankedMatch(format, left.uuid, right.uuid)
+        val seated = rooms.claimSeat(roomId, left.uuid, PvpRoomSide.LEFT) is PvpRoomMutation.Applied &&
+            rooms.invite(roomId, left.uuid, right.uuid) is PvpRoomMutation.Applied &&
+            rooms.join(roomId, right.uuid) is PvpRoomMutation.Applied &&
+            rooms.claimSeat(roomId, right.uuid, PvpRoomSide.RIGHT) is PvpRoomMutation.Applied
+        val request = PvpChallengeRequest(roomId, left.uuid, right.uuid, format, PvpRankedRules.ENABLED_MECHANICS)
+        if (!seated || !sessions.prepareRoomMatch(request, leftTeam.team, rightTeam.team)) {
+            abandonRankedMatch(roomId, pairing)
+            return
+        }
+        if (rooms.startPreview(roomId, left.uuid) !is PvpRoomMutation.Applied) {
+            sessions.cancel(roomId, left.uuid)
+            abandonRankedMatch(roomId, pairing)
+            return
+        }
+        val ladder = PvpRankedHistory.ladder
+        listOf(left to right, right to left).forEach { (player, opponent) ->
+            player.sendSystemMessage(Component.translatable(rankedKey("matched"),
+                Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.pvp.format.${format.recordId}"),
+                opponent.displayName ?: Component.literal(opponent.scoreboardName), ladder.standing(opponent.uuid, format).rating))
+            sendRankedState(player)
+        }
+        protectProvisionalPvpStateNotification(
+            rollback = {
+                runManagedCleanupActions(
+                    { sessions.cancel(roomId, left.uuid) },
+                    { notifyClosed(request, "screen.${MoreCobblemonContents.MOD_ID}.pvp.closed.cancelled") },
+                    { finishRankedRoom(roomId) },
+                )
+            },
+        ) {
+            sendState(left, null)
+            sendState(right, null)
+        }
+    }
+
+    /** A ranked room that could not be set up: gone again, and both players back in the queue as they were. */
+    private fun abandonRankedMatch(roomId: UUID, pairing: PvpRankedPairing) {
+        rooms.close(roomId)
+        rankedRooms.remove(roomId)
+        MoreCobblemonContents.LOGGER.warn("PvP ranked room {} could not be set up; both players wait again", roomId)
+        rankedQueue.join(pairing.first)
+        rankedQueue.join(pairing.second)
+    }
+
+    /**
+     * A ranked match is over, played out or called off: the arena goes, the room goes, and both players get the
+     * ranked tab back with their new standing.
+     */
+    private fun finishRankedRoom(roomId: UUID) {
+        val match = rankedRooms[roomId] ?: return
+        runManagedCleanupActionsSafely(
+            reportFailure = { failure ->
+                MoreCobblemonContents.LOGGER.error("PvP ranked room finish cleanup failed for room $roomId", failure)
+            },
+            { lounge.finish(roomId) },
+            { rooms.close(roomId) },
+            { rankedRooms.remove(roomId) },
+            { notifyOnlinePlayers(match.playerIds, "ranked finish") { player -> sendRankedState(player, reopen = true) } },
+        )
+    }
+
+    /** Each player's rating before and after a ranked game, said to them alone. */
+    private fun tellRatingChange(server: MinecraftServer, result: PvpRankedResult) {
+        listOf(result.winnerBefore to result.winnerAfter, result.loserBefore to result.loserAfter).forEach { (before, after) ->
+            val from = before.rating.roundToInt()
+            val to = after.rating.roundToInt()
+            val delta = to - from
+            server.playerList.getPlayer(after.playerId)?.sendSystemMessage(Component.translatable(rankedKey("rating_change"),
+                Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.pvp.format.${after.format.recordId}"),
+                from, to, if (delta >= 0) "+$delta" else delta.toString()))
+        }
+    }
+
+    private fun sendRankedState(
+        player: ServerPlayer,
+        messageKey: String? = null,
+        messageArgs: List<String> = emptyList(),
+        reopen: Boolean = false,
+    ) {
+        if (!ServerPlayNetworking.canSend(player, PvpRankedStatePayload.TYPE)) return
+        val ladder = PvpRankedHistory.ladder
+        val entry = rankedQueue.entryFor(player.uuid)
+        ServerPlayNetworking.send(player, PvpRankedStatePayload(
+            standings = PvpBattleFormat.entries.map { ladder.standing(player.uuid, it) },
+            queuedFormat = entry?.format,
+            queuedForMillis = entry?.let { System.currentTimeMillis() - it.joinedAtMillis } ?: 0,
+            queueSizes = PvpBattleFormat.entries.associateWith(rankedQueue::size),
+            leaders = PvpBattleFormat.entries.associateWith { format ->
+                ladder.top(format, PVP_RANKED_MAX_LEADERS).map { record ->
+                    PvpRankedLeader(ladder.standing(record.playerId, format).rank, record.name,
+                        record.rating.roundToInt(), record.wins, record.losses)
+                }
+            },
+            messageKey = messageKey?.takeIf { it.isNotEmpty() },
+            messageArgs = messageArgs.take(4),
+            reopen = reopen,
+        ))
+    }
+
+    /** Everyone online gets the queue counts again; the ranked tab shows how many wait in each format. */
+    private fun pushRankedQueueSizes(except: UUID? = null) {
+        notifyOnlinePlayers(onlinePlayers.keys.filter { it != except }, "ranked queue update") { player -> sendRankedState(player) }
+    }
+
+    private fun rejectFailedRankedRequest(player: ServerPlayer, failure: Throwable) {
+        runManagedCleanupActionsSafely(
+            reportFailure = {},
+            { MoreCobblemonContents.LOGGER.error("PvP ranked request failed for ${player.uuid}", failure) },
+            { sendRankedState(player, "screen.${MoreCobblemonContents.MOD_ID}.pvp.error.internal_failure") },
+        )
+    }
+
+    private fun rankedKey(path: String) = "screen.${MoreCobblemonContents.MOD_ID}.pvp.ranked.$path"
 
     private fun PvpChallengeMutationResult.toCommandOutcome(): PvpCommandOutcome = when (this) {
         is PvpChallengeMutationResult.Applied, is PvpChallengeMutationResult.Unchanged ->
@@ -1470,3 +1769,20 @@ internal fun pvpInviteCandidates(
     .sortedBy(PvpRoomMemberView::name)
     .take(PVP_ROOM_MAX_INVITE_CANDIDATES)
     .toList()
+
+/** How often the ranked queue looks for pairs and drops who cannot wait: once a second. */
+private const val RANKED_PAIRING_TICKS = 20
+
+/** The room an intent acts on, for the intents that name one. */
+private fun PvpRoomIntent.targetRoomId(): UUID? = when (this) {
+    is PvpRoomIntent.Refresh, is PvpRoomIntent.Create -> null
+    is PvpRoomIntent.Join -> roomId
+    is PvpRoomIntent.Leave -> roomId
+    is PvpRoomIntent.ClaimSeat -> roomId
+    is PvpRoomIntent.Observe -> roomId
+    is PvpRoomIntent.UpdateSettings -> roomId
+    is PvpRoomIntent.Invite -> roomId
+    is PvpRoomIntent.DeclineInvite -> roomId
+    is PvpRoomIntent.TransferHost -> roomId
+    is PvpRoomIntent.Start -> roomId
+}

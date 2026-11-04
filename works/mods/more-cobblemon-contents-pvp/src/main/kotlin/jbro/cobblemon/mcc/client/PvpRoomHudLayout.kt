@@ -43,13 +43,23 @@ internal data class PvpRoomHudLayout(
         private const val SPECTATOR_HEADING_HEIGHT = 10
         private const val SPECTATOR_ROW_HEIGHT = 10
 
-        fun calculate(screenWidth: Int, screenHeight: Int, expanded: Boolean, spectatorCount: Int): PvpRoomHudLayout {
+        /** The ranked queue's bar: collapsed, as wide as an expanded room so the wait's clock fits beside the controls. */
+        fun queue(screenWidth: Int, screenHeight: Int): PvpRoomHudLayout =
+            calculate(screenWidth, screenHeight, expanded = false, spectatorCount = 0, collapsedWidth = EXPANDED_WIDTH)
+
+        fun calculate(
+            screenWidth: Int,
+            screenHeight: Int,
+            expanded: Boolean,
+            spectatorCount: Int,
+            collapsedWidth: Int = COLLAPSED_WIDTH,
+        ): PvpRoomHudLayout {
             require(screenWidth > 0 && screenHeight > 0)
             require(spectatorCount >= 0)
             val visibleSpectators = if (expanded) spectatorCount.coerceAtMost(MAX_VISIBLE_SPECTATORS) else 0
             val hiddenSpectators = if (expanded) (spectatorCount - visibleSpectators).coerceAtLeast(0) else 0
             val extraRow = if (hiddenSpectators > 0) 1 else 0
-            val panelWidth = (if (expanded) EXPANDED_WIDTH else COLLAPSED_WIDTH)
+            val panelWidth = (if (expanded) EXPANDED_WIDTH else collapsedWidth)
                 .coerceAtMost((screenWidth - SCREEN_MARGIN * 2).coerceAtLeast(1))
             val panelHeight = if (expanded) {
                 HEADER_HEIGHT + CONTROL_GAP + PHASE_HEIGHT + SIDE_HEIGHT + SPECTATOR_HEADING_HEIGHT +

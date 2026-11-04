@@ -11,7 +11,6 @@ import jbro.cobblemon.mcc.client.hub.MccHubTabs
 import jbro.cobblemon.mcc.client.hub.MccPokemonPortraits
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleFormat
 import jbro.cobblemon.mcc.internal.pvp.PvpBattleMechanic
-import jbro.cobblemon.mcc.internal.pvp.PvpRoomDefaults
 import jbro.cobblemon.mcc.internal.pvp.PvpRoomPhase
 import jbro.cobblemon.mcc.internal.pvp.PvpRoomSettings
 import jbro.cobblemon.mcc.internal.pvp.PvpRoomSide
@@ -55,6 +54,9 @@ internal object PvpHubClient {
 
     enum class View { LIST, ROOM, PICKER, SELECTION }
 
+    /** The two tabs over the lobby: ranked battles and custom rooms. */
+    enum class Section { RANKED, CUSTOM }
+
     var view = View.LIST
         private set
     var listFeedbackKey: String? = null
@@ -66,6 +68,9 @@ internal object PvpHubClient {
         private set
     var inviting = true
         private set
+    var section = Section.RANKED
+    /** The format picked on the ranked tab; the player's card shows their standing in it. */
+    var rankedFormat = PvpBattleFormat.SINGLE
     var listPage = 0
     var pickerPage = 0
     var mechanicsOffset = 0
@@ -192,13 +197,24 @@ internal object PvpHubClient {
             openSelection()
             return
         }
-        val last = PvpRoomClientState.lastRoom ?: return
+        val last = PvpRoomClientState.lastRoom
+        if (last == null) {
+            // Waiting in the ranked queue is what the HUD shows then; its open control goes to the ranked tab.
+            if (PvpRankedClientState.queuedFormat != null) showRanked()
+            return
+        }
         dropStaleSpectatorPreview(last)
         if (room?.state?.roomId != last.roomId) {
             room = PvpRoomScreenController(last) { intent -> PvpPlayClientNetworking.send(PvpRoomIntentPayload(intent)) }
         }
         if (view != View.SELECTION) view = View.ROOM
         MccHubScreen.open(CONTENT)
+    }
+
+    /** The ranked tab, as a finished ranked match or the queue HUD opens it. A team preview keeps its place. */
+    fun showRanked() {
+        if (view != View.SELECTION || selection == null) view = View.LIST
+        PvpLobbyView.showRanked()
     }
 
     fun navigate(next: View, invite: Boolean = inviting) {
@@ -259,38 +275,8 @@ internal class PvpHubTab : MccHubTabContent {
             PvpHubClient.view == PvpHubClient.View.SELECTION && selection != null -> buildSelection(host, layout, selection)
             PvpHubClient.view == PvpHubClient.View.PICKER && room != null -> buildPicker(host, layout, room)
             PvpHubClient.view == PvpHubClient.View.ROOM && room != null -> buildRoom(host, layout, room)
-            else -> buildList(host, layout)
+            else -> PvpLobbyView.build(host, bounds)
         }
-    }
-
-    private fun buildList(host: MccHubContentHost, layout: PvpHubLayout) {
-        val rooms = PvpRoomClientState.lastRooms
-        MccHubKit.strip(host, layout.strip, room("title"), room("browser.summary", rooms.size))
-        var body = MccHubKit.card(host, layout.body, room("browser.title"), MccHubKit.CardTone.FEATURE)
-        PvpHubClient.listFeedbackKey?.let { key ->
-            val feedback = Component.translatable(key, *PvpHubClient.listFeedbackArgs.toTypedArray())
-            val (line, rest) = MccHubKit.lineAbove(body, feedbackHeight(feedback, body.width))
-            MccHubKit.text(host, line, feedback) { it.colors.accentDanger }
-            body = rest
-        }
-        MccHubKit.pagedList(host, body, rooms.map { summary ->
-            MccHubKit.ListEntry(
-                Component.literal(summary.host.name),
-                Component.empty().append(room("format.${summary.settings.format.recordId}")).append(" · ")
-                    .append(room("phase.${summary.phase.name.lowercase()}")).append(" · ")
-                    .append(room("visibility.${summary.settings.visibility.name.lowercase()}")),
-                room("spectators", summary.spectatorCount),
-            ) { PvpPlayClientNetworking.openRoom(summary.roomId) }
-        }, PvpHubClient.listPage, room("browser.empty")) { page ->
-            PvpHubClient.listPage = page
-            host.rebuild()
-        }
-        MccHubKit.footer(host, layout.footer,
-            listOf(MccHubKit.Action(room("browser.refresh")) { sendRoom(PvpRoomIntent.Refresh(UUID.randomUUID())) }),
-            listOf(
-                MccHubKit.Action(room("browser.create_private")) { create(PvpRoomVisibility.PRIVATE) },
-                MccHubKit.Action(room("browser.create_public"), UiButtonVariant.PRIMARY) { create(PvpRoomVisibility.PUBLIC) },
-            ))
     }
 
     private fun buildRoom(host: MccHubContentHost, layout: PvpHubLayout, controller: PvpRoomScreenController) {
@@ -533,9 +519,6 @@ internal class PvpHubTab : MccHubTabContent {
         controller.submit(PvpRoomIntent.UpdateSettings(UUID.randomUUID(), controller.state.roomId, settings))
         MccHubScreen.refresh(PvpHubClient.CONTENT)
     }
-
-    private fun create(visibility: PvpRoomVisibility) = sendRoom(PvpRoomIntent.Create(UUID.randomUUID(),
-        PvpRoomSettings(visibility, PvpBattleFormat.SINGLE, PvpRoomDefaults.ENABLED_MECHANICS)))
 
     private fun sendRoom(intent: PvpRoomIntent) = PvpPlayClientNetworking.send(PvpRoomIntentPayload(intent))
 

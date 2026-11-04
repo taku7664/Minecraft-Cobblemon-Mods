@@ -10,6 +10,7 @@ object PvpContent : ModInitializer {
         PvpPlayNetworking.registerServer()
         PvpLoungeProtection.registerServer()
         PvpMatchHistory.register()
+        PvpRankedHistory.register()
         PvpWikiApi.register()
         PvpDashboard.register()
     }

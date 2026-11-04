@@ -69,9 +69,13 @@ internal object PvpRoomHudOverlay {
 
     private fun render(graphics: GuiGraphics, deltaTracker: DeltaTracker) {
         val client = Minecraft.getInstance()
-        val room = PvpRoomClientState.lastRoom ?: return
         val screen = client.screen
         if (screen != null && screen !is ChatScreen) return
+        val room = PvpRoomClientState.lastRoom
+        if (room == null) {
+            if (PvpRankedClientState.queuedFormat != null) drawQueue(graphics, client, screen is ChatScreen)
+            return
+        }
         val layout = PvpRoomHudLayout.calculate(graphics.guiWidth(), graphics.guiHeight(), expanded, room.spectators.size)
         drawRoom(graphics, client, room, layout, screen is ChatScreen)
     }
@@ -123,6 +127,33 @@ internal object PvpRoomHudOverlay {
         }
     }
 
+    /**
+     * The ranked queue while the hub is closed: the room HUD's bar alone, with the format and the time waited, the
+     * hub's open control and one to stop waiting.
+     */
+    private fun drawQueue(graphics: GuiGraphics, client: Minecraft, interactive: Boolean) {
+        val format = PvpRankedClientState.queuedFormat ?: return
+        val theme = CobblemonUiSharedTheme.snapshot()
+        val content = CobblemonUiSharedTheme.contentSnapshot()
+        val font = client.font
+        val layout = PvpRoomHudLayout.queue(graphics.guiWidth(), graphics.guiHeight())
+        val panel = layout.panel
+        UiSurfaceRenderer.draw(graphics, panel.x, panel.y, panel.width, panel.height,
+            theme.surfaces.shell.copy(backgroundOpacity = WINDOW_OPACITY))
+        drawTitleBar(graphics, theme, layout)
+        val seconds = PvpRankedClientState.queuedSeconds()
+        val text = Component.translatable(lobbyKey("hud.queue"),
+            Component.translatable("screen.${MoreCobblemonContents.MOD_ID}.pvp.format.${format.recordId}"),
+            "%d:%02d".format(seconds / 60, seconds % 60))
+        val title = MccHubKit.fitted(text, (layout.title.width - 2).coerceAtLeast(1))
+        graphics.drawString(font, title, layout.title.x, layout.title.y + (layout.title.height - font.lineHeight) / 2 + 1,
+            theme.colors.textPrimary, false)
+        if (!interactive) {
+            CobblemonUiThemedButton.draw(graphics, content, layout.openButton, openLabel(), UiButtonVariant.PRIMARY, opacity = CONTROL_OPACITY)
+            CobblemonUiThemedButton.draw(graphics, content, layout.toggleButton, cancelLabel(), UiButtonVariant.DANGER, opacity = CONTROL_OPACITY)
+        }
+    }
+
     /** The hub header's navy bar inside the window's frame, with its red trim under it once the room shows below. */
     private fun drawTitleBar(graphics: GuiGraphics, theme: UiThemeSnapshot, layout: PvpRoomHudLayout) {
         val bar = layout.titleBar
@@ -159,7 +190,21 @@ internal object PvpRoomHudOverlay {
     private fun installChatControls(screen: Screen) {
         installedButtons.remove(screen)?.let { previous -> Screens.getButtons(screen).removeAll(previous.toSet()) }
         if (screen !is ChatScreen) return
-        val room = PvpRoomClientState.lastRoom ?: return
+        val room = PvpRoomClientState.lastRoom
+        if (room == null) {
+            if (PvpRankedClientState.queuedFormat == null) return
+            val layout = PvpRoomHudLayout.queue(screen.width, screen.height)
+            val open = CobblemonUiThemedButton(layout.openButton, openLabel(), UiButtonVariant.PRIMARY, CONTROL_OPACITY) {
+                PvpHubClient.showRanked()
+            }.apply { theme = CobblemonUiSharedTheme::contentSnapshot }
+            val cancel = CobblemonUiThemedButton(layout.toggleButton, cancelLabel(), UiButtonVariant.DANGER, CONTROL_OPACITY) {
+                PvpRankedClientState.send(jbro.cobblemon.mcc.internal.pvp.network.PvpRankedIntent.Leave)
+            }.apply { theme = CobblemonUiSharedTheme::contentSnapshot }
+            Screens.getButtons(screen).add(open)
+            Screens.getButtons(screen).add(cancel)
+            installedButtons[screen] = listOf(open, cancel)
+            return
+        }
         val layout = PvpRoomHudLayout.calculate(screen.width, screen.height, expanded, room.spectators.size)
         val open = CobblemonUiThemedButton(layout.openButton, openLabel(), UiButtonVariant.PRIMARY, CONTROL_OPACITY) {
             openRoom(Minecraft.getInstance())
@@ -193,5 +238,9 @@ internal object PvpRoomHudOverlay {
         PvpRoomPhase.CLOSED -> theme.colors.textSecondary
     }
 
+    private fun cancelLabel(): Component = Component.translatable(lobbyKey("hud.cancel"))
+
     private fun key(path: String) = "screen.${MoreCobblemonContents.MOD_ID}.pvp.room.$path"
+
+    private fun lobbyKey(path: String) = "screen.${MoreCobblemonContents.MOD_ID}.pvp.lobby.$path"
 }

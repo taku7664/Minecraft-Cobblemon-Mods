@@ -15,6 +15,8 @@ import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomInvitePayload
 import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomListStatePayload
 import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomRejectedPayload
 import jbro.cobblemon.mcc.internal.pvp.network.PvpRoomStatePayload
+import jbro.cobblemon.mcc.internal.pvp.network.PvpRankedStatePayload
+import jbro.cobblemon.mcc.client.hub.MccHubScreen
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.minecraft.ChatFormatting
 import net.minecraft.network.chat.Component
@@ -26,6 +28,14 @@ internal object PvpPlayClientNetworking {
         MccClientSessionReset.onReset("PvP room client state") {
             PvpRoomClientState.clear()
             PvpHubClient.clear()
+            PvpRankedClientState.clear()
+        }
+        ClientPlayNetworking.registerGlobalReceiver(PvpRankedStatePayload.TYPE) { payload, context ->
+            context.client().execute {
+                PvpRankedClientState.apply(payload)
+                if (payload.reopen) PvpHubClient.showRanked() else MccHubScreen.refresh(PvpHubClient.CONTENT)
+                PvpRoomHudOverlay.refreshControls()
+            }
         }
         ClientPlayNetworking.registerGlobalReceiver(PvpLoungeSpectatorStatePayload.TYPE) { payload, context ->
             context.client().execute {
