@@ -1,5 +1,16 @@
 # cobblemon-party-sidebar 작업 기록
 
+## [2026-11-04 11:58] 프리셋·도구 보관함 (0.3.0, 빌드·main·개발 배포, 실게임 미확인)
+
+- **사용자 결정:** 하단에 `[합성][+][휴지통][보관함]` 버튼과 `< 1 / 2 >` 페이지. 보관함은 상자 창, Esc로 인벤토리 복귀, 사이드바 유지. 보관함 도구는 이름 앞 아이콘 + 아이템 위 표시. 참조 도구가 없으면 지닌 도구 칸이 붉게. 배틀 소모는 "없어지게(기본)/안 없어지게" 둘 다 선택 가능. 아이템화된 포켓몬을 받은 사람이 빼면 받은 사람 보관함으로. 배틀 중 프리셋 조작 금지. 삭제는 + 옆 휴지통.
+- **참조 = 대여 방식(사용자와 합의):** 보관함 도구는 `custom_data`의 `cobblemon_party_sidebar_stored` 표시를 단 진짜 스택이다. 포켓몬이 빌리면 그 스택을 실제로 든다(배틀·진화·다른 모드가 그대로 본다). 장부를 두지 않으므로 배틀 중 끊김·크래시로 "보관함에도 있고 포켓몬도 든" 상태가 생기지 않는다. ID 조회(`heldItem()` 믹스인)·배틀 때만 실체화 방식은 복사 위험과 영향 범위 때문에 버렸다.
+- **바이트코드로 확인한 것(Cobblemon 1.8.1):** 플레이어 포켓몬은 `BattlePokemon.playerOwned`로 원본=effected 같은 객체. 배틀 도구 변화는 `BaseCobblemonHeldItemManager.take/give`가 즉시 진짜 포켓몬에 반영(`give`는 아이템 종류로 새 스택을 만든다). 소모 여부는 `consumed_in_{wild,npc,pvp}_battle` 태그(PvP는 열매·주얼만).
+- **현재 프리셋 = 라이브 파티:** 10틱마다 미러. 비어 있는 칸의 포켓몬이 파티·PC에 없으면(아이템화·교환) 기록 유지, PC/다른 칸으로 옮겼으면 비움. 아무것도 안 들고 있으면 참조 유지 → 붉은 칸. 사용자가 사이드바로 대여 도구를 빼면 참조를 지운다. 전환 시 대여 도구 전부 반납 → 파티/PC 재배치 → 새 프리셋 대여. 자기 도구(표시 없음)를 든 포켓몬은 그대로 둔다. 삭제는 이웃 프리셋을 먼저 적용한 뒤 지운다. 최대 18개.
+- **누수 처리:** 보관함 창 밖에서 인벤토리에 표시 달린 도구가 생기면(합성 재료 반환 등) 10틱마다 보관함으로 되돌리고, 가득 차면 표시만 뗀다. 보관함 창 안에서 인벤토리로 옮긴 도구는 바로 표시를 뗀다. 보관함 칸에서 Q 버리기는 막았다.
+- **알려진 한계:** `consumeStoredItemsInBattle=false`에서 상대가 트릭·도둑질로 대여 도구를 가져가면 내 쪽은 유지되고 상대는 Cobblemon `give`로 새 스택을 받는다(복사). 기본값 true에서는 생기지 않는다. 보관함(월드 `data/cobblemon_party_sidebar.dat`)과 Cobblemon 파티 저장 사이의 크래시 창은 남아 있다(cobblemon-to-item과 같은 성격). `SavedData` 팩토리는 null `DataFixTypes`면 두 번째 로드에서 NPE가 나므로 다른 모듈처럼 `LEVEL`을 쓴다.
+- **빌드·배포:** `:cobblemon-party-sidebar:build -x test` 성공(경고 0). `works/mods/cobblemon-to-item/build`가 C에 없어 F 정션을 새로 만들었다. 커밋 `b0e77bd14`를 plumbing으로 origin/main 위에 만들어 `main`·`feature/sidebar-presets`에 올리고 푸시, 0/0 확인(체크아웃은 다른 세션의 `feature/pichu-wiki`라 바꾸지 않음; 작업 트리 내 수정 파일은 커밋 내용과 같다). 빌드 트리와 main의 차이는 무관한 `cobblemon-battle-speed` 한 줄뿐. JAR SHA-256 `611d92f87e066cdb8fc68b6d3e586b04874efd2d9a38e673a9663f1b8638b25d`, `develop-product/{server,client}/mods`에 0.2.3 대신 설치·해시 일치. 백업 `develop-product/deployment-backups/20261104-115751-party-sidebar-presets`. 게임·서버 꺼진 상태 확인. PPakemon·운영·VPS·deploy-product는 건드리지 않았다.
+- **미확인:** 서버·게임 기동과 실게임 동작 전부(버튼 위치·크기, 아이콘, 보관함 창, Esc 복귀, 대여·반납, 프리셋 전환, 붉은 칸, 배틀 소모).
+
 ## [2026-10-24 15:10] 개발 서버·클라이언트 배포 (0.2.3, 실게임 미확인)
 
 - **배치:** 사용자 요청으로 `develop-product/server/mods`와 `develop-product/client/mods`(cobblemon-dev 정션)에 아이템화 0.1.5·사이드바 0.2.3·포켓퓨전 1.4.2를 함께 설치했다. 기존 각 모드 JAR은 대상 폴더에서 교체했으며 백업은 `F:\AI\builds\cobblemon-mods-sidebar-fusion-20261024\deployment-backups\20261024-151020`에 보관했다.
