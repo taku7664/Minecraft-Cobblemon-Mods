@@ -1,5 +1,10 @@
 # cobblemon-to-item 작업 기록
 
+## [2026-11-04 18:38] 창 칸 → 파티 복원 API, 지닌 도구 이름 꾸미기 (0.1.7, 빌드·main·개발 배포, 실게임 미확인)
+
+- **구현:** `PokemonTransfers.restoreFromMenuSlot(player, menuSlot)` — 사이드바 메뉴(포켓몬 보관함)의 칸에서 파티 가장 앞 빈칸으로 복원한다. 기존 `restore` 경로(중복·롤백)를 그대로 쓰고, 이동 로그 출발지는 `menu[칸]`. `restore`에 `from` 인자를 더해 로그 출발지를 정확히 적는다. `PokemonTooltip.heldItemName`로 다른 모드가 지닌 도구 이름을 꾸밀 수 있다(사이드바가 보관함 아이콘을 붙임).
+- **검증·배포:** 단위 21/21, 사이드바 0.4.6과 함께 커밋 `eab10418d`. 개발 서버·클라 0.1.6 → 0.1.7, SHA-256 `a4a81bcce30e5bf6c2e89dc29ad279898a483d9656452ea92645c2266917b45b` 일치.
+
 ## [2026-11-04 13:12] 사이드바 포켓몬 보관함 메뉴 허용 (0.1.6, 빌드·main·개발 배포, 실게임 미확인)
 
 - **구현:** `supportsSidebarMenu`가 `pokefusion:fusion`에 더해 `cobblemon_party_sidebar:pokemon_storage`도 허용한다. 레지스트리 ID로만 비교하므로 두 모드 중 어느 쪽도 로드할 필요가 없다. 전송 규칙·롤백은 바꾸지 않았다.
