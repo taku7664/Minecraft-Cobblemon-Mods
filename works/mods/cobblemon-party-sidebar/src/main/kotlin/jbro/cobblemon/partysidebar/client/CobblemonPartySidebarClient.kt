@@ -11,10 +11,9 @@ import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking
 import net.fabricmc.fabric.api.resource.ResourceManagerHelper
 import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener
 import net.minecraft.client.gui.screens.MenuScreens
-import net.minecraft.client.gui.screens.inventory.ContainerScreen
 import net.minecraft.server.packs.PackType
-import net.minecraft.world.inventory.ChestMenu
 import net.minecraft.server.packs.resources.ResourceManager
+import net.minecraft.world.inventory.ChestMenu
 
 /** The sidebar itself is drawn and driven from the inventory screen; see [PartySidebar]. */
 object CobblemonPartySidebarClient : ClientModInitializer {
@@ -26,8 +25,8 @@ object CobblemonPartySidebarClient : ClientModInitializer {
 
             override fun onResourceManagerReload(manager: ResourceManager) = InventorySkin.invalidate()
         })
-        // The item storage is a plain chest window; the party column docks beside it.
-        MenuScreens.register<ChestMenu, ContainerScreen>(StorageMenu.TYPE) { menu, inventory, title -> ContainerScreen(menu, inventory, title) }
+        // The item storage is a chest window with a scroll bar; the party column docks beside it.
+        MenuScreens.register<ChestMenu, StorageScreen>(StorageMenu.TYPE) { menu, inventory, title -> StorageScreen(menu as StorageMenu, inventory, title) }
         ClientPlayNetworking.registerGlobalReceiver(PresetStatePayload.TYPE) { payload, _ -> PresetClient.state = payload }
         ClientPlayConnectionEvents.DISCONNECT.register { _, _ -> PresetClient.state = null }
         ItemTooltipCallback.EVENT.register { stack, _, _, lines ->

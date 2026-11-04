@@ -28,8 +28,9 @@ inventory texture, so it matches the inventory under any resource pack.
   out again. A new preset starts as a copy of the current one; deleting one switches to its neighbour first. Up to 18
   presets; switching, adding and deleting are refused during a battle, while the cursor holds an item, or when the PC
   has no room for the Pokemon leaving the party.
-- **Item storage:** a 27-slot chest that belongs to you, opened from its button; Esc goes back to the inventory and
-  the column stays beside it. Items in it, and items Pokemon borrow from it, wear a small chest in the corner and
+- **Item storage:** a 54-slot chest that belongs to you, opened from its button. It shows three rows at a time;
+  scroll with the wheel or drag the bar on its right. Shift-clicking an item in fills any free slot, shown or not.
+  Esc goes back to the inventory and the column stays beside it. Items in it, and items Pokemon borrow from it, wear a small chest in the corner and
   before their name. Pick one up in the storage and click a held-item slot to lend it: the Pokemon really holds it, so
   battles and evolutions see it. Taking a borrowed item off a Pokemon puts it back in the storage, not the inventory.
   An item placed in the inventory is taken out of the storage and loses the mark.

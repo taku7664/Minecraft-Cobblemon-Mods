@@ -64,7 +64,7 @@ class PresetData : SavedData() {
 
     companion object {
         const val PARTY_SIZE = 6
-        const val STORAGE_SIZE = 27
+        const val STORAGE_SIZE = 54
         const val MAX_PRESETS = 18
         private const val NAME = "cobblemon_party_sidebar"
 
