@@ -54,3 +54,7 @@ Python 표준 `unittest`로 실제 임시 Git 저장소에서 파일 선택·보
 테스트 임시 폴더는 F 드라이브를 지정하고 `PYTHONDONTWRITEBYTECODE=1`로 소스 옆 캐시 생성을 끕니다.
 `vps-manager.ps1 -Probe`는 GUI와 같은 SSH 경로로 VPS 상태만 확인합니다.
 `-RenderUiPath <png>`는 샘플 행을 사용한 화면 검증용이며 서버에 접속하지 않습니다.
+
+## VPS 예약 백업 간격
+
+운영 VPS의 Google Drive 전체 백업은 마지막 성공일을 기준으로 이틀마다 04:00(한국 시간)에 실행합니다. 설치 파일과 검증 범위는 backup-schedule/README.md를 참조하세요.

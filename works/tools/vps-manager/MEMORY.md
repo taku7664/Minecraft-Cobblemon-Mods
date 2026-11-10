@@ -1,3 +1,9 @@
+# [2026-11-10 19:50] VPS Drive 예약 백업을 성공일 기준 이틀 간격으로 변경
+
+- **요청·기준:** 빡대리의 “백업간격 2일마다” 지시를 오늘 04:00(KST) 성공 백업을 기준으로 격일 04:00 실행으로 적용했다. 오늘 백업은 SNAPSHOT_VERIFIED와 BACKUP_VERIFIED, 서비스 종료 코드 0을 확인했다. 기존 매일 04:00 실행에서 다음 실제 예정일은 11/12 04:00으로 바뀐다.
+- **구현·설치:** ppakemon-gdrive-backup.timer의 매일 04:00 Persistent 트리거는 유지하고 설명을 실행 여부 검사로 바꿨다. 서비스 ExecCondition은 /opt/ppakemon-gdrive/schedule_due.py로 마지막 성공 표식의 한국 날짜가 이틀 이상 지났는지 판단한다. /opt/ppakemon-gdrive/backup.py는 새 백업의 Drive 검증·로컬 정리를 끝낸 뒤에만 /var/lib/ppakemon-gdrive/last-success를 갱신한다. 초기 표식은 오늘 성공한 타이머 기록 시각으로 설정했다. 첫 설치안의 서비스 ExecStartPost 표식 갱신은 중복 실행도 성공으로 세는 문제를 발견해 다음 트리거 전에 제거했다. 기존 타이머·서비스·backup.py는 /var/lib/ppakemon-gdrive/schedule-change-20261110/에 보존했다. 설치본 4개 파일과 이 작업 트리 소스의 SHA-256이 각각 일치한다.
+- **검증·한계:** 날짜·월말·누락 표식 판정 8건과 백업 성공·업로드 실패·중복 실행·스냅샷 전용 4건이 통과했다. systemd-analyze verify 종료 코드 0, 타이머 active·백업 서비스 inactive·ExecCondition 로드, 오늘 판정 BACKUP_SKIP을 확인했다. 게임 Java PID170548과 25565 LISTEN은 유지됐고 서버 종료·재시작은 없다. 11/11 건너뜀과 11/12 실제 백업·Drive 검증은 미래 실행이므로 미확인이다. 관리 도구가 작업마다 만드는 별도 백업의 일정은 변경하지 않았다.
+
 # [2026-11-10 19:30] VPS Watchdog 종료 후 명시적 재기동
 
 - **종료 확인:** 19:12:03(KST) 서버 틱 하나가 60.05초 걸려 Watchdog이 강제 종료했다. crash-2026-11-10_19.12.09-server.txt의 서버 스레드는 Cobblemon 포켓몬 이동 AI의 블록 조회 경로에 있었지만, 그 경로나 특정 플레이어가 장시간 정체의 근본 원인인지는 미확인이다. 커널 OOM 기록과 VPS 재부팅 흔적은 찾지 못했다. 11/09 힙 히스토그램의 -all은 회수 가능한 객체도 포함하므로 청크 누적을 확정하지 않는다.

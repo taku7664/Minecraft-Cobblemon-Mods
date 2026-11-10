@@ -1,0 +1,11 @@
+[Unit]
+Description=Check PPakemon two-day backup schedule at 04:00 Korea time
+
+[Timer]
+OnCalendar=*-*-* 04:00:00 Asia/Seoul
+Persistent=true
+RandomizedDelaySec=0
+Unit=ppakemon-gdrive-backup.service
+
+[Install]
+WantedBy=timers.target
