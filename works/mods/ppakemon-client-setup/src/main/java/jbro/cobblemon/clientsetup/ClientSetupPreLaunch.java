@@ -52,10 +52,10 @@ public final class ClientSetupPreLaunch implements PreLaunchEntrypoint {
             LOGGER.error("Could not check the Iris reload and Cobblemon send-out keys", exception);
         }
         try {
-            int moved = XaeroWorldReset.apply(loader.getGameDir(), loader.getConfigDir());
-            if (moved > 0) LOGGER.info("Moved {} Xaero map caches of the reset live server aside", moved);
+            int moved = XaeroOverworldReset.apply(loader.getGameDir(), loader.getConfigDir());
+            if (moved > 0) LOGGER.info("Moved {} Xaero overworld map folders of the live server aside", moved);
         } catch (IOException exception) {
-            LOGGER.error("Could not move the reset live server's Xaero map caches; initialization will retry next launch", exception);
+            LOGGER.error("Could not move the live server's Xaero overworld maps; initialization will retry next launch", exception);
         }
         try {
             int applied = XaeroSetup.apply(loader.getGameDir(), loader.getConfigDir(), installedMods);

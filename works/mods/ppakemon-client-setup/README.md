@@ -94,7 +94,7 @@ Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기�
 - `config/xaero/minimap/default_radar_categories_client.json`의 기본 `icons`를 `2`(항상 표시)로 설정합니다. 파일이 없으면 번들된 기본 분류를 만들고, 기존 분류·이름 표시 등 다른 값은 유지합니다.
 - 전체 지도는 N, 미니맵 설정은 Y입니다. Xaero 기본 웨이포인트 키는 충돌을 피하려고 미지정으로 둡니다.
 - 시작 훅이 기존 Xaero 월드의 `xaero/minimap/<월드>/config.txt`에서 `teleportationEnabled:false`를 적용합니다. 접속 중 새로 생성된 월드는 `jbro-policy`가 처리합니다.
-- 운영 서버 월드 초기화(2026-10-11, 광장만 유지·같은 시드)에 맞춰 `xaero/minimap`, `xaero/world-map`의 `Multiplayer_210.207.108.196` 폴더(포트가 붙은 이름 포함)를 한 번만 `ppakemon_client_setup/backups/xaero-world-reset-2026-10-11/`로 옮깁니다. 예전 건물·웨이포인트가 새 월드 지도에 남지 않게 하려는 것이며, 다른 서버와 싱글 월드 지도는 건드리지 않고 아무것도 지우지 않습니다.
+- 운영 서버의 다음 오버월드 초기화에 맞춰 `Multiplayer_210.207.108.196`(포트가 붙은 이름 포함)의 Xaero 미니맵 `dim%0`과 전체 지도 `null` 폴더만 한 번 `ppakemon_client_setup/backups/xaero-overworld-reset-2026-11-11/`로 옮깁니다. 마이룸·광장·다른 차원 및 다른 서버의 지도·웨이포인트는 유지합니다. 클라이언트가 게임 시작 전에 처리하므로 월드 초기화 후에 이 버전을 배포해야 합니다. 기존 2026-10-11 전체 서버 지도 이동 규칙은 더 이상 실행하지 않습니다.
 - `resourcepacks/E19-Xaero-Icons-<버전>.zip`이 설치되어 있으면 가장 높은 버전을 활성화하고(옛 버전 항목은 뺌) 가장 높은 우선순위에 둡니다. 팩을 다운로드하거나 포켓몬 모델·텍스처를 교체하지 않습니다.
 - JourneyMap이 설치되어 있지 않으면 기존 JourneyMap 키와 전용 팩 2개의 선택 항목을 제거합니다. 모드·팩 파일 자체는 삭제하지 않습니다.
 
