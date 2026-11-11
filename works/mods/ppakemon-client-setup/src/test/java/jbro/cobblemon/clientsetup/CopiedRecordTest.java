@@ -49,13 +49,13 @@ final class CopiedRecordTest {
         assertTrue(Files.readString(game.resolve("options.txt")).contains("lang:ko_kr\n"));
     }
 
-    @Test void copiedResetRecordKeepsTheNewWorldsMaps() throws Exception {
+    @Test void oldResetRecordDoesNotSkipTheNewOverworldReset() throws Exception {
         ship();
-        Path map = game.resolve("xaero/minimap/Multiplayer_210.207.108.196");
+        Path map = game.resolve("xaero/minimap/Multiplayer_210.207.108.196/dim%0");
         Files.createDirectories(map);
-        assertEquals(0, XaeroWorldReset.apply(game, config()));
-        assertTrue(Files.isDirectory(map));
-        assertEquals("true", SetupFiles.readState(config()).getProperty(XaeroWorldReset.RULE));
+        assertEquals(1, XaeroOverworldReset.apply(game, config()));
+        assertFalse(Files.exists(map));
+        assertEquals("true", SetupFiles.readState(config()).getProperty(XaeroOverworldReset.RULE));
     }
 
     @Test void sendOutConflictIsResolvedOnEveryLaunchWhateverTheRecordSays() throws Exception {
