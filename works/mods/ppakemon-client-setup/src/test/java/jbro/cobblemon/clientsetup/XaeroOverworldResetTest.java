@@ -69,4 +69,20 @@ final class XaeroOverworldResetTest {
         assertEquals("old", Files.readString(oldBackup.resolve("map.txt")));
         assertEquals("null", Files.readString(backup("world-map", server, "null-2").resolve("map.txt")));
     }
+
+    @Test void copiedCompletionRecordKeepsMapsAlreadyMadeAfterReset() throws Exception {
+        String server = "Multiplayer_210.207.108.196";
+        Path minimap = map("minimap", server, "dim%0");
+        Path worldMap = map("world-map", server, "null");
+        var copied = new java.util.Properties();
+        copied.setProperty(SetupFiles.PROFILE, "another-profile");
+        copied.setProperty(XaeroOverworldReset.RULE, "true");
+        SetupFiles.saveState(config(), copied);
+
+        assertEquals(0, XaeroOverworldReset.apply(game, config()));
+        assertTrue(Files.exists(minimap));
+        assertTrue(Files.exists(worldMap));
+        assertEquals("true", SetupFiles.readState(config()).getProperty(XaeroOverworldReset.RULE));
+        assertEquals(SetupFiles.profileId(config()), SetupFiles.readRawState(config()).getProperty(SetupFiles.PROFILE));
+    }
 }

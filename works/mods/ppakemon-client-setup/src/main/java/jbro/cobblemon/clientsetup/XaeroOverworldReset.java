@@ -18,6 +18,11 @@ public final class XaeroOverworldReset {
     public static synchronized int apply(Path gameDirectory, Path configDirectory) throws IOException {
         Properties state = SetupFiles.readState(configDirectory);
         if ("true".equals(state.getProperty(RULE))) return 0;
+        // A profile copied after this reset carries maps that were already generated for the new overworld.
+        if ("true".equals(SetupFiles.readRawState(configDirectory).getProperty(RULE))) {
+            SetupFiles.markApplied(configDirectory, state, List.of(RULE));
+            return 0;
+        }
 
         Path backup = gameDirectory.resolve("ppakemon_client_setup/backups").resolve(RULE);
         int moved = 0;
