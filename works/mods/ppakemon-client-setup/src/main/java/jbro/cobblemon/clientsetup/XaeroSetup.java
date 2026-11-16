@@ -30,6 +30,12 @@ public final class XaeroSetup {
 
     /** Absent mods have no files or completion records; all input files are prepared before writing. */
     public static synchronized int apply(Path gameDirectory, Path configDirectory, Set<String> installedMods) throws IOException {
+        return apply(gameDirectory, configDirectory, installedMods, false);
+    }
+
+    /** Existing profiles keep their resource-pack order and every key in options.txt. */
+    public static synchronized int apply(Path gameDirectory, Path configDirectory, Set<String> installedMods,
+                                         boolean preserveOptions) throws IOException {
         if (MAPS.stream().noneMatch(installedMods::contains)) return 0;
         ClientSetup.ApplyMode mode = mode(configDirectory);
         Properties state = mode == ClientSetup.ApplyMode.ONCE ? SetupFiles.readState(configDirectory) : new Properties();
@@ -78,20 +84,22 @@ public final class XaeroSetup {
             writes.put(file, setting(cfg, "display_minimap_radar", "true"));
         }
 
-        Path optionsFile = gameDirectory.resolve("options.txt");
-        String options = SetupFiles.seedOptions(read(optionsFile));
-        boolean removeJourneyMap = !installedMods.contains("journeymap");
-        if (removeJourneyMap) options = options.replaceAll("(?m)^key_key\\.journeymap\\.[^\\r\\n]*(?:\\r?\\n|\\r|$)", "");
-        if (worldmap) options = option(options, "key_gui.xaero_open_map", "key.keyboard.n");
-        if (minimap) {
-            options = option(options, "key_gui.xaero_minimap_settings", "key.keyboard.y");
-            for (String key : List.of("new_waypoint", "waypoints_key", "instant_waypoint", "toggle_waypoints", "toggle_map_waypoints", "switch_waypoint_set", "display_all_sets"))
-                options = option(options, "key_gui.xaero_" + key, "key.keyboard.unknown");
+        if (!preserveOptions) {
+            Path optionsFile = gameDirectory.resolve("options.txt");
+            String options = SetupFiles.seedOptions(read(optionsFile));
+            boolean removeJourneyMap = !installedMods.contains("journeymap");
+            if (removeJourneyMap) options = options.replaceAll("(?m)^key_key\\.journeymap\\.[^\\r\\n]*(?:\\r?\\n|\\r|$)", "");
+            if (worldmap) options = option(options, "key_gui.xaero_open_map", "key.keyboard.n");
+            if (minimap) {
+                options = option(options, "key_gui.xaero_minimap_settings", "key.keyboard.y");
+                for (String key : List.of("new_waypoint", "waypoints_key", "instant_waypoint", "toggle_waypoints", "toggle_map_waypoints", "switch_waypoint_set", "display_all_sets"))
+                    options = option(options, "key_gui.xaero_" + key, "key.keyboard.unknown");
+            }
+            options = packs(options, "resourcePacks", removeJourneyMap, minimap,
+                OptionsSetup.newestPack(gameDirectory, ICON_PACK).orElse(null));
+            options = packs(options, "incompatibleResourcePacks", removeJourneyMap, false, null);
+            writes.put(optionsFile, options);
         }
-        options = packs(options, "resourcePacks", removeJourneyMap, minimap,
-            OptionsSetup.newestPack(gameDirectory, ICON_PACK).orElse(null));
-        options = packs(options, "incompatibleResourcePacks", removeJourneyMap, false, null);
-        writes.put(optionsFile, options);
 
         SetupFiles.ensureMode(configDirectory, MODE, mode);
         for (var write : writes.entrySet()) {

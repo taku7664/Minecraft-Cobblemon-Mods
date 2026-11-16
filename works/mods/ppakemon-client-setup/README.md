@@ -28,7 +28,7 @@ CLC가 설치되어 있으면
 
 CLC의 서버 레벨 제한 설정은 변경하지 않습니다.
 
-단축키 정리는 설치된 모드의 다음 키를 `options.txt`에서 지정한 값으로
+단축키 정리는 `options.txt`가 없거나 비어 있는 새 프로필에서만 설치된 모드의 다음 키를 지정한 값으로
 변경합니다. 다른 키, 옵션과 줄바꿈은 유지하며, 항목이나 파일이 없으면 추가합니다.
 `options.txt`가 없거나 완전히 비어 있으면 Minecraft 1.21.1의 설정 데이터 버전
 `version:3955`도 먼저 기록합니다. 버전 없는 최신 키 문자열을 오래된 숫자 키 형식으로
@@ -75,11 +75,11 @@ Crafting Tweaks의 `config/craftingtweaks-common.toml`도 `[client] mode = "BUTT
 
 모드팩에 `options.txt`·`config/iris.properties`를 넣으면 팩을 업데이트할 때마다 플레이어 설정을 덮어쓸 수 있어서, 팩에서는 두 파일을 빼고 이 훅이 새로 설치한 클라이언트에만 기본값을 넣습니다.
 
-**첫 실행과 업데이트 구분:** 이 규칙이 처음 실행될 때 `options.txt`가 없거나 비어 있으면 새 설치로, 있으면 기존 프로필의 업데이트로 보고 `fresh-install=true|false`로 기록합니다. 판정은 한 번만 하며, 이 규칙이 `options.txt`를 쓰는 다른 규칙보다 먼저 돕니다. 업데이트한 프로필은 언어·리소스팩 선택과 순서·셰이더 켜짐을 바꾸지 않고 완료 기록만 남깁니다.
+**첫 실행과 업데이트 구분:** 시작 시 `options.txt`가 없거나 비어 있으면 새 설치로, 내용이 있으면 기존 프로필로 판단합니다. 새 설치에는 첫 실행 기본 옵션·단축키·Xaero 키와 아이콘 팩 선택을 적용합니다. 기존 프로필은 `options.txt`를 읽거나 다시 쓰지 않으므로 언어·리소스팩 선택과 순서·단축키를 그대로 유지합니다. Xaero 지도 설정 파일은 기존 적용 모드에 따라 계속 처리합니다.
 
 - `options.txt`(`options-defaults-v1`, 새 설치만): `lang:ko_kr`, `skipMultiplayerWarning:true`, `joinedFirstServer:true`, `tutorialStep:none`. `resourcePacks`에서 팩 기본 리소스팩 10개(알림음, CCC, 한국어 번역, 음악, Galmuri, Whimscape 두 종, RCT Trainers+, MoreRadicalTextures, E19 Xaero 아이콘)를 이 순서로 켭니다. `resourcepacks/`에 실제로 있는 파일만 켜고, 이름은 패턴으로 찾으며 같은 팩이 여러 버전이면 숫자로 비교해 가장 높은 버전(`CCC_2.21` > `CCC_2.9`)을 고릅니다.
 - `config/iris.properties`(`shader-defaults-v2`, 새 설치만): Iris가 있고 `shaderpacks/`에 LumaVale이 있으면 가장 높은 버전을 `shaderPack`으로 넣고 `enableShaders=true`로 켭니다. LumaVale이 아직 없으면 표시하지 않고 다음 실행에 다시 시도합니다. v1은 Iris가 읽지 않는 OptiFine용 `optionsshaders.txt`에 썼기 때문에 기록 이름을 올렸습니다.
-- 매 실행(새 설치·업데이트 공통): 켜진 리소스팩 중 우리 팩 파일이 사라졌으면(팩 업데이트로 버전이 바뀐 경우) 같은 자리에 설치된 새 버전으로 바꿉니다. 새 버전이 이미 켜져 있거나 없으면 사라진 항목만 뺍니다. 실제로 있는 파일·폴더형 팩과 플레이어 팩은 건드리지 않습니다. `shaderPack`이 설치되지 않은 LumaVale 파일을 가리킬 때도 설치된 LumaVale로 바꾸며, 켜짐·꺼짐과 다른 셰이더 선택은 그대로 둡니다.
+- 기존 프로필에서는 사라진 리소스팩 파일명이나 LumaVale 셰이더 선택도 자동으로 교체하지 않습니다. 팩 업데이트 뒤 사용자가 직접 고른 설정과 순서를 우선합니다.
 
 ## Xaero 지도 설정
 
@@ -92,14 +92,14 @@ Xaero's Minimap 26.5.0 / World Map 1.46.0의 기본 프로필을 게임 초기�
 - 미니맵 기본 프로필의 `minimap_shape = 1`로 원형을 선택합니다. `config/xaerohud.txt`에서 미니맵 모듈만 `x=0`, `y=0`, `centered=false`, `fromRight=true`, `fromBottom=false`로 변경하여 우측 상단에 둡니다. 다른 HUD 모듈과 무관한 속성은 유지합니다.
 - 미니맵 기본 프로필의 정보 표시 파일(`profiles/info_display_config/default.cfg.txt`)에서 현재 바이옴을 켜고 좌표 바로 다음에 둡니다. 다른 정보 항목의 표시 상태·색·상대 순서는 유지합니다.
 - `config/xaero/minimap/default_radar_categories_client.json`의 기본 `icons`를 `2`(항상 표시)로 설정합니다. 파일이 없으면 번들된 기본 분류를 만들고, 기존 분류·이름 표시 등 다른 값은 유지합니다.
-- 전체 지도는 N, 미니맵 설정은 Y입니다. Xaero 기본 웨이포인트 키는 충돌을 피하려고 미지정으로 둡니다.
+- 새 프로필에서 전체 지도는 N, 미니맵 설정은 Y입니다. Xaero 기본 웨이포인트 키는 충돌을 피하려고 미지정으로 둡니다. 기존 프로필의 키는 유지합니다.
 - 시작 훅이 기존 Xaero 월드의 `xaero/minimap/<월드>/config.txt`에서 `teleportationEnabled:false`를 적용합니다. 접속 중 새로 생성된 월드는 `jbro-policy`가 처리합니다.
 - 운영 서버의 다음 오버월드 초기화에 맞춰 `Multiplayer_210.207.108.196`(포트가 붙은 이름 포함)의 Xaero 미니맵 `dim%0`과 전체 지도 `null` 폴더만 한 번 `ppakemon_client_setup/backups/xaero-overworld-reset-2026-11-11/`로 옮깁니다. 마이룸·광장·다른 차원 및 다른 서버의 지도·웨이포인트는 유지합니다. 클라이언트가 게임 시작 전에 처리하므로 월드 초기화 후에 이 버전을 배포해야 합니다. 기존 2026-10-11 전체 서버 지도 이동 규칙은 더 이상 실행하지 않습니다.
-- `resourcepacks/E19-Xaero-Icons-<버전>.zip`이 설치되어 있으면 가장 높은 버전을 활성화하고(옛 버전 항목은 뺌) 가장 높은 우선순위에 둡니다. 팩을 다운로드하거나 포켓몬 모델·텍스처를 교체하지 않습니다.
-- JourneyMap이 설치되어 있지 않으면 기존 JourneyMap 키와 전용 팩 2개의 선택 항목을 제거합니다. 모드·팩 파일 자체는 삭제하지 않습니다.
+- 새 프로필에 `resourcepacks/E19-Xaero-Icons-<버전>.zip`이 있으면 가장 높은 버전을 활성화하고 가장 높은 우선순위에 둡니다. 기존 프로필의 리소스팩 선택과 순서는 유지합니다. 팩을 다운로드하거나 포켓몬 모델·텍스처를 교체하지 않습니다.
+- 새 프로필에서 JourneyMap이 설치되어 있지 않으면 JourneyMap 키와 전용 팩 2개의 선택 항목을 제거합니다. 기존 프로필의 `options.txt`는 건드리지 않습니다.
 
 Xaero의 기본 적용 방식은 `ALWAYS`입니다. Mod Menu에서 `ONCE`로 바꾸면 각 지도 모드의
-성공 기록은 미니맵 `xaero-xaerominimap-v3=true`, 전체 지도 `xaero-xaeroworldmap-v3=true`로 남깁니다. 기존 미니맵 `v2` 기록이 있어도 바이옴 표시를 한 번 적용하고, 전체 지도 `v2` 기록이 있어도 N 키를 한 번 적용합니다. 나중에 다른 지도 모드를 설치하면 그 모드만 처리합니다.
+성공 기록은 미니맵 `xaero-xaerominimap-v3=true`, 전체 지도 `xaero-xaeroworldmap-v3=true`로 남깁니다. 기존 미니맵 `v2` 기록이 있어도 바이옴 표시를 한 번 적용합니다. 전체 지도 `v2` 기록이 있어도 지도 설정을 한 번 적용하며, N 키는 새 프로필에서만 지정합니다. 나중에 다른 지도 모드를 설치하면 그 모드만 처리합니다.
 기존 CFG의 무관한 설정·주석·줄바꿈과 다른 리소스팩의 상대 순서는 유지합니다.
 레이더 JSON의 값을 바꾸면 들여쓰기를 다시 정리할 수 있습니다.
 

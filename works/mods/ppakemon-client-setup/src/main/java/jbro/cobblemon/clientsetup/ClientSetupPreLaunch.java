@@ -1,6 +1,8 @@
 package jbro.cobblemon.clientsetup;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.stream.Collectors;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.FabricLoader;
@@ -23,6 +25,13 @@ public final class ClientSetupPreLaunch implements PreLaunchEntrypoint {
             return;
         }
         var installedMods = loader.getAllMods().stream().map(mod -> mod.getMetadata().getId()).collect(Collectors.toSet());
+        boolean existingOptions;
+        try {
+            existingOptions = hasExistingOptions(loader.getGameDir());
+        } catch (IOException exception) {
+            LOGGER.error("Could not inspect existing options; skipping option presets to preserve user choices", exception);
+            existingOptions = true;
+        }
         try {
             if (ClientSetup.apply(loader.getConfigDir(), loader.isModLoaded("cobbled_level_control"))
                 == ClientSetup.Result.APPLIED) {
@@ -31,20 +40,20 @@ public final class ClientSetupPreLaunch implements PreLaunchEntrypoint {
         } catch (IOException exception) {
             LOGGER.error("Could not apply CLC HUD default; initialization will retry next launch", exception);
         }
-        try {
+        if (!existingOptions) try {
             int applied = OptionsSetup.apply(loader.getGameDir(), loader.getConfigDir(), installedMods);
             if (applied > 0) LOGGER.info("Applied {} first-launch option defaults (language, resource packs, shader)", applied);
         } catch (IOException exception) {
             LOGGER.error("Could not apply first-launch option defaults; initialization will retry next launch", exception);
         }
-        try {
+        if (!existingOptions) try {
             int applied = KeybindingSetup.apply(loader.getGameDir(), loader.getConfigDir(),
                 installedMods);
             if (applied > 0) LOGGER.info("Applied keybinding cleanup for {} installed mods", applied);
         } catch (IOException exception) {
             LOGGER.error("Could not apply keybinding defaults; initialization will retry next launch", exception);
         }
-        try {
+        if (!existingOptions) try {
             if (KeybindingSetup.resolveSendOutConflict(loader.getGameDir(), installedMods)) {
                 LOGGER.info("Unbound Iris shader reload: it shared a key with Cobblemon send-out");
             }
@@ -58,7 +67,7 @@ public final class ClientSetupPreLaunch implements PreLaunchEntrypoint {
             LOGGER.error("Could not move the live server's Xaero overworld maps; initialization will retry next launch", exception);
         }
         try {
-            int applied = XaeroSetup.apply(loader.getGameDir(), loader.getConfigDir(), installedMods);
+            int applied = XaeroSetup.apply(loader.getGameDir(), loader.getConfigDir(), installedMods, existingOptions);
             if (applied > 0) LOGGER.info("Applied Xaero map preset for {} installed map mods", applied);
         } catch (IOException exception) {
             LOGGER.error("Could not apply Xaero map defaults; initialization will retry next launch", exception);
@@ -70,5 +79,10 @@ public final class ClientSetupPreLaunch implements PreLaunchEntrypoint {
         } catch (IOException exception) {
             LOGGER.error("Could not apply Rounding-Block default; initialization will retry next launch", exception);
         }
+    }
+
+    static boolean hasExistingOptions(Path gameDirectory) throws IOException {
+        var options = gameDirectory.resolve("options.txt");
+        return Files.isRegularFile(options) && Files.size(options) > 0;
     }
 }

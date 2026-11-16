@@ -46,6 +46,19 @@ final class XaeroSetupTest {
         assertFalse(keys.contains("file/E19-Xaero-Icons-1.5.1.zip"));
     }
 
+    @Test void existingProfileKeepsResourcePackOrderAndKeysWhileMapPresetUpdates() throws Exception {
+        String personal = "version:3955\r\nkey_gui.xaero_open_map:key.keyboard.m\r\n"
+            + "key_gui.xaero_minimap_settings:key.keyboard.p\r\n"
+            + "resourcePacks:[\"vanilla\",\"file/E19-Xaero-Icons-1.5.1.zip\",\"file/personal.zip\"]\r\n";
+        write(options(), personal);
+        write(minimap(), "waypoints_in_world = false\n");
+        write(game.resolve("resourcepacks/E19-Xaero-Icons-1.5.1.zip"), "installed");
+
+        assertEquals(2, XaeroSetup.apply(game, config(), MAPS, true));
+        assertEquals(personal, Files.readString(options()));
+        assertTrue(Files.readString(minimap()).contains("waypoints_in_world = true"));
+    }
+
     @Test void newerIconPackVersionReplacesTheOldEntry() throws Exception {
         write(game.resolve("resourcepacks/E19-Xaero-Icons-1.6.0.zip"), "installed");
         write(options(), "version:3955\nresourcePacks:[\"vanilla\",\"file/E19-Xaero-Icons-1.5.1.zip\",\"file/other.zip\"]\n");
